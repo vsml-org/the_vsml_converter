@@ -3,6 +3,8 @@ use std::fmt;
 pub const WRAP_TAGS: [&str; 6] = ["cont", "wrp", "seq", "prl", "rect", "layer"];
 pub const CONTENT_TAGS: [&str; 4] = ["vid", "aud", "img", "txt"];
 
+pub struct StyleData {}
+
 pub struct RectSize {
     pub width: usize,
     pub height: usize,
