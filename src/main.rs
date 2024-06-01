@@ -1,14 +1,12 @@
-use clap::Parser as _;
-use vsmlc::{args, parse_xml};
+use vsmlc::args;
 
 fn main() {
-    let mut args = args::Args::parse();
-    if args.output_path.is_none() {
-        args.output_path = match args.preview_frame {
-            Some(_) => Some(String::from("preview.png")),
-            None => Some(String::from("video.mp4")),
-        }
-    }
+    // 引数を取得
+    let args = args::get_parsed_args();
 
-    parse_xml::convert_xml_with_validate(args.input_path);
+    // VSMLファイルからIVデータに変換
+    // let iv_data = convert_iv_data(args.input_path);
+
+    // 動画へと出力
+    // output_video(iv_data);
 }
