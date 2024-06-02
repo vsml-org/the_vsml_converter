@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<vsml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://vsml.pigeons.house/config/vsml.xsd">
+  <meta>
+    <style src="./hoge.vss" />
+    <style>
+      prl {
+        height:100rh;
+      }
+      layer {
+        direction: column;
+      }
+      img {
+        width: 100rw;
+      }
+      .styled {
+        object-length: 1s;
+        font-family: "Noto Sans CJK JP";
+        font-size: 150px;
+        font-weight: bold;
+        font-color: purple;
+      }
+    </style>
+  </meta>
+  <cont resolution="1920x1080" fps="30">
+    <prl>
+      <img src="yellow.jpg"/>
+      <layer>
+        <txt class="styled">これは文章です</txt>
+        <txt class="styled">これもまた文章です</txt>
+      </layer>
+    </prl>
+  </cont>
+</vsml>
