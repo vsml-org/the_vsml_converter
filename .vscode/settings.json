@@ -6,4 +6,6 @@
     "rust-analyzer.linkedProjects": [
         "./Cargo.toml"
     ],
+    "files.trimFinalNewlines": true,
+    "files.insertFinalNewline": true,
 }
