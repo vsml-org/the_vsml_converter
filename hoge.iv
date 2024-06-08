@@ -2,54 +2,45 @@ hash: 2762ddb3a9da1e6acca3981bbfad64d8b5ee5677248e4a159dadd0f6d3ee2df7
 resolution: 1920x1080
 fps: 30
 sampling: 44100
-wrp{
-  start_x: 0
-  start_y: 0
-  width: 1920
-  height: 1080
+
+wrp {
   start_time: 0
   duration: 1
+  style: {
+    origin_x: 0
+    origin_y: 0
+    width: 1920
+    height: 1080
+  }
 }
-wrp{
-  start_x: 0
-  start_y: 0
-  width: 1920
-  height: 1080
+vobj {
+  src: "./hoge.mp4"
   start_time: 0
   duration: 1
+  style: {
+    origin_x: 0
+    origin_y: 0
+    width: 1920
+    height: 1080
+  }
 }
-vobj{
-  src: "./yellow.jpg"
-  start_x: 0
-  start_y: 0
-  width: 1920
-  height: 1080
+aobj {
+  src: "./hoge.wav"
   start_time: 0
   duration: 1
+  style: {
+    audio-volume: 100
+    audio-system: stereo
+  }
 }
-wrp{
-  start_x: 0
-  start_y: 0
-  width: 1350
-  height: 150
+tobj {
+  text: "こんにちは"
   start_time: 0
   duration: 1
-}
-tobj{
-  text: "これは文章です"
-  start_x: 0
-  start_y: 0
-  width: 1050
-  height: 150
-  start_time: 0
-  duration: 1
-}
-tobj{
-  text: "これもまた文章です"
-  start_x: 0
-  start_y: 0
-  width: 1350
-  height: 150
-  start_time: 0
-  duration: 1
+  style: {
+    origin_x: 0
+    origin_y: 0
+    width: 1920
+    height: 1080
+  }
 }
