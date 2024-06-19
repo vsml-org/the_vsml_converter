@@ -1,9 +1,15 @@
 {
-    "[rust]": {
-        "editor.formatOnSave": true,
-    },
-    "rust-analyzer.check.command": "clippy",
-    "rust-analyzer.linkedProjects": [
-        "./Cargo.toml"
-    ],
+  "[rust]": {
+    "editor.formatOnSave": true
+  },
+  "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.linkedProjects": ["./Cargo.toml"],
+  "cSpell.words": [
+    "aobj",
+    "roxmltree",
+    "tobj",
+    "vobj",
+    "VSML",
+    "vsmlc"
+  ]
 }
