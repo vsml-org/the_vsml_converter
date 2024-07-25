@@ -31,6 +31,7 @@ struct ArgsForParse {
 
 pub struct Args {
     pub input_path: String,
+    pub src_base_path: String,
     pub output_path: String,
     pub preview_frame: Option<usize>,
     pub preview_duration: Option<usize>,
@@ -65,8 +66,11 @@ pub fn get_parsed_args() -> Args {
             }
         }
     };
+    let base_path_index = args.input_path.rfind('/').unwrap();
+    let src_base_path = args.input_path[..base_path_index].to_string();
     Args {
         input_path: args.input_path,
+        src_base_path,
         output_path,
         preview_frame: args.preview_frame,
         preview_duration: args.preview_duration,
