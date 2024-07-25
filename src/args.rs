@@ -13,7 +13,7 @@ fn validate_duration(preview_duration: &str) -> Result<Option<usize>, Error> {
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
-pub struct Args {
+struct ArgsForParse {
     pub input_path: String,
 
     #[arg(short, long = "output")]
@@ -26,6 +26,15 @@ pub struct Args {
     pub preview_duration: Option<usize>,
 
     #[arg(long)]
+    pub overwrite: bool,
+}
+
+pub struct Args {
+    pub input_path: String,
+    pub src_base_path: String,
+    pub output_path: String,
+    pub preview_frame: Option<usize>,
+    pub preview_duration: Option<usize>,
     pub overwrite: bool,
 }
 
@@ -45,13 +54,26 @@ pub struct Args {
  */
 
 pub fn get_parsed_args() -> Args {
-    let mut args = Args::parse();
-    if args.output_path.is_none() {
-        args.output_path = if args.preview_frame.is_some() && args.preview_duration.is_none() {
-            Some(String::from("preview.png"))
-        } else {
-            Some(String::from("video.mp4"))
+    let args = ArgsForParse::parse();
+
+    let output_path = match args.output_path {
+        Some(v) => v,
+        None => {
+            if args.preview_frame.is_some() && args.preview_duration.is_none() {
+                String::from("preview.png")
+            } else {
+                String::from("video.mp4")
+            }
         }
+    };
+    let base_path_index = args.input_path.rfind('/').unwrap();
+    let src_base_path = args.input_path[..base_path_index].to_string();
+    Args {
+        input_path: args.input_path,
+        src_base_path,
+        output_path,
+        preview_frame: args.preview_frame,
+        preview_duration: args.preview_duration,
+        overwrite: args.overwrite,
     }
-    args
 }
