@@ -1,4 +1,3 @@
-use crate::iv::pre_style::PreStyle;
 use crate::iv::style::Style;
 
 #[derive(Debug)]
@@ -15,7 +14,7 @@ pub struct NestedObject {
     pub duration: f64,
     pub src: Option<String>,
     pub text: Option<String>,
-    pub styles: Vec<Box<dyn PreStyle>>,
+    pub styles: Vec<Box<dyn Style>>,
     pub children: Vec<NestedObject>,
 }
 
@@ -90,7 +89,7 @@ impl IVData {
         sampling: String,
         objects: Vec<ObjectData>,
     ) -> Result<IVData, String> {
-        let resolutions = resolution.split("x").collect::<Vec<&str>>();
+        let resolutions = resolution.split('x').collect::<Vec<&str>>();
         if resolutions.len() != 2 {
             return Err("resolution format is invalid".to_string());
         }

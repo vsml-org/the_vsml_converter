@@ -393,6 +393,7 @@ version = "0.0.1"
 dependencies = [
  "clap",
  "ffmpeg-next",
+ "regex",
  "roxmltree",
 ]
 

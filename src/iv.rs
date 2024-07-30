@@ -8,7 +8,7 @@ use roxmltree::Document;
 
 use std::{fs, process};
 
-pub fn convert_iv_data(input_path: String) -> iv_data::IVData {
+pub fn convert_iv_data(input_path: String, base_path: &String) -> iv_data::IVData {
     let vsml_text = match fs::read_to_string(input_path) {
         Ok(c) => c,
         Err(e) => {
@@ -19,11 +19,11 @@ pub fn convert_iv_data(input_path: String) -> iv_data::IVData {
     if iv_file::is_cache_enabled(&vsml_text) {
         iv_file::read_iv_file()
     } else {
-        convert_iv_data_from_vsml_text(vsml_text)
+        convert_iv_data_from_vsml_text(vsml_text, base_path)
     }
 }
 
-fn convert_iv_data_from_vsml_text(vsml_text: String) -> iv_data::IVData {
+fn convert_iv_data_from_vsml_text(vsml_text: String, base_path: &String) -> iv_data::IVData {
     // xmlオブジェクトに変換
     let document = Document::parse(&vsml_text).expect("failed to cast dom tree");
 
@@ -40,8 +40,8 @@ fn convert_iv_data_from_vsml_text(vsml_text: String) -> iv_data::IVData {
         .expect("cont tag is not exist");
 
     // metaからstyle情報を集め、structを作る
-    let style_data = vsml::format_style_data_from_meta(meta_node);
+    let vss_data = vsml::convert_vss_data_from_meta(meta_node, base_path);
 
     // contとstyleのstructを持って、IVDataを作る
-    vsml::convert_iv_data_from_cont(cont_node, style_data)
+    vsml::convert_iv_data_from_cont(cont_node, vss_data, base_path)
 }

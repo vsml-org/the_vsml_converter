@@ -9,6 +9,10 @@
     "files.trimFinalNewlines": true,
     "files.insertFinalNewline": true,
     "cSpell.words": [
+        "Aobj",
+        "roxmltree",
+        "Tobj",
+        "Vobj",
         "vsmlc"
     ],
 }

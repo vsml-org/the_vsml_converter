@@ -66,8 +66,11 @@ pub fn get_parsed_args() -> Args {
             }
         }
     };
-    let base_path_index = args.input_path.rfind('/').unwrap();
-    let src_base_path = args.input_path[..base_path_index].to_string();
+    let base_path_index = args.input_path.rfind('/');
+    let src_base_path = match base_path_index {
+        Some(index) => args.input_path[..index + 1].to_string(),
+        None => String::new(),
+    };
     Args {
         input_path: args.input_path,
         src_base_path,
