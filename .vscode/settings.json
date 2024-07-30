@@ -1,18 +1,17 @@
 {
-    "[rust]": {
-        "editor.formatOnSave": true,
-    },
-    "rust-analyzer.check.command": "clippy",
-    "rust-analyzer.linkedProjects": [
-        "./Cargo.toml"
-    ],
+  "[rust]": {
+    "editor.formatOnSave": true
+  },
+  "rust-analyzer.check.command": "clippy",
+  "rust-analyzer.linkedProjects": ["./Cargo.toml"],
     "files.trimFinalNewlines": true,
     "files.insertFinalNewline": true,
-    "cSpell.words": [
-        "Aobj",
-        "roxmltree",
-        "Tobj",
-        "Vobj",
-        "vsmlc"
-    ],
+  "cSpell.words": [
+    "aobj",
+    "roxmltree",
+    "tobj",
+    "vobj",
+    "vsml",
+    "vsmlc"
+  ]
 }
