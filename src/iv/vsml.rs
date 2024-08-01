@@ -1,3 +1,5 @@
+use std::fs;
+
 use super::iv_data::{self, NestedObject};
 use crate::definitions::CONTENT_TAG;
 use crate::ffmpeg::get_duration;
@@ -6,6 +8,37 @@ use crate::iv::pre_style::{
 };
 
 use roxmltree::Node;
+
+pub fn convert_vss_data_from_meta(meta: Option<&Node>, base_path: &String) -> Vec<VSSData> {
+    let meta_node = match meta {
+        Some(v) => v,
+        None => return vec![],
+    };
+    let mut style_list: Vec<VSSData> = vec![];
+    for node in meta_node.children() {
+        match node.attribute("src") {
+            Some(v) => {
+                let style_string = match fs::read_to_string(format!("{base_path}{v}")) {
+                    Ok(v) => v,
+                    Err(_) => continue,
+                };
+                style_list.append(&mut convert_to_vss_data(style_string.as_str()));
+            }
+            None => match node.text() {
+                Some(style_str) => {
+                    let replaced_style_str = style_str.replace('\n', "");
+                    let replaced_style_str = replaced_style_str.trim();
+                    if replaced_style_str.is_empty() {
+                        continue;
+                    }
+                    style_list.append(&mut convert_to_vss_data(replaced_style_str));
+                }
+                None => continue,
+            },
+        };
+    }
+    style_list
+}
 
 fn convert_to_vss_data(style_str: &str) -> Vec<VSSData> {
     let pre_style_factory_list: Vec<Box<dyn PreStyleFactory>> =
@@ -26,6 +59,7 @@ fn convert_to_vss_data(style_str: &str) -> Vec<VSSData> {
         if selector_result.is_err() {
             continue;
         }
+        // TODO: ここのis_errの確認方法を修正
         let selector = selector_result.unwrap();
 
         let mut pre_style_list = vec![];
@@ -52,26 +86,7 @@ fn convert_to_vss_data(style_str: &str) -> Vec<VSSData> {
             pre_style_list,
         })
     }
-    vec![]
-}
-
-pub fn convert_vss_data_from_meta(meta: Option<&Node>, base_path: &String) -> Vec<VSSData> {
-    let meta_node = match meta {
-        Some(v) => v,
-        None => return vec![],
-    };
-    let mut style_list: Vec<VSSData> = vec![];
-    for node in meta_node.children() {
-        let style_str = match node.attribute("src") {
-            Some(v) => v,
-            None => match node.text() {
-                Some(v) => v,
-                None => continue,
-            },
-        };
-        style_list.append(&mut convert_to_vss_data(style_str));
-    }
-    style_list
+    vss_data_list
 }
 
 pub fn convert_iv_data_from_cont(

@@ -11,6 +11,7 @@ impl PreStyleFactory for TimeMarginFactory {
     fn check_property_name(&self, property_name: &str) -> bool {
         property_name == "time-margin"
     }
+    // TODO: 実装
     fn create_from_value(&self, value: &str) -> Box<dyn PreStyle> {
         Box::new(TimeMargin {
             value: 10.0,
@@ -25,6 +26,7 @@ impl PreStyleFactory for DurationFactory {
     fn check_property_name(&self, property_name: &str) -> bool {
         property_name == "duration"
     }
+    // TODO: 実装
     fn create_from_value(&self, value: &str) -> Box<dyn PreStyle> {
         Box::new(Duration {
             value: 10.0,
@@ -76,6 +78,7 @@ pub struct Selector {
 }
 
 impl Selector {
+    // TODO: 実装
     pub fn from_str(selector_str: &str) -> Result<Selector, &str> {
         let mut selector_list = vec![];
         let selector_parts = selector_str.split(' ').collect::<Vec<&str>>();
@@ -90,6 +93,7 @@ impl Selector {
                     if last_selector.is_none() {
                         return Err("invalid selector");
                     }
+                    // TODO: ここのis_someの確認方法を修正
                     if last_selector.is_some() {
                         let mut new_last_selector: SelectorPart = last_selector.unwrap();
                         if new_last_selector.combinator != Combinator::Descendant {
@@ -104,6 +108,7 @@ impl Selector {
                     if last_selector.is_none() {
                         return Err("invalid selector");
                     }
+                    // TODO: ここのis_someの確認方法を修正
                     if last_selector.is_some() {
                         let mut new_last_selector: SelectorPart = last_selector.unwrap();
                         if new_last_selector.combinator != Combinator::Descendant {
@@ -118,6 +123,7 @@ impl Selector {
                     if last_selector.is_none() {
                         return Err("invalid selector");
                     }
+                    // TODO: ここのis_someの確認方法を修正
                     if last_selector.is_some() {
                         let mut new_last_selector: SelectorPart = last_selector.unwrap();
                         if new_last_selector.combinator != Combinator::Descendant {
@@ -137,6 +143,7 @@ impl Selector {
         }
         Ok(Selector { selector_list })
     }
+    // TODO: 実装
     pub fn is_target(&self, node: &Node) -> bool {
         // node.parent().unwrap().parent().unwrap().parent().unwrap();
         false
