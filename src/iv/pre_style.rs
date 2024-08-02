@@ -66,6 +66,17 @@ enum Combinator {
     SubsequentSibling,
 }
 
+impl Combinator {
+    pub fn from_str(combinator: &str) -> Combinator {
+        match combinator {
+            "+" => Combinator::NextSibling,
+            ">" => Combinator::Child,
+            "~" => Combinator::SubsequentSibling,
+            _ => unreachable!(),
+        }
+    }
+}
+
 struct SelectorPart {
     tag_name: Option<String>,
     class_names: Vec<String>,
@@ -78,7 +89,6 @@ pub struct Selector {
 }
 
 impl Selector {
-    // TODO: 実装
     pub fn from_str(selector_str: &str) -> Result<Selector, &str> {
         let mut selector_list = vec![];
         let selector_parts = selector_str.split(' ').collect::<Vec<&str>>();
@@ -88,7 +98,7 @@ impl Selector {
                 continue;
             }
             match selector_part {
-                "+" => {
+                "+" | ">" | "~" => {
                     let last_selector = selector_list.pop();
                     let mut new_last_selector: SelectorPart = match last_selector {
                         Some(s) => s,
@@ -97,33 +107,10 @@ impl Selector {
                     if new_last_selector.combinator != Combinator::Descendant {
                         return Err("invalid selector");
                     }
-                    new_last_selector.combinator = Combinator::NextSibling;
+                    new_last_selector.combinator = Combinator::from_str(selector_part);
                     selector_list.push(new_last_selector);
                 }
-                ">" => {
-                    let last_selector = selector_list.pop();
-                    let mut new_last_selector: SelectorPart = match last_selector {
-                        Some(s) => s,
-                        None => return Err("invalid selector"),
-                    };
-                    if new_last_selector.combinator != Combinator::Descendant {
-                        return Err("invalid selector");
-                    }
-                    new_last_selector.combinator = Combinator::Child;
-                    selector_list.push(new_last_selector);
-                }
-                "~" => {
-                    let last_selector = selector_list.pop();
-                    let mut new_last_selector: SelectorPart = match last_selector {
-                        Some(s) => s,
-                        None => return Err("invalid selector"),
-                    };
-                    if new_last_selector.combinator != Combinator::Descendant {
-                        return Err("invalid selector");
-                    }
-                    new_last_selector.combinator = Combinator::SubsequentSibling;
-                    selector_list.push(new_last_selector);
-                }
+                // TODO: 実装
                 _ => selector_list.push(SelectorPart {
                     tag_name: None,
                     class_names: vec![],
