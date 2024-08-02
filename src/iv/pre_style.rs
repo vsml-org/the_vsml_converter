@@ -1,22 +1,72 @@
 use roxmltree::Node;
 
+// inheritやunsetなど共通の値の考慮がない
 pub trait PreStyleFactory {
     fn check_property_name(&self, property_name: &str) -> bool;
-    fn create_from_value(&self, value: &str) -> Box<dyn PreStyle>;
+    fn create_from_value(&self, property_name: &str, value: &str) -> Vec<Box<dyn PreStyle>>;
 }
 
 pub struct TimeMarginFactory {}
 
 impl PreStyleFactory for TimeMarginFactory {
     fn check_property_name(&self, property_name: &str) -> bool {
-        property_name == "time-margin"
+        ["time-margin", "time-margin-start", "time-margin-end"].contains(&property_name)
     }
     // TODO: 実装
-    fn create_from_value(&self, value: &str) -> Box<dyn PreStyle> {
-        Box::new(TimeMargin {
-            value: 10.0,
-            unit: TimeUnit::Seconds,
-        })
+    fn create_from_value(&self, property_name: &str, value: &str) -> Vec<Box<dyn PreStyle>> {
+        match property_name {
+            "time-margin" => vec![
+                Box::new(TimeMarginStart {
+                    value: 10.0,
+                    unit: TimeUnit::Seconds,
+                }),
+                Box::new(TimeMarginEnd {
+                    value: 10.0,
+                    unit: TimeUnit::Seconds,
+                }),
+            ],
+            "time-margin-start" => vec![Box::new(TimeMarginStart {
+                value: 10.0,
+                unit: TimeUnit::Seconds,
+            })],
+            "time-margin-end" => vec![Box::new(TimeMarginEnd {
+                value: 10.0,
+                unit: TimeUnit::Seconds,
+            })],
+            _ => unreachable!(),
+        }
+    }
+}
+
+pub struct OrderFactory {}
+
+impl PreStyleFactory for OrderFactory {
+    fn check_property_name(&self, property_name: &str) -> bool {
+        property_name == "order"
+    }
+    fn create_from_value(&self, _: &str, value: &str) -> Vec<Box<dyn PreStyle>> {
+        let order = match value {
+            "sequence" => Order::Sequence,
+            "parallel" => Order::Parallel,
+            _ => panic!(),
+        };
+        vec![Box::new(order)]
+    }
+}
+
+pub struct LayerFactory {}
+
+impl PreStyleFactory for LayerFactory {
+    fn check_property_name(&self, property_name: &str) -> bool {
+        property_name == "layer"
+    }
+    fn create_from_value(&self, _: &str, value: &str) -> Vec<Box<dyn PreStyle>> {
+        let layer = match value {
+            "single" => Layer::Single,
+            "multi" => Layer::Multi,
+            _ => panic!(),
+        };
+        vec![Box::new(layer)]
     }
 }
 
@@ -27,11 +77,11 @@ impl PreStyleFactory for DurationFactory {
         property_name == "duration"
     }
     // TODO: 実装
-    fn create_from_value(&self, value: &str) -> Box<dyn PreStyle> {
-        Box::new(Duration {
+    fn create_from_value(&self, _: &str, value: &str) -> Vec<Box<dyn PreStyle>> {
+        vec![Box::new(Duration {
             value: 10.0,
             unit: TimeUnit::Seconds,
-        })
+        })]
     }
 }
 
@@ -44,6 +94,20 @@ enum TimeUnit {
     Samples,
 }
 
+enum Order {
+    Sequence,
+    Parallel,
+}
+
+impl PreStyle for Order {}
+
+enum Layer {
+    Single,
+    Multi,
+}
+
+impl PreStyle for Layer {}
+
 pub struct Duration {
     value: f64,
     unit: TimeUnit,
@@ -51,12 +115,19 @@ pub struct Duration {
 
 impl PreStyle for Duration {}
 
-pub struct TimeMargin {
+pub struct TimeMarginStart {
     value: f64,
     unit: TimeUnit,
 }
 
-impl PreStyle for TimeMargin {}
+impl PreStyle for TimeMarginStart {}
+
+pub struct TimeMarginEnd {
+    value: f64,
+    unit: TimeUnit,
+}
+
+impl PreStyle for TimeMarginEnd {}
 
 #[derive(PartialEq)]
 enum Combinator {

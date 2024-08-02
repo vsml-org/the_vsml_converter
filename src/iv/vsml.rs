@@ -76,7 +76,8 @@ fn convert_to_vss_data(style_str: &str) -> Vec<VSSData> {
             let value = property_and_value[1].trim();
             for pre_style_factory in &pre_style_factory_list {
                 if pre_style_factory.check_property_name(property) {
-                    pre_style_list.push(pre_style_factory.create_from_value(value));
+                    pre_style_list
+                        .append(&mut pre_style_factory.create_from_value(property, value));
                 }
             }
         }
