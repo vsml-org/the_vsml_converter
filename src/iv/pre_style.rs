@@ -90,48 +90,39 @@ impl Selector {
             match selector_part {
                 "+" => {
                     let last_selector = selector_list.pop();
-                    if last_selector.is_none() {
+                    let mut new_last_selector: SelectorPart = match last_selector {
+                        Some(s) => s,
+                        None => return Err("invalid selector"),
+                    };
+                    if new_last_selector.combinator != Combinator::Descendant {
                         return Err("invalid selector");
                     }
-                    // TODO: ここのis_someの確認方法を修正
-                    if last_selector.is_some() {
-                        let mut new_last_selector: SelectorPart = last_selector.unwrap();
-                        if new_last_selector.combinator != Combinator::Descendant {
-                            return Err("invalid selector");
-                        }
-                        new_last_selector.combinator = Combinator::NextSibling;
-                        selector_list.push(new_last_selector);
-                    }
+                    new_last_selector.combinator = Combinator::NextSibling;
+                    selector_list.push(new_last_selector);
                 }
                 ">" => {
                     let last_selector = selector_list.pop();
-                    if last_selector.is_none() {
+                    let mut new_last_selector: SelectorPart = match last_selector {
+                        Some(s) => s,
+                        None => return Err("invalid selector"),
+                    };
+                    if new_last_selector.combinator != Combinator::Descendant {
                         return Err("invalid selector");
                     }
-                    // TODO: ここのis_someの確認方法を修正
-                    if last_selector.is_some() {
-                        let mut new_last_selector: SelectorPart = last_selector.unwrap();
-                        if new_last_selector.combinator != Combinator::Descendant {
-                            return Err("invalid selector");
-                        }
-                        new_last_selector.combinator = Combinator::Child;
-                        selector_list.push(new_last_selector);
-                    }
+                    new_last_selector.combinator = Combinator::Child;
+                    selector_list.push(new_last_selector);
                 }
                 "~" => {
                     let last_selector = selector_list.pop();
-                    if last_selector.is_none() {
+                    let mut new_last_selector: SelectorPart = match last_selector {
+                        Some(s) => s,
+                        None => return Err("invalid selector"),
+                    };
+                    if new_last_selector.combinator != Combinator::Descendant {
                         return Err("invalid selector");
                     }
-                    // TODO: ここのis_someの確認方法を修正
-                    if last_selector.is_some() {
-                        let mut new_last_selector: SelectorPart = last_selector.unwrap();
-                        if new_last_selector.combinator != Combinator::Descendant {
-                            return Err("invalid selector");
-                        }
-                        new_last_selector.combinator = Combinator::SubsequentSibling;
-                        selector_list.push(new_last_selector);
-                    }
+                    new_last_selector.combinator = Combinator::SubsequentSibling;
+                    selector_list.push(new_last_selector);
                 }
                 _ => selector_list.push(SelectorPart {
                     tag_name: None,

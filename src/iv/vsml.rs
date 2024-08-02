@@ -56,11 +56,11 @@ fn convert_to_vss_data(style_str: &str) -> Vec<VSSData> {
         }
         let selector_str = style_parts[0].trim();
         let selector_result = Selector::from_str(selector_str);
-        if selector_result.is_err() {
-            continue;
-        }
-        // TODO: ここのis_errの確認方法を修正
-        let selector = selector_result.unwrap();
+
+        let selector = match selector_result {
+            Ok(s) => s,
+            Err(_) => continue,
+        };
 
         let mut pre_style_list = vec![];
         for property_line in style_parts[1].split(';').collect::<Vec<&str>>() {
