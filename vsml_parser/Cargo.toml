@@ -1,7 +1,8 @@
 [package]
-name = "vsml_core"
+name = "vsml_parser"
 version = { workspace = true }
 edition = { workspace = true }
 authors = { workspace = true }
 
 [dependencies]
+vsml_core = { workspace = true }

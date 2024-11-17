@@ -5,3 +5,10 @@ version = 3
 [[package]]
 name = "vsml_core"
 version = "0.1.0"
+
+[[package]]
+name = "vsml_parser"
+version = "0.1.0"
+dependencies = [
+ "vsml_core",
+]
