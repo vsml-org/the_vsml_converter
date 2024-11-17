@@ -10,3 +10,6 @@ members = ["vsml_core", "vsml_parser"]
 [workspace.dependencies]
 vsml_core = { path = "vsml_core" }
 vsml_parser = { path = "vsml_parser" }
+cssparser = "0.34.0"
+roxmltree = "0.20.0"
+thiserror = "2.0.3"
