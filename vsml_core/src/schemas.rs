@@ -104,10 +104,10 @@ impl FromStr for Order {
     }
 }
 
-pub enum ObjectType {
+pub enum ObjectType<I> {
     Seq,
     Prl,
-    Other(Arc<dyn ObjectProcessor>),
+    Other(Arc<dyn ObjectProcessor<I>>),
 }
 
 impl Debug for ObjectType {
@@ -120,33 +120,33 @@ impl Debug for ObjectType {
     }
 }
 
-pub trait ObjectProcessor {
+pub trait ObjectProcessor<I> {
     fn name(&self) -> &str;
     fn default_duration(&self, attr: ()) -> f64;
-    // fn process(&self, attr: /* ? */, children: /* ? */, at: /* Time */) -> (/* ? */);
+    fn process(&self, image: I) -> I;
 }
 
 #[derive(Debug)]
-pub enum ObjectData {
+pub enum ObjectData<I> {
     Element {
-        object_type: ObjectType,
+        object_type: ObjectType<I>,
         start_time: f64,
         attributes: HashMap<String, String>,
         order: Option<Order>,
         duration: Option<Duration>,
         styles: StyleData,
-        children: Vec<ObjectData>,
+        children: Vec<ObjectData<I>>,
     },
     Text(String),
 }
 
 #[derive(Debug)]
-pub struct IVData {
+pub struct IVData<I> {
     pub resolution_x: usize,
     pub resolution_y: usize,
     pub fps: f64,
     pub sampling: usize,
-    pub objects: Vec<ObjectData>,
+    pub objects: Vec<ObjectData<I>>,
 }
 
 #[cfg(test)]
