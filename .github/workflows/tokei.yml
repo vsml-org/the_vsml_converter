@@ -23,4 +23,4 @@ jobs:
 
       - name: Send to Discord
         run: |
-          curl -X POST -H 'Content-type: application/json' --data '{"content": "[現在](https://)のtokei\n```"$(cat tokei_result.txt)"```"}' ${{ secrets.DISCORD_TOKEI_WEBHOOK }}
+          curl -X POST -H 'Content-type: application/json' --data "{\"content\": \"[現在](https://github.com/vsml-org/the_vsml_converter/tree/${{ github.sha }})のtokei\\n\`\`\`$(cat tokei_result.txt | tr '\n' '\\' | sed -r 's/\\/\\n/g')\`\`\`\"}" ${{ secrets.DISCORD_TOKEI_WEBHOOK }}
