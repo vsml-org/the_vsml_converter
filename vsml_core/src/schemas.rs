@@ -1,9 +1,9 @@
+use crate::{ElementRect, RenderingInfo};
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::str::FromStr;
 use std::sync::Arc;
-use crate::{ElementRect, RenderingInfo};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Color {

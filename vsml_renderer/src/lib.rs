@@ -1,6 +1,6 @@
+use vsml_common_image::Image as VsmlImage;
 use vsml_core;
 use vsml_core::{Rect, RenderingInfo};
-use vsml_common_image::Image as VsmlImage;
 
 pub struct RendererImpl {
     images: Vec<(VsmlImage, RenderingInfo)>,
@@ -15,7 +15,11 @@ impl vsml_core::Renderer for RendererImpl {
         self.images.push((image, info));
     }
 
-    fn render_text(&mut self, text_data: &[vsml_core::TextData], info: vsml_core::TextRenderingInfo) -> Rect {
+    fn render_text(
+        &mut self,
+        text_data: &[vsml_core::TextData],
+        info: vsml_core::TextRenderingInfo,
+    ) -> Rect {
         todo!()
     }
 
@@ -26,7 +30,12 @@ impl vsml_core::Renderer for RendererImpl {
     fn render(self, width: u32, height: u32) -> Self::Image {
         let mut result = VsmlImage::new(width, height);
         self.images.iter().for_each(|(image, info)| {
-            image::imageops::resize(image, info.width as u32, info.height as u32, image::imageops::FilterType::CatmullRom);
+            image::imageops::resize(
+                image,
+                info.width as u32,
+                info.height as u32,
+                image::imageops::FilterType::CatmullRom,
+            );
             image::imageops::overlay(&mut result, image, info.x as i64, info.y as i64);
         });
         result

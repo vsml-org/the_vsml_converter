@@ -1,6 +1,6 @@
-use std::{collections::HashMap, sync::Arc};
 use crate::schemas::{ObjectData, ObjectType};
 use schemas::{ObjectProcessor, StyleData};
+use std::{collections::HashMap, sync::Arc};
 
 pub mod schemas;
 #[cfg(test)]
@@ -163,7 +163,9 @@ pub trait RenderingContext {
 }
 
 impl<R> RenderingContext for &mut R
-where R:RenderingContext{
+where
+    R: RenderingContext,
+{
     type Image = R::Image;
     type Renderer = R::Renderer;
     fn create_renderer(&mut self) -> Self::Renderer {
