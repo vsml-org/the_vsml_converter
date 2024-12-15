@@ -38,13 +38,13 @@ struct TextStyleData {
     font_name: String,
 }
 
-struct TextData {
+pub struct TextData {
     text: String,
     style: TextStyleData,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
-enum Alignment {
+pub enum Alignment {
     Center,
     Top,
     Left,
@@ -84,13 +84,13 @@ impl Alignment {
 
 /// Alignment付きのRectの位置とサイズ
 #[derive(Debug)]
-struct ElementRect {
-    alignment: Alignment,
-    parent_alignment: Alignment,
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
+pub struct ElementRect {
+    pub alignment: Alignment,
+    pub parent_alignment: Alignment,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
 }
 
 impl ElementRect {
@@ -126,19 +126,19 @@ impl ElementRect {
     }
 }
 
-struct Property {}
+pub struct Property {}
 
-struct EffectStyle {}
+pub struct EffectStyle {}
 
 /// rendererから見た左上の座標とサイズ
 #[derive(Debug)]
-struct RenderingInfo {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
+pub struct RenderingInfo {
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
 }
-struct TextRenderingInfo {
+pub struct TextRenderingInfo {
     x: f32,
     y: f32,
     max_width: f32,
@@ -162,7 +162,19 @@ pub trait RenderingContext {
     fn apply_style(&mut self, image: Self::Image, style: EffectStyle) -> Self::Image;
 }
 
-fn render_frame_image<R>(
+impl<R> RenderingContext for &mut R
+where R:RenderingContext{
+    type Image = R::Image;
+    type Renderer = R::Renderer;
+    fn create_renderer(&mut self) -> Self::Renderer {
+        R::create_renderer(self)
+    }
+    fn apply_style(&mut self, image: Self::Image, style: EffectStyle) -> Self::Image {
+        R::apply_style(self, image, style)
+    }
+}
+
+pub fn render_frame_image<R>(
     &schemas::IVData {
         resolution_x,
         resolution_y,
