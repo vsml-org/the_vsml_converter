@@ -1,0 +1,28 @@
+name: Send Current Tokei for Discord
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install tokei
+        run: cargo install tokei
+
+      - name: Run tokei
+        id: tokei_result
+        run: tokei >> tokei_result.txt
+
+      - name: Send to Discord
+        run: |
+          curl -X POST -H 'Content-type: application/json' --data "{\"content\": \"[現在](https://github.com/vsml-org/the_vsml_converter/tree/${{ github.sha }})のtokei\\n\`\`\`$(cat tokei_result.txt | tr '\n' '\\' | sed -r 's/\\/\\n/g')\`\`\`\"}" ${{ secrets.DISCORD_TOKEI_WEBHOOK }}
