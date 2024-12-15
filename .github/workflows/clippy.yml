@@ -22,4 +22,4 @@ jobs:
           components: clippy
 
       - name: Run tests
-        run: cargo clippy --workspace
+        run: cargo clippy --workspace --tests
