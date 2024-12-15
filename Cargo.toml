@@ -1,3 +1,21 @@
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["PigeonsHouse"]
+
 [workspace]
 resolver = "2"
-members = ["vsml_core"]
+members = [ "vsml_cli","vsml_common_image","vsml_core", "vsml_parser", "vsml_processer", "vsml_renderer"]
+
+[workspace.dependencies]
+vsml_common_image = { path = "vsml_common_image" }
+vsml_core = { path = "vsml_core" }
+vsml_parser = { path = "vsml_parser" }
+vsml_processer = { path = "vsml_processer" }
+vsml_renderer = { path = "vsml_renderer" }
+cssparser = "0.34.0"
+image = "0.25.5"
+imageproc = "0.25.0"
+mockall = "0.13.1"
+roxmltree = "0.20.0"
+thiserror = "2.0.3"

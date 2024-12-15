@@ -1,0 +1,10 @@
+[package]
+name = "vsml_renderer"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+vsml_core.workspace = true
+image.workspace = true
+vsml_common_image.workspace = true

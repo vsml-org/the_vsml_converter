@@ -1,12 +1,22 @@
+use crate::{ElementRect, RenderingInfo};
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::str::FromStr;
 use std::sync::Arc;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub struct Color {
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+}
+
+#[derive(Debug, Clone, Default)]
 pub struct StyleData {
     pub layer_mode: Option<LayerMode>,
+    pub background_color: Option<Color>,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -104,49 +114,50 @@ impl FromStr for Order {
     }
 }
 
-pub enum ObjectType {
-    Seq,
-    Prl,
-    Other(Arc<dyn ObjectProcessor>),
+#[derive(Debug)]
+pub enum ObjectType<I> {
+    Wrap,
+    Other(Arc<dyn ObjectProcessor<I>>),
 }
 
-impl Debug for ObjectType {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            ObjectType::Seq => write!(f, "Seq"),
-            ObjectType::Prl => write!(f, "Prl"),
-            ObjectType::Other(p) => write!(f, "Other({})", p.name()),
-        }
+pub trait ObjectProcessor<I> {
+    fn name(&self) -> &str;
+    fn default_duration(&self, attributes: HashMap<String, String>) -> f64;
+    fn process(&self, render_sec: f64, attributes: &HashMap<String, String>, image: Option<I>)
+        -> I;
+}
+
+impl<I> Debug for dyn ObjectProcessor<I> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        write!(f, "ObjectProcessor({})", self.name())
     }
 }
 
-pub trait ObjectProcessor {
-    fn name(&self) -> &str;
-    fn default_duration(&self, attr: ()) -> f64;
-    // fn process(&self, attr: /* ? */, children: /* ? */, at: /* Time */) -> (/* ? */);
-}
-
+/// Elementまたはテキスト1つに相当するデータ
 #[derive(Debug)]
-pub enum ObjectData {
+pub enum ObjectData<I> {
     Element {
-        object_type: ObjectType,
+        object_type: ObjectType<I>,
+        /// 親エレメントからの相対開始時間(s)
         start_time: f64,
+        /// エレメントが表示される時間(s)
+        duration: f64,
         attributes: HashMap<String, String>,
-        order: Option<Order>,
-        duration: Option<Duration>,
+        /// エレメントの表示位置とサイズ
+        element_rect: ElementRect,
         styles: StyleData,
-        children: Vec<ObjectData>,
+        children: Vec<ObjectData<I>>,
     },
     Text(String),
 }
 
 #[derive(Debug)]
-pub struct IVData {
-    pub resolution_x: usize,
-    pub resolution_y: usize,
-    pub fps: f64,
-    pub sampling: usize,
-    pub objects: Vec<ObjectData>,
+pub struct IVData<I> {
+    pub resolution_x: u32,
+    pub resolution_y: u32,
+    pub fps: u32,
+    pub sampling_rate: u32,
+    pub object: ObjectData<I>,
 }
 
 #[cfg(test)]

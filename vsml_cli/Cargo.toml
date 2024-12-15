@@ -1,0 +1,11 @@
+[package]
+name = "vsml_cli"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+vsml_core.workspace = true
+vsml_parser.workspace = true
+vsml_processer.workspace = true
+vsml_renderer.workspace = true

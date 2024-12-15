@@ -1,0 +1,10 @@
+[package]
+name = "vsml_processer"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+image.workspace = true
+vsml_common_image.workspace = true
+vsml_core.workspace = true
