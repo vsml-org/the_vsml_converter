@@ -13,16 +13,10 @@ pub struct Color {
     a: u8,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct StyleData {
     pub layer_mode: Option<LayerMode>,
     pub background_color: Option<Color>,
-}
-
-impl StyleData {
-    pub fn pass_through(&self) -> bool {
-        self.background_color.is_none()
-    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]

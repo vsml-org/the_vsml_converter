@@ -11,5 +11,6 @@ members = ["vsml_core", "vsml_parser"]
 vsml_core = { path = "vsml_core" }
 vsml_parser = { path = "vsml_parser" }
 cssparser = "0.34.0"
+mockall = "0.13.1"
 roxmltree = "0.20.0"
 thiserror = "2.0.3"

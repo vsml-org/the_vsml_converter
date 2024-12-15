@@ -1,6 +1,5 @@
 use std::{collections::HashMap, sync::Arc};
-
-use crate::schemas::{ObjectData, ObjectType, Order};
+use crate::schemas::{ObjectData, ObjectType};
 use schemas::{ObjectProcessor, StyleData};
 
 pub mod schemas;
@@ -146,6 +145,7 @@ struct TextRenderingInfo {
     max_height: f32,
 }
 
+#[cfg_attr(test, mockall::automock(type Image=tests::MockImage;))]
 pub trait Renderer {
     type Image;
     fn render_image(&mut self, image: Self::Image, info: RenderingInfo);
@@ -154,15 +154,12 @@ pub trait Renderer {
     fn render(self, width: u32, height: u32) -> Self::Image;
 }
 
-pub trait ImageStyleApplier {
-    type Image;
-    fn apply_style(&mut self, image: Self::Image, style: EffectStyle) -> Self::Image;
-}
-
-pub trait RendererFactory {
+#[cfg_attr(test, mockall::automock(type Image=tests::MockImage; type Renderer=MockRenderer;))]
+pub trait RenderingContext {
     type Image;
     type Renderer: Renderer<Image = Self::Image>;
     fn create_renderer(&mut self) -> Self::Renderer;
+    fn apply_style(&mut self, image: Self::Image, style: EffectStyle) -> Self::Image;
 }
 
 fn render_frame_image<R>(
@@ -172,22 +169,22 @@ fn render_frame_image<R>(
         fps,
         sampling_rate,
         ref object,
-    }: &schemas::IVData<<R::Renderer as Renderer>::Image>,
+    }: &schemas::IVData<R::Image>,
     frame_number: u32,
     mut rendering_context: R,
-) -> <R::Renderer as Renderer>::Image
+) -> R::Image
 where
-    R: RendererFactory<Image = <R as ImageStyleApplier>::Image> + ImageStyleApplier,
+    R: RenderingContext,
 {
     fn render_inner<R>(
         rendering_context: &mut R,
         renderer: &mut R::Renderer,
-        object: &ObjectData<<R as ImageStyleApplier>::Image>,
+        object: &ObjectData<R::Image>,
         target_time: f64,
         outer_width: f32,
         outer_height: f32,
     ) where
-        R: RendererFactory<Image = <R as ImageStyleApplier>::Image> + ImageStyleApplier,
+        R: RenderingContext,
     {
         match object {
             &ObjectData::Element {

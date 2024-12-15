@@ -5,3 +5,6 @@ edition = { workspace = true }
 authors = { workspace = true }
 
 [dependencies]
+
+[dev-dependencies]
+mockall = { workspace = true }

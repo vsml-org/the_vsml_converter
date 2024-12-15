@@ -1,4 +1,5 @@
 use super::*;
+use mockall::{mock, predicate};
 
 #[test]
 fn test_calc_rendering_info() {
@@ -124,8 +125,41 @@ fn test_calc_rendering_info() {
     assert_eq!(element_rect.calc_rendering_info(4.0, 8.0).y, 8.0);
 }
 
+pub struct MockImage {}
+
 #[test]
 fn test_render_frame_image() {
-
-    render_frame_image()
+    let iv_data = schemas::IVData::<MockImage> {
+        resolution_x: 1920,
+        resolution_y: 1080,
+        fps: 60,
+        sampling_rate: 44100,
+        object: ObjectData::Element {
+            object_type: ObjectType::Wrap,
+            start_time: 0.0,
+            duration: 1.0,
+            element_rect: ElementRect {
+                alignment: Alignment::Center,
+                parent_alignment: Alignment::Center,
+                x: 0.0,
+                y: 0.0,
+                width: 1920.0,
+                height: 1080.0,
+            },
+            attributes: Default::default(),
+            styles: Default::default(),
+            children: vec![],
+        },
+    };
+    let mut mock_rc = MockRenderingContext::new();
+    mock_rc.expect_create_renderer().times(1).returning(|| {
+        let mut mock_renderer = MockRenderer::new();
+        mock_renderer
+            .expect_render()
+            .with(predicate::eq(1920), predicate::eq(1080))
+            .times(1)
+            .returning(|_, _| MockImage {});
+        mock_renderer
+    });
+    render_frame_image(&iv_data, 0, mock_rc);
 }
