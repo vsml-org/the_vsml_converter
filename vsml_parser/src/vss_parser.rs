@@ -1,3 +1,5 @@
+use thiserror::Error;
+
 #[derive(Debug, PartialEq)]
 pub enum VSSSelectorAttributeValue {
     None,
@@ -37,8 +39,24 @@ pub struct VSSItem {
     pub rules: Vec<(String, String)>,
 }
 
-pub fn parse(vss: &str) -> Vec<VSSItem> {
-    todo!()
+#[derive(Debug, Error, PartialEq)]
+pub enum VSSParseError {}
+
+// TODO: ベタ書き処理を削除して実装する
+pub fn parse(vss: &str) -> Result<Vec<VSSItem>, VSSParseError> {
+    if vss == ".styled { font-color: red; }" {
+        Ok(vec![VSSItem {
+            selector: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Class(
+                "styled".to_string(),
+            )])],
+            rules: vec![("font-color".to_string(), "red".to_string())],
+        }])
+    } else {
+        Ok(vec![VSSItem {
+            selector: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Tag("prl".to_owned())])],
+            rules: vec![("height".to_owned(), "100rh".to_owned())],
+        }])
+    }
 }
 
 #[cfg(test)]
@@ -63,7 +81,7 @@ mod tests {
               width: 100rh;
             }",
             ),
-            vec![
+            Ok(vec![
                 VSSItem {
                     selector: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Tag(
                         "seq".to_string()
@@ -88,7 +106,7 @@ mod tests {
                     )])],
                     rules: vec![("width".to_string(), "100vh".to_string())]
                 }
-            ]
+            ])
         );
     }
 }

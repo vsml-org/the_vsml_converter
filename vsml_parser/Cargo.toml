@@ -9,3 +9,6 @@ vsml_core.workspace = true
 cssparser.workspace = true
 roxmltree.workspace = true
 thiserror.workspace = true
+
+[dev-dependencies]
+mockall.workspace = true

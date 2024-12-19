@@ -1102,6 +1102,7 @@ name = "vsml_parser"
 version = "0.1.0"
 dependencies = [
  "cssparser",
+ "mockall",
  "roxmltree",
  "thiserror 2.0.3",
  "vsml_core",
