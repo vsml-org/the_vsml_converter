@@ -184,20 +184,18 @@ fn parse_content<L>(node: Node) -> Result<Content, VSMLParseError<L>> {
 fn parse_element(node: Node) -> Option<Element> {
     match node.node_type() {
         NodeType::Root => unreachable!(),
-        NodeType::Element => {
-            Some(Element::Tag {
-                name: node.tag_name().name().to_owned(),
-                attributes: node
-                    .attributes()
-                    .map(|attr| (attr.name().to_owned(), attr.value().to_owned()))
-                    .collect(),
-                children: node.children().filter_map(parse_element).collect(),
-            })
-        }
+        NodeType::Element => Some(Element::Tag {
+            name: node.tag_name().name().to_owned(),
+            attributes: node
+                .attributes()
+                .map(|attr| (attr.name().to_owned(), attr.value().to_owned()))
+                .collect(),
+            children: node.children().filter_map(parse_element).collect(),
+        }),
         NodeType::PI | NodeType::Comment => None,
         NodeType::Text => {
             let text = node.text().unwrap().trim();
-            (!text.is_empty()).then(||Element::Text(text.to_owned()))
+            (!text.is_empty()).then(|| Element::Text(text.to_owned()))
         }
     }
 }
@@ -287,9 +285,7 @@ mod tests {
                                             .iter()
                                             .cloned()
                                             .collect(),
-                                        children: vec![
-                                            Element::Text("これは文章です".to_owned()),
-                                        ],
+                                        children: vec![Element::Text("これは文章です".to_owned()),],
                                     },
                                     Element::Tag {
                                         name: "txt".to_owned(),
@@ -297,9 +293,9 @@ mod tests {
                                             .iter()
                                             .cloned()
                                             .collect(),
-                                        children: vec![
-                                            Element::Text("これもまた文章です".to_owned()),
-                                        ],
+                                        children: vec![Element::Text(
+                                            "これもまた文章です".to_owned()
+                                        ),],
                                     },
                                 ],
                             },

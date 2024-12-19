@@ -53,7 +53,9 @@ pub fn parse(vss: &str) -> Result<Vec<VSSItem>, VSSParseError> {
         }])
     } else {
         Ok(vec![VSSItem {
-            selector: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Tag("prl".to_owned())])],
+            selector: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Tag(
+                "prl".to_owned(),
+            )])],
             rules: vec![("height".to_owned(), "100rh".to_owned())],
         }])
     }
