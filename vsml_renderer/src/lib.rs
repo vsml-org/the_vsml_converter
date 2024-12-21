@@ -1,5 +1,4 @@
 use vsml_common_image::Image as VsmlImage;
-use vsml_core;
 use vsml_core::{Rect, RenderingInfo};
 
 pub struct RendererImpl {
@@ -39,6 +38,12 @@ impl vsml_core::Renderer for RendererImpl {
             image::imageops::overlay(&mut result, image, info.x as i64, info.y as i64);
         });
         result
+    }
+}
+
+impl Default for RenderingContextImpl {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

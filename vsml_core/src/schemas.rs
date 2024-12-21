@@ -1,4 +1,4 @@
-use crate::{ElementRect, RenderingInfo};
+use crate::ElementRect;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Formatter};

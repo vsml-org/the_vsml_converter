@@ -6,6 +6,10 @@ authors.workspace = true
 
 [dependencies]
 vsml_core.workspace = true
-cssparser.workspace = true
+nom.workspace = true
+regex.workspace = true
 roxmltree.workspace = true
 thiserror.workspace = true
+
+[dev-dependencies]
+mockall.workspace = true
