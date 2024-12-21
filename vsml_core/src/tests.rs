@@ -1,5 +1,5 @@
 use super::*;
-use mockall::{mock, predicate};
+use mockall::predicate;
 
 #[test]
 fn test_calc_rendering_info() {

@@ -210,7 +210,7 @@ pub trait VSSLoader {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::vss_parser::{VSSItem, VSSSelector, VSSSelectorTree};
+    use crate::vss_parser::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
     use std::collections::HashMap;
 
     #[test]
@@ -245,16 +245,22 @@ mod tests {
                 meta: Some(Meta {
                     vss_items: vec![
                         VSSItem {
-                            selector: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Class(
+                            selectors: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Class(
                                 "styled".to_owned()
                             )])],
-                            rules: vec![("font-color".to_owned(), "red".to_owned())],
+                            rules: vec![Rule {
+                                property: "font-color".to_owned(),
+                                value: "red".to_owned(),
+                            },],
                         },
                         VSSItem {
-                            selector: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Tag(
+                            selectors: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Tag(
                                 "prl".to_owned()
                             )])],
-                            rules: vec![("height".to_owned(), "100rh".to_owned())],
+                            rules: vec![Rule {
+                                property: "height".to_owned(),
+                                value: "100rh".to_owned(),
+                            }],
                         },
                     ],
                 }),
