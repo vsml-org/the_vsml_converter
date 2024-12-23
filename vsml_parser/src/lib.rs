@@ -1,10 +1,9 @@
-use crate::elements::{Content, Element, Meta, VSML};
 use crate::vss_parser::VSSParseError;
 use roxmltree::{Document, Node, NodeType};
 use std::error::Error;
 use thiserror::Error;
+use vsml_ast::vsml::{Content, Element, Meta, VSML};
 
-mod elements;
 mod vss_parser;
 
 #[derive(Debug, Error, PartialEq)]
@@ -93,7 +92,7 @@ where
         return Err(VSMLParseError::ContentElementNotFoundError);
     }
     Ok(VSML {
-        meta,
+        meta: meta.unwrap_or_else(|| Meta { vss_items: vec![] }),
         content: content.unwrap(),
     })
 }
@@ -210,8 +209,8 @@ pub trait VSSLoader {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::vss_parser::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
     use std::collections::HashMap;
+    use vsml_ast::vss::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
 
     #[test]
     fn test_parse_vsml() {
@@ -242,7 +241,7 @@ mod tests {
         assert_eq!(
             parse(vsml, &mock_vss_loader),
             Ok(VSML {
-                meta: Some(Meta {
+                meta: Meta {
                     vss_items: vec![
                         VSSItem {
                             selectors: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Class(
@@ -263,7 +262,7 @@ mod tests {
                             }],
                         },
                     ],
-                }),
+                },
                 content: Content {
                     width: 1920,
                     height: 1080,

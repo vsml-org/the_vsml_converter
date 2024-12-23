@@ -16,13 +16,13 @@ impl vsml_core::Renderer for RendererImpl {
 
     fn render_text(
         &mut self,
-        text_data: &[vsml_core::TextData],
-        info: vsml_core::TextRenderingInfo,
+        _text_data: &[vsml_core::TextData],
+        _info: vsml_core::TextRenderingInfo,
     ) -> Rect {
         todo!()
     }
 
-    fn render_box(&mut self, property: vsml_core::Property, info: vsml_core::RenderingInfo) {
+    fn render_box(&mut self, _property: vsml_core::Property, _info: RenderingInfo) {
         todo!()
     }
 
@@ -61,7 +61,7 @@ impl vsml_core::RenderingContext for RenderingContextImpl {
         RendererImpl { images: vec![] }
     }
 
-    fn apply_style(&mut self, image: Self::Image, style: vsml_core::EffectStyle) -> Self::Image {
+    fn apply_style(&mut self, _image: Self::Image, _style: vsml_core::EffectStyle) -> Self::Image {
         todo!()
     }
 }

@@ -1,11 +1,7 @@
 [package]
-name = "vsml_core"
+name = "vsml_ast"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 
 [dependencies]
-thiserror.workspace = true
-
-[dev-dependencies]
-mockall.workspace = true

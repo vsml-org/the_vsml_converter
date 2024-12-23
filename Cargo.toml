@@ -5,11 +5,13 @@ authors = ["PigeonsHouse"]
 
 [workspace]
 resolver = "2"
-members = [ "vsml_cli","vsml_common_image","vsml_core", "vsml_parser", "vsml_processer", "vsml_renderer"]
+members = [ "vsml_ast", "vsml_cli","vsml_common_image","vsml_core", "vsml_iv_converter", "vsml_parser", "vsml_processer", "vsml_renderer"]
 
 [workspace.dependencies]
+vsml_ast = { path = "vsml_ast" }
 vsml_common_image = { path = "vsml_common_image" }
 vsml_core = { path = "vsml_core" }
+vsml_iv_converter = { path = "vsml_iv_converter" }
 vsml_parser = { path = "vsml_parser" }
 vsml_processer = { path = "vsml_processer" }
 vsml_renderer = { path = "vsml_renderer" }

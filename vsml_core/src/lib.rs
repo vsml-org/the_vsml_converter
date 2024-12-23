@@ -1,46 +1,24 @@
 use crate::schemas::{ObjectData, ObjectType};
-use schemas::{ObjectProcessor, StyleData};
-use std::{collections::HashMap, sync::Arc};
 
 pub mod schemas;
 #[cfg(test)]
 mod tests;
-#[derive(Debug)]
-pub struct RenderObject<I> {
-    width: f32,
-    height: f32,
-    x: f32,
-    y: f32,
-    src: Arc<dyn ObjectProcessor<I>>,
-    attributes: HashMap<String, String>,
-    children: Vec<RenderObject<I>>,
-    style: StyleData,
-}
-
-#[derive(Debug)]
-pub struct RenderData<I> {
-    frame: usize,
-    objects: Vec<RenderObject<I>>,
-}
-
-#[derive(Debug)]
-pub struct MixData {}
 
 pub struct Rect {
-    x: f32,
-    y: f32,
-    width: f32,
-    height: f32,
+    pub x: f32,
+    pub y: f32,
+    pub width: f32,
+    pub height: f32,
 }
 
-struct TextStyleData {
-    color: String,
-    font_name: String,
+pub struct TextStyleData {
+    pub color: String,
+    pub font_name: String,
 }
 
 pub struct TextData {
-    text: String,
-    style: TextStyleData,
+    pub text: String,
+    pub style: TextStyleData,
 }
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
@@ -139,10 +117,10 @@ pub struct RenderingInfo {
     pub height: f32,
 }
 pub struct TextRenderingInfo {
-    x: f32,
-    y: f32,
-    max_width: f32,
-    max_height: f32,
+    pub x: f32,
+    pub y: f32,
+    pub max_width: f32,
+    pub max_height: f32,
 }
 
 #[cfg_attr(test, mockall::automock(type Image=tests::MockImage;))]
@@ -181,7 +159,7 @@ pub fn render_frame_image<R>(
         resolution_x,
         resolution_y,
         fps,
-        sampling_rate,
+        sampling_rate: _,
         ref object,
     }: &schemas::IVData<R::Image>,
     frame_number: u32,
@@ -207,7 +185,7 @@ where
                 duration,
                 ref element_rect,
                 ref attributes,
-                ref styles,
+                styles: _,
                 ref children,
             } => {
                 let range = start_time..start_time + duration;
@@ -278,8 +256,4 @@ where
         resolution_y as f32,
     );
     renderer.render(resolution_x, resolution_y)
-}
-
-fn convert_to_mix_info<I>(iv_data: &schemas::IVData<I>) -> MixData {
-    todo!()
 }

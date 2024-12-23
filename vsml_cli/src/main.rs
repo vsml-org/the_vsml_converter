@@ -1,49 +1,33 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use vsml_core::schemas::{IVData, ObjectData, ObjectType, StyleData};
-use vsml_core::Alignment::Center;
-use vsml_core::{render_frame_image, ElementRect};
+use vsml_common_image::Image as VsmlImage;
+use vsml_core::render_frame_image;
+use vsml_core::schemas::ObjectProcessor;
+use vsml_iv_converter::convert;
+use vsml_parser::{parse, VSSLoader};
 use vsml_processer::ImageProcessor;
 use vsml_renderer::RenderingContextImpl;
 
+struct VSSFileLoader;
+
+impl VSSLoader for VSSFileLoader {
+    type Err = std::io::Error;
+    fn load(&self, path: &str) -> Result<String, Self::Err> {
+        std::fs::read_to_string(path)
+    }
+}
+
 fn main() {
-    let iv_data = IVData {
-        resolution_x: 1920,
-        resolution_y: 1080,
-        fps: 30,
-        sampling_rate: 44100,
-        object: ObjectData::Element {
-            object_type: ObjectType::Wrap,
-            start_time: 0.0,
-            duration: 1.0,
-            attributes: HashMap::new(),
-            element_rect: ElementRect {
-                alignment: Default::default(),
-                parent_alignment: Default::default(),
-                x: 0.0,
-                y: 0.0,
-                width: 1920.0,
-                height: 1080.0,
-            },
-            styles: StyleData::default(),
-            children: vec![ObjectData::Element {
-                object_type: ObjectType::Other(Arc::new(ImageProcessor)),
-                start_time: 0.0,
-                duration: 1.0,
-                attributes: HashMap::from([("src".to_owned(), "image.png".to_owned())]),
-                element_rect: ElementRect {
-                    alignment: Center,
-                    parent_alignment: Center,
-                    x: 0.0,
-                    y: 0.0,
-                    width: 350.0,
-                    height: 350.0,
-                },
-                styles: StyleData::default(),
-                children: vec![],
-            }],
-        },
-    };
+    let vsml_file_path = std::env::args().nth(1).unwrap_or("video.vsml".to_string());
+    let vsml_string = std::fs::read_to_string(&vsml_file_path).unwrap();
+    let vsml = parse(&vsml_string, &VSSFileLoader).unwrap();
+    let iv_data = convert(
+        &vsml,
+        &HashMap::from([(
+            "img".to_string(),
+            Arc::new(ImageProcessor) as Arc<dyn ObjectProcessor<VsmlImage>>,
+        )]),
+    );
 
     let mut rendering_context = RenderingContextImpl::new();
 
