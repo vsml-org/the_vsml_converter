@@ -9,7 +9,7 @@ impl ObjectProcessor<VsmlImage> for ImageProcessor {
         "image"
     }
 
-    fn default_duration(&self, _attributes: HashMap<String, String>) -> f64 {
+    fn default_duration(&self, _attributes: &HashMap<String, String>) -> f64 {
         f64::INFINITY
     }
 

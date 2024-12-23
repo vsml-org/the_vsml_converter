@@ -1,11 +1,9 @@
 [package]
-name = "vsml_core"
+name = "vsml_iv_converter"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 
 [dependencies]
-thiserror.workspace = true
-
-[dev-dependencies]
-mockall.workspace = true
+vsml_ast.workspace = true
+vsml_core.workspace = true

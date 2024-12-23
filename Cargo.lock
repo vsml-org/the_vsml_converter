@@ -1020,10 +1020,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "852e951cb7832cb45cb1169900d19760cfa39b82bc0ea9c0e5a14ae88411c98b"
 
 [[package]]
+name = "vsml_ast"
+version = "0.1.0"
+
+[[package]]
 name = "vsml_cli"
 version = "0.1.0"
 dependencies = [
+ "vsml_common_image",
  "vsml_core",
+ "vsml_iv_converter",
  "vsml_parser",
  "vsml_processer",
  "vsml_renderer",
@@ -1041,6 +1047,15 @@ name = "vsml_core"
 version = "0.1.0"
 dependencies = [
  "mockall",
+ "thiserror 2.0.3",
+]
+
+[[package]]
+name = "vsml_iv_converter"
+version = "0.1.0"
+dependencies = [
+ "vsml_ast",
+ "vsml_core",
 ]
 
 [[package]]
@@ -1052,7 +1067,7 @@ dependencies = [
  "regex",
  "roxmltree",
  "thiserror 2.0.3",
- "vsml_core",
+ "vsml_ast",
 ]
 
 [[package]]

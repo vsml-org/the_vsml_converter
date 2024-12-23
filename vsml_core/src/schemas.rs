@@ -4,6 +4,7 @@ use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::str::FromStr;
 use std::sync::Arc;
+use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Color {
@@ -57,9 +58,11 @@ pub enum Duration {
     Fit,
 }
 
-#[derive(Debug, PartialEq, Eq, Hash)]
+#[derive(Debug, PartialEq, Eq, Hash, Error)]
 pub enum DurationParseError {
+    #[error("number parse error")]
     NumberParseError,
+    #[error("unknown unit")]
     UnknownUnit,
 }
 
@@ -122,7 +125,7 @@ pub enum ObjectType<I> {
 
 pub trait ObjectProcessor<I> {
     fn name(&self) -> &str;
-    fn default_duration(&self, attributes: HashMap<String, String>) -> f64;
+    fn default_duration(&self, attributes: &HashMap<String, String>) -> f64;
     fn process(&self, render_sec: f64, attributes: &HashMap<String, String>, image: Option<I>)
         -> I;
 }
