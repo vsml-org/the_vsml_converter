@@ -1068,7 +1068,6 @@ dependencies = [
  "roxmltree",
  "thiserror 2.0.3",
  "vsml_ast",
- "vsml_core",
 ]
 
 [[package]]
