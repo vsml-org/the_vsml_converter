@@ -10,7 +10,7 @@ jobs:
     name: rustdoc
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v
+      - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@nightly
       - run: RUSTDOCFLAGS="--enable-index-page" cargo doc --locked --workspace --document-private-items --no-deps -Zrustdoc-map
       - uses: actions/upload-pages-artifact@v3
