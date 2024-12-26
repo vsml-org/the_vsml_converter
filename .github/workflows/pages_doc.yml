@@ -1,0 +1,34 @@
+name: rustdoc pages
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  rustdoc:
+    name: rustdoc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v
+      - uses: dtolnay/rust-toolchain@nightly
+      - run: RUSTDOCFLAGS="--enable-index-page" cargo doc --locked --workspace --document-private-items --no-deps -Zrustdoc-map
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/doc
+
+  deploy:
+    # if: github.event_name == 'push' # TODO: マージ前に戻します
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: rustdoc
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
