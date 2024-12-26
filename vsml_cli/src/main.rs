@@ -1,4 +1,6 @@
+use clap::Parser;
 use std::collections::HashMap;
+use std::path::PathBuf;
 use std::sync::Arc;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::ObjectProcessor;
@@ -7,6 +9,21 @@ use vsml_iv_converter::convert;
 use vsml_parser::{parse, VSSLoader};
 use vsml_processer::ImageProcessor;
 use vsml_renderer::RenderingContextImpl;
+
+#[derive(Parser, Debug)]
+#[command(version, about, long_about = None)]
+struct Args {
+    /// Path to the input VSML file
+    input_path: PathBuf,
+
+    /// Path to the output file
+    #[arg(short, long = "output")]
+    output_path: Option<PathBuf>,
+
+    /// Overwrite the output file if it already exists
+    #[arg(long)]
+    overwrite: bool,
+}
 
 struct VSSFileLoader;
 
@@ -18,8 +35,9 @@ impl VSSLoader for VSSFileLoader {
 }
 
 fn main() {
-    let vsml_file_path = std::env::args().nth(1).unwrap_or("video.vsml".to_string());
-    let vsml_string = std::fs::read_to_string(&vsml_file_path).unwrap();
+    let args = Args::parse();
+
+    let vsml_string = std::fs::read_to_string(args.input_path).unwrap();
     let vsml = parse(&vsml_string, &VSSFileLoader).unwrap();
     let iv_data = convert(
         &vsml,
@@ -31,5 +49,10 @@ fn main() {
 
     let mut rendering_context = RenderingContextImpl::new();
 
-    encode(iv_data, &mut rendering_context);
+    encode(
+        iv_data,
+        &mut rendering_context,
+        args.output_path.as_deref(),
+        args.overwrite,
+    );
 }

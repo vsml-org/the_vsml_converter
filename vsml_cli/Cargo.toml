@@ -16,3 +16,4 @@ vsml_iv_converter.workspace = true
 vsml_parser.workspace = true
 vsml_processer.workspace = true
 vsml_renderer.workspace = true
+clap.workspace = true
