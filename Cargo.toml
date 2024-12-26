@@ -5,12 +5,13 @@ authors = ["PigeonsHouse"]
 
 [workspace]
 resolver = "2"
-members = [ "vsml_ast", "vsml_cli","vsml_common_image","vsml_core", "vsml_iv_converter", "vsml_parser", "vsml_processer", "vsml_renderer"]
+members = [ "vsml_ast", "vsml_cli","vsml_common_image","vsml_core", "vsml_encoder", "vsml_iv_converter", "vsml_parser", "vsml_processer", "vsml_renderer"]
 
 [workspace.dependencies]
 vsml_ast = { path = "vsml_ast" }
 vsml_common_image = { path = "vsml_common_image" }
 vsml_core = { path = "vsml_core" }
+vsml_encoder = { path = "vsml_encoder" }
 vsml_iv_converter = { path = "vsml_iv_converter" }
 vsml_parser = { path = "vsml_parser" }
 vsml_processer = { path = "vsml_processer" }
@@ -21,4 +22,5 @@ mockall = "0.13.1"
 nom = "7.1.3"
 regex = "1.11.1"
 roxmltree = "0.20.0"
+temp-dir = "0.1.14"
 thiserror = "2.0.9"

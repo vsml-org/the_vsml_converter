@@ -1,8 +1,8 @@
 use std::collections::HashMap;
 use std::sync::Arc;
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::render_frame_image;
 use vsml_core::schemas::ObjectProcessor;
+use vsml_encoder::encode;
 use vsml_iv_converter::convert;
 use vsml_parser::{parse, VSSLoader};
 use vsml_processer::ImageProcessor;
@@ -31,10 +31,5 @@ fn main() {
 
     let mut rendering_context = RenderingContextImpl::new();
 
-    for f in 0..10 {
-        let frame_image = render_frame_image(&iv_data, f, &mut rendering_context);
-        frame_image
-            .save(format!("output/frame_{:04}.png", f))
-            .unwrap();
-    }
+    encode(iv_data, &mut rendering_context);
 }
