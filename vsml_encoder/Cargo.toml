@@ -1,0 +1,10 @@
+[package]
+name = "vsml_encoder"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+temp-dir.workspace = true
+vsml_common_image.workspace = true
+vsml_core.workspace = true

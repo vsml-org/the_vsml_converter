@@ -906,6 +906,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "61c41af27dd6d1e27b1b16b489db798443478cef1f06a660c96db617ba5de3b1"
 
 [[package]]
+name = "temp-dir"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "bc1ee6eef34f12f765cb94725905c6312b6610ab2b0940889cfe58dae7bc3c72"
+
+[[package]]
 name = "termtree"
 version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1029,6 +1035,7 @@ version = "0.1.0"
 dependencies = [
  "vsml_common_image",
  "vsml_core",
+ "vsml_encoder",
  "vsml_iv_converter",
  "vsml_parser",
  "vsml_processer",
@@ -1048,6 +1055,15 @@ version = "0.1.0"
 dependencies = [
  "mockall",
  "thiserror 2.0.9",
+]
+
+[[package]]
+name = "vsml_encoder"
+version = "0.1.0"
+dependencies = [
+ "temp-dir",
+ "vsml_common_image",
+ "vsml_core",
 ]
 
 [[package]]

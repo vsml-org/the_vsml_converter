@@ -7,6 +7,7 @@ authors.workspace = true
 [dependencies]
 vsml_common_image.workspace = true
 vsml_core.workspace = true
+vsml_encoder.workspace = true
 vsml_iv_converter.workspace = true
 vsml_parser.workspace = true
 vsml_processer.workspace = true
