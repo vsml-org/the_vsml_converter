@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use vsml_audio_mixer::MixingContextImpl;
+use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::ObjectProcessor;
 use vsml_encoder::encode;
@@ -35,9 +36,6 @@ impl VSSLoader for VSSFileLoader {
     }
 }
 
-// TODO
-type Audio = ();
-
 fn main() {
     let args = Args::parse();
 
@@ -47,7 +45,7 @@ fn main() {
         &vsml,
         &HashMap::from([(
             "img".to_string(),
-            Arc::new(ImageProcessor) as Arc<dyn ObjectProcessor<VsmlImage, Audio>>,
+            Arc::new(ImageProcessor) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
         )]),
     );
 

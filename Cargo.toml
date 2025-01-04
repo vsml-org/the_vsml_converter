@@ -5,19 +5,21 @@ authors = ["PigeonsHouse"]
 
 [workspace]
 resolver = "2"
-members = [ "vsml_ast", "vsml_common_audio", "vsml_audio_mixer", "vsml_cli","vsml_common_image","vsml_core", "vsml_encoder", "vsml_iv_converter", "vsml_parser", "vsml_processer", "vsml_image_renderer"]
+members = [
+    "vsml_ast",
+    "vsml_common_audio", "vsml_audio_mixer", "vsml_cli", "vsml_common_image", "vsml_core", "vsml_encoder", "vsml_iv_converter", "vsml_parser", "vsml_processer", "vsml_image_renderer"]
 
 [workspace.dependencies]
 vsml_ast = { path = "vsml_ast" }
-vsml_common_audio = { path = "vsml_common_audio" }
 vsml_audio_mixer = { path = "vsml_audio_mixer" }
+vsml_common_audio = { path = "vsml_common_audio" }
 vsml_common_image = { path = "vsml_common_image" }
 vsml_core = { path = "vsml_core" }
 vsml_encoder = { path = "vsml_encoder" }
+vsml_image_renderer = { path = "vsml_image_renderer" }
 vsml_iv_converter = { path = "vsml_iv_converter" }
 vsml_parser = { path = "vsml_parser" }
 vsml_processer = { path = "vsml_processer" }
-vsml_image_renderer = { path = "vsml_image_renderer" }
 clap = { version = "4.5.23", features = ["derive"] }
 image = "0.25.5"
 imageproc = "0.25.0"

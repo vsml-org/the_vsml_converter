@@ -1150,6 +1150,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "vsml_audio_mixer",
+ "vsml_common_audio",
  "vsml_common_image",
  "vsml_core",
  "vsml_encoder",
