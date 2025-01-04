@@ -1137,18 +1137,31 @@ name = "vsml_ast"
 version = "0.1.0"
 
 [[package]]
+name = "vsml_audio_mixer"
+version = "0.1.0"
+dependencies = [
+ "vsml_common_audio",
+ "vsml_core",
+]
+
+[[package]]
 name = "vsml_cli"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "vsml_audio_mixer",
  "vsml_common_image",
  "vsml_core",
  "vsml_encoder",
+ "vsml_image_renderer",
  "vsml_iv_converter",
  "vsml_parser",
  "vsml_processer",
- "vsml_renderer",
 ]
+
+[[package]]
+name = "vsml_common_audio"
+version = "0.1.0"
 
 [[package]]
 name = "vsml_common_image"
@@ -1170,6 +1183,16 @@ name = "vsml_encoder"
 version = "0.1.0"
 dependencies = [
  "temp-dir",
+ "vsml_common_audio",
+ "vsml_common_image",
+ "vsml_core",
+]
+
+[[package]]
+name = "vsml_image_renderer"
+version = "0.1.0"
+dependencies = [
+ "image",
  "vsml_common_image",
  "vsml_core",
 ]
@@ -1196,15 +1219,6 @@ dependencies = [
 
 [[package]]
 name = "vsml_processer"
-version = "0.1.0"
-dependencies = [
- "image",
- "vsml_common_image",
- "vsml_core",
-]
-
-[[package]]
-name = "vsml_renderer"
 version = "0.1.0"
 dependencies = [
  "image",

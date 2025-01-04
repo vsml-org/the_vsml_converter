@@ -1,17 +1,20 @@
 use std::path::Path;
 use std::process::Command;
 use temp_dir::TempDir;
+use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{IVData, ObjectData};
-use vsml_core::{render_frame_image, RenderingContext};
+use vsml_core::{mix_audio, render_frame_image, MixingContext, RenderingContext};
 
-pub fn encode<R>(
-    iv_data: IVData<R::Image>,
+pub fn encode<R, M>(
+    iv_data: IVData<R::Image, M::Audio>,
     mut rendering_context: R,
+    mut mixing_context: M,
     output_path: Option<&Path>,
     overwrite: bool,
 ) where
     R: RenderingContext<Image = VsmlImage>,
+    M: MixingContext<Audio = VsmlAudio>,
 {
     let ObjectData::Element { duration, .. } = iv_data.object else {
         panic!()
@@ -25,6 +28,8 @@ pub fn encode<R>(
         let save_path = d.child(format!("frame_{}.png", f));
         frame_image.save(save_path).unwrap();
     }
+
+    let _audio = mix_audio(&iv_data, &mut mixing_context);
 
     let fps = iv_data.fps.to_string();
     let output_path = output_path.unwrap_or(Path::new("output.mp4"));

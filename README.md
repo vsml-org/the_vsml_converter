@@ -22,7 +22,7 @@ VSMLやVSSの字句解析を行うライブラリ
 VSMLの文字列から `vsml_ast` で定義した構造体のデータを生成する
 
 ### vsml_iv_converter
-VSMLの時間、サイズ、位置などのデータ計算処理を行いIVData(Interimidiate VSML Data)へ変換するライブラリ
+VSMLの時間、サイズ、位置などのデータ計算処理を行いIVData(Intermediate VSML Data)へ変換するライブラリ
 
 `vsml_ast` の構造体を受け取りIVDataを生成する
 
@@ -51,7 +51,7 @@ VSMLの画像生成の具体的な構造体を定義するライブラリ
 
 `Renderer` traitをimplementしている
 
-### vsml_processer
+### vsml_processor
 VSMLのプリミティブなWrapタグを除く各タグの画像生成を行うライブラリ
 
 ユーザ定義タグのプラグインなどはここで受け取る

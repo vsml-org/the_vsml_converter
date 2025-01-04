@@ -1,11 +1,9 @@
 [package]
-name = "vsml_encoder"
+name = "vsml_audio_mixer"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 
 [dependencies]
-temp-dir.workspace = true
-vsml_common_audio.workspace = true
-vsml_common_image.workspace = true
 vsml_core.workspace = true
+vsml_common_audio.workspace = true

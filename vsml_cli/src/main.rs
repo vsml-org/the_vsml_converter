@@ -2,13 +2,14 @@ use clap::Parser;
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
+use vsml_audio_mixer::MixingContextImpl;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::ObjectProcessor;
 use vsml_encoder::encode;
 use vsml_iv_converter::convert;
 use vsml_parser::{parse, VSSLoader};
 use vsml_processer::ImageProcessor;
-use vsml_renderer::RenderingContextImpl;
+use vsml_image_renderer::RenderingContextImpl;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -34,6 +35,9 @@ impl VSSLoader for VSSFileLoader {
     }
 }
 
+// TODO
+type Audio = ();
+
 fn main() {
     let args = Args::parse();
 
@@ -43,15 +47,17 @@ fn main() {
         &vsml,
         &HashMap::from([(
             "img".to_string(),
-            Arc::new(ImageProcessor) as Arc<dyn ObjectProcessor<VsmlImage>>,
+            Arc::new(ImageProcessor) as Arc<dyn ObjectProcessor<VsmlImage, Audio>>,
         )]),
     );
 
     let mut rendering_context = RenderingContextImpl::new();
+    let mut mixing_context = MixingContextImpl::new();
 
     encode(
         iv_data,
         &mut rendering_context,
+        &mut mixing_context,
         args.output_path.as_deref(),
         args.overwrite,
     );
