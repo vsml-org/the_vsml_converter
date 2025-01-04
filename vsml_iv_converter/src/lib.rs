@@ -7,10 +7,10 @@ use vsml_core::schemas::{
 };
 use vsml_core::ElementRect;
 
-pub fn convert<I>(
+pub fn convert<I, A>(
     vsml: &VSML,
-    object_processor_provider: &impl ObjectProcessorProvider<I>,
-) -> IVData<I> {
+    object_processor_provider: &impl ObjectProcessorProvider<I, A>,
+) -> IVData<I, A> {
     let &VSML {
         meta: Meta { ref vss_items },
         content:
@@ -129,13 +129,13 @@ impl<'a> VssScanner<'a> {
     }
 }
 
-fn recursive<'a, I>(
+fn recursive<'a, I, A>(
     element: &'a Element,
     vss_scanner: &mut VssScanner<'a>,
     offset_start_time: f64,
     offset_position: (f32, f32),
-    object_processor_provider: &impl ObjectProcessorProvider<I>,
-) -> ObjectData<I> {
+    object_processor_provider: &impl ObjectProcessorProvider<I, A>,
+) -> ObjectData<I, A> {
     match element {
         Element::Tag {
             name,
@@ -154,25 +154,25 @@ fn recursive<'a, I>(
     }
 }
 
-pub trait ObjectProcessorProvider<I> {
-    fn get_processor(&self, name: &str) -> Option<Arc<dyn ObjectProcessor<I>>>;
+pub trait ObjectProcessorProvider<I, A> {
+    fn get_processor(&self, name: &str) -> Option<Arc<dyn ObjectProcessor<I, A>>>;
 }
 
-impl<I> ObjectProcessorProvider<I> for HashMap<String, Arc<dyn ObjectProcessor<I>>> {
-    fn get_processor(&self, name: &str) -> Option<Arc<dyn ObjectProcessor<I>>> {
+impl<I, A> ObjectProcessorProvider<I, A> for HashMap<String, Arc<dyn ObjectProcessor<I, A>>> {
+    fn get_processor(&self, name: &str) -> Option<Arc<dyn ObjectProcessor<I, A>>> {
         self.get(name).cloned()
     }
 }
 
-fn convert_tag_element<'a, I>(
+fn convert_tag_element<'a, I, A>(
     vss_scanner: &mut VssScanner<'a>,
     offset_start_time: f64,
     offset_position: (f32, f32),
     name: &str,
     attributes: &HashMap<String, String>,
     children: &'a [Element],
-    object_processor_provider: &impl ObjectProcessorProvider<I>,
-) -> ObjectData<I> {
+    object_processor_provider: &impl ObjectProcessorProvider<I, A>,
+) -> ObjectData<I, A> {
     let object_type = match name {
         "cont" | "seq" | "prl" | "layer" => ObjectType::Wrap,
         name => ObjectType::Other(

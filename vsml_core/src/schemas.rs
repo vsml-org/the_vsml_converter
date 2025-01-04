@@ -118,19 +118,24 @@ impl FromStr for Order {
 }
 
 #[derive(Debug)]
-pub enum ObjectType<I> {
+pub enum ObjectType<I, A> {
     Wrap,
-    Other(Arc<dyn ObjectProcessor<I>>),
+    Other(Arc<dyn ObjectProcessor<I, A>>),
 }
 
-pub trait ObjectProcessor<I> {
+pub trait ObjectProcessor<I, A> {
     fn name(&self) -> &str;
     fn default_duration(&self, attributes: &HashMap<String, String>) -> f64;
-    fn process(&self, render_sec: f64, attributes: &HashMap<String, String>, image: Option<I>)
-        -> I;
+    fn process_image(
+        &self,
+        render_sec: f64,
+        attributes: &HashMap<String, String>,
+        image: Option<I>,
+    ) -> Option<I>;
+    fn process_audio(&self, attributes: &HashMap<String, String>, audio: Option<A>) -> Option<A>;
 }
 
-impl<I> Debug for dyn ObjectProcessor<I> {
+impl<I, A> Debug for dyn ObjectProcessor<I, A> {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
         write!(f, "ObjectProcessor({})", self.name())
     }
@@ -138,9 +143,9 @@ impl<I> Debug for dyn ObjectProcessor<I> {
 
 /// Elementまたはテキスト1つに相当するデータ
 #[derive(Debug)]
-pub enum ObjectData<I> {
+pub enum ObjectData<I, A> {
     Element {
-        object_type: ObjectType<I>,
+        object_type: ObjectType<I, A>,
         /// 親エレメントからの相対開始時間(s)
         start_time: f64,
         /// エレメントが表示される時間(s)
@@ -149,18 +154,18 @@ pub enum ObjectData<I> {
         /// エレメントの表示位置とサイズ
         element_rect: ElementRect,
         styles: StyleData,
-        children: Vec<ObjectData<I>>,
+        children: Vec<ObjectData<I, A>>,
     },
     Text(String),
 }
 
 #[derive(Debug)]
-pub struct IVData<I> {
+pub struct IVData<I, A> {
     pub resolution_x: u32,
     pub resolution_y: u32,
     pub fps: u32,
     pub sampling_rate: u32,
-    pub object: ObjectData<I>,
+    pub object: ObjectData<I, A>,
 }
 
 #[cfg(test)]

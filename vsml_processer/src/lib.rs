@@ -4,7 +4,7 @@ use vsml_core::schemas::ObjectProcessor;
 
 pub struct ImageProcessor;
 
-impl ObjectProcessor<VsmlImage> for ImageProcessor {
+impl<A> ObjectProcessor<VsmlImage, A> for ImageProcessor {
     fn name(&self) -> &str {
         "image"
     }
@@ -13,13 +13,17 @@ impl ObjectProcessor<VsmlImage> for ImageProcessor {
         f64::INFINITY
     }
 
-    fn process(
+    fn process_image(
         &self,
         _: f64,
         attributes: &HashMap<String, String>,
         _: Option<VsmlImage>,
-    ) -> VsmlImage {
+    ) -> Option<VsmlImage> {
         let src_path = attributes.get("src").unwrap();
-        image::open(src_path).unwrap().into_rgba8()
+        Some(image::open(src_path).unwrap().into_rgba8())
+    }
+
+    fn process_audio(&self, _attributes: &HashMap<String, String>, _audio: Option<A>) -> Option<A> {
+        None
     }
 }

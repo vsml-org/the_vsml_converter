@@ -61,7 +61,11 @@ impl vsml_core::RenderingContext for RenderingContextImpl {
         RendererImpl { images: vec![] }
     }
 
-    fn apply_style(&mut self, _image: Self::Image, _style: vsml_core::EffectStyle) -> Self::Image {
-        todo!()
+    fn apply_style(
+        &mut self,
+        image: Self::Image,
+        _style: vsml_core::ImageEffectStyle,
+    ) -> Self::Image {
+        image
     }
 }

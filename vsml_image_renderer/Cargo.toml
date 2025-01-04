@@ -1,5 +1,5 @@
 [package]
-name = "vsml_renderer"
+name = "vsml_image_renderer"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

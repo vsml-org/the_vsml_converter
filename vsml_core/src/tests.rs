@@ -126,10 +126,11 @@ fn test_calc_rendering_info() {
 }
 
 pub struct MockImage {}
+pub struct MockAudio {}
 
 #[test]
 fn test_render_frame_image() {
-    let iv_data = schemas::IVData::<MockImage> {
+    let iv_data = schemas::IVData::<MockImage, MockAudio> {
         resolution_x: 1920,
         resolution_y: 1080,
         fps: 60,
@@ -162,4 +163,37 @@ fn test_render_frame_image() {
         mock_renderer
     });
     render_frame_image(&iv_data, 0, mock_rc);
+}
+
+#[test]
+fn test_mix_audio() {
+    let iv_data = schemas::IVData::<MockImage, MockAudio> {
+        resolution_x: 1920,
+        resolution_y: 1080,
+        fps: 60,
+        sampling_rate: 44100,
+        object: ObjectData::Element {
+            object_type: ObjectType::Wrap,
+            start_time: 0.0,
+            duration: 1.0,
+            element_rect: ElementRect {
+                alignment: Alignment::Center,
+                parent_alignment: Alignment::Center,
+                x: 0.0,
+                y: 0.0,
+                width: 1920.0,
+                height: 1080.0,
+            },
+            attributes: Default::default(),
+            styles: Default::default(),
+            children: vec![],
+        },
+    };
+    let mut mock_mc = MockMixingContext::new();
+    mock_mc.expect_create_mixer().times(1).returning(|| {
+        let mut mock_mixer = MockMixer::new();
+        mock_mixer.expect_mix().times(1).returning(|| MockAudio {});
+        mock_mixer
+    });
+    mix_audio(&iv_data, mock_mc);
 }

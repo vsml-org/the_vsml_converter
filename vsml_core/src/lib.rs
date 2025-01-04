@@ -106,7 +106,8 @@ impl ElementRect {
 
 pub struct Property {}
 
-pub struct EffectStyle {}
+pub struct ImageEffectStyle {}
+pub struct AudioEffectStyle {}
 
 /// rendererから見た左上の座標とサイズ
 #[derive(Debug)]
@@ -137,7 +138,7 @@ pub trait RenderingContext {
     type Image;
     type Renderer: Renderer<Image = Self::Image>;
     fn create_renderer(&mut self) -> Self::Renderer;
-    fn apply_style(&mut self, image: Self::Image, style: EffectStyle) -> Self::Image;
+    fn apply_style(&mut self, image: Self::Image, style: ImageEffectStyle) -> Self::Image;
 }
 
 impl<R> RenderingContext for &mut R
@@ -149,29 +150,29 @@ where
     fn create_renderer(&mut self) -> Self::Renderer {
         R::create_renderer(self)
     }
-    fn apply_style(&mut self, image: Self::Image, style: EffectStyle) -> Self::Image {
+    fn apply_style(&mut self, image: Self::Image, style: ImageEffectStyle) -> Self::Image {
         R::apply_style(self, image, style)
     }
 }
 
-pub fn render_frame_image<R>(
+pub fn render_frame_image<R, A>(
     &schemas::IVData {
         resolution_x,
         resolution_y,
         fps,
         sampling_rate: _,
         ref object,
-    }: &schemas::IVData<R::Image>,
+    }: &schemas::IVData<R::Image, A>,
     frame_number: u32,
     mut rendering_context: R,
 ) -> R::Image
 where
     R: RenderingContext,
 {
-    fn render_inner<R>(
+    fn render_inner<R, A>(
         rendering_context: &mut R,
         renderer: &mut R::Renderer,
-        object: &ObjectData<R::Image>,
+        object: &ObjectData<R::Image, A>,
         target_time: f64,
         outer_width: f32,
         outer_height: f32,
@@ -235,10 +236,12 @@ where
                                 element_rect.height.ceil() as u32,
                             )
                         });
-                        let result = processor.process(target_time, attributes, child_image);
-                        let rendering_info =
-                            element_rect.calc_rendering_info(outer_width, outer_height);
-                        renderer.render_image(result, rendering_info);
+                        let result = processor.process_image(target_time, attributes, child_image);
+                        if let Some(result) = result {
+                            let rendering_info =
+                                element_rect.calc_rendering_info(outer_width, outer_height);
+                            renderer.render_image(result, rendering_info);
+                        }
                     }
                 }
             }
@@ -256,4 +259,91 @@ where
         resolution_y as f32,
     );
     renderer.render(resolution_x, resolution_y)
+}
+
+#[cfg_attr(test, mockall::automock(type Audio=tests::MockAudio;))]
+pub trait Mixer {
+    type Audio;
+    fn mix_audio(&mut self, audio: Self::Audio);
+    fn mix(self) -> Self::Audio;
+}
+
+#[cfg_attr(test, mockall::automock(type Audio=tests::MockAudio; type Mixer=MockMixer;))]
+pub trait MixingContext {
+    type Audio;
+    type Mixer: Mixer<Audio = Self::Audio>;
+    fn create_mixer(&mut self) -> Self::Mixer;
+    fn apply_style(&mut self, audio: Self::Audio, style: AudioEffectStyle) -> Self::Audio;
+}
+
+impl<M> MixingContext for &mut M
+where
+    M: MixingContext,
+{
+    type Audio = M::Audio;
+    type Mixer = M::Mixer;
+
+    fn create_mixer(&mut self) -> Self::Mixer {
+        M::create_mixer(self)
+    }
+    fn apply_style(&mut self, audio: Self::Audio, style: AudioEffectStyle) -> Self::Audio {
+        M::apply_style(self, audio, style)
+    }
+}
+
+pub fn mix_audio<M, I>(
+    schemas::IVData { object, .. }: &schemas::IVData<I, M::Audio>,
+    mut mixing_context: M,
+) -> M::Audio
+where
+    M: MixingContext,
+{
+    fn mix_inner<M, I>(
+        mixing_context: &mut M,
+        mixer: &mut M::Mixer,
+        object: &ObjectData<I, M::Audio>,
+    ) where
+        M: MixingContext,
+    {
+        match object {
+            ObjectData::Element {
+                object_type: ObjectType::Wrap,
+                children,
+                ..
+            } => {
+                if children.is_empty() {
+                    return;
+                }
+                let mut inner_mixer = mixing_context.create_mixer();
+                children
+                    .iter()
+                    .for_each(|object| mix_inner(mixing_context, &mut inner_mixer, object));
+                let child_audio = inner_mixer.mix();
+                mixer.mix_audio(child_audio);
+            }
+            ObjectData::Element {
+                object_type: ObjectType::Other(processor),
+                attributes,
+                children,
+                ..
+            } => {
+                let child_audio = (!children.is_empty()).then(|| {
+                    let mut inner_mixer = mixing_context.create_mixer();
+                    children
+                        .iter()
+                        .for_each(|object| mix_inner(mixing_context, &mut inner_mixer, object));
+                    inner_mixer.mix()
+                });
+                let result = processor.process_audio(attributes, child_audio);
+                if let Some(result) = result {
+                    mixer.mix_audio(result);
+                }
+            }
+            ObjectData::Text(_) => {}
+        }
+    }
+
+    let mut mixer = mixing_context.create_mixer();
+    mix_inner(&mut mixing_context, &mut mixer, object);
+    mixer.mix()
 }
