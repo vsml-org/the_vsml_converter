@@ -34,18 +34,14 @@ impl<I> ObjectProcessor<I, VsmlAudio> for AudioProcessor {
         let spec = reader.spec();
 
         let samples = match spec.sample_format {
-            hound::SampleFormat::Float => {
-                reader
-                    .samples::<f32>()
-                    .collect::<Result<Vec<_>, _>>()
-                    .unwrap()
-            }
-            hound::SampleFormat::Int => {
-                reader
-                    .samples::<i32>()
-                    .map(|s| (s.unwrap() as f64 / (1i64 << (spec.bits_per_sample - 1)) as f64) as f32)
-                    .collect()
-            }
+            hound::SampleFormat::Float => reader
+                .samples::<f32>()
+                .collect::<Result<Vec<_>, _>>()
+                .unwrap(),
+            hound::SampleFormat::Int => reader
+                .samples::<i32>()
+                .map(|s| (s.unwrap() as f64 / (1i64 << (spec.bits_per_sample - 1)) as f64) as f32)
+                .collect(),
         };
         let samples = samples
             .chunks(spec.channels as usize)

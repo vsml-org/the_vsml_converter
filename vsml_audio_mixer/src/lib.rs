@@ -28,10 +28,9 @@ impl vsml_core::Mixer for MixerImpl {
         let duration_sample = (duration * sampling_rate) as usize;
 
         if offset_sample + duration_sample + 1 > self.audio.samples.len() {
-            self.audio.samples.resize(
-                offset_sample + duration_sample + 1,
-                [0.0, 0.0],
-            );
+            self.audio
+                .samples
+                .resize(offset_sample + duration_sample + 1, [0.0, 0.0]);
         }
 
         add_in_place(
