@@ -6,10 +6,10 @@ use vsml_audio_mixer::MixingContextImpl;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::ObjectProcessor;
 use vsml_encoder::encode;
+use vsml_image_renderer::RenderingContextImpl;
 use vsml_iv_converter::convert;
 use vsml_parser::{parse, VSSLoader};
 use vsml_processer::ImageProcessor;
-use vsml_image_renderer::RenderingContextImpl;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]

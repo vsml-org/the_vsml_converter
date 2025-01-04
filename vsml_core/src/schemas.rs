@@ -126,10 +126,13 @@ pub enum ObjectType<I, A> {
 pub trait ObjectProcessor<I, A> {
     fn name(&self) -> &str;
     fn default_duration(&self, attributes: &HashMap<String, String>) -> f64;
-    fn process_image(&self, render_sec: f64, attributes: &HashMap<String, String>, image: Option<I>)
-                     -> Option<I>;
-    fn process_audio(&self, attributes: &HashMap<String, String>, audio: Option<A>)
-        -> Option<A>;
+    fn process_image(
+        &self,
+        render_sec: f64,
+        attributes: &HashMap<String, String>,
+        image: Option<I>,
+    ) -> Option<I>;
+    fn process_audio(&self, attributes: &HashMap<String, String>, audio: Option<A>) -> Option<A>;
 }
 
 impl<I, A> Debug for dyn ObjectProcessor<I, A> {

@@ -296,12 +296,17 @@ pub fn mix_audio<M, I>(
         ..
     }: &schemas::IVData<I, M::Audio>,
     mut mixing_context: M,
-) -> M::Audio where M: MixingContext {
+) -> M::Audio
+where
+    M: MixingContext,
+{
     fn mix_inner<M, I>(
         mixing_context: &mut M,
         mixer: &mut M::Mixer,
         object: &ObjectData<I, M::Audio>,
-    ) where M: MixingContext {
+    ) where
+        M: MixingContext,
+    {
         match object {
             ObjectData::Element {
                 object_type: ObjectType::Wrap,
@@ -312,13 +317,9 @@ pub fn mix_audio<M, I>(
                     return;
                 }
                 let mut inner_mixer = mixing_context.create_mixer();
-                children.iter().for_each(|object| {
-                    mix_inner(
-                        mixing_context,
-                        &mut inner_mixer,
-                        object,
-                    )
-                });
+                children
+                    .iter()
+                    .for_each(|object| mix_inner(mixing_context, &mut inner_mixer, object));
                 let child_audio = inner_mixer.mix();
                 mixer.mix_audio(child_audio);
             }
@@ -330,13 +331,9 @@ pub fn mix_audio<M, I>(
             } => {
                 let child_audio = (!children.is_empty()).then(|| {
                     let mut inner_mixer = mixing_context.create_mixer();
-                    children.iter().for_each(|object| {
-                        mix_inner(
-                            mixing_context,
-                            &mut inner_mixer,
-                            object,
-                        )
-                    });
+                    children
+                        .iter()
+                        .for_each(|object| mix_inner(mixing_context, &mut inner_mixer, object));
                     inner_mixer.mix()
                 });
                 let result = processor.process_audio(attributes, child_audio);

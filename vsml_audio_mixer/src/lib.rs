@@ -1,4 +1,3 @@
-
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_core::AudioEffectStyle;
 
@@ -9,11 +8,9 @@ pub struct MixingContextImpl {}
 impl vsml_core::Mixer for MixerImpl {
     type Audio = VsmlAudio;
 
-    fn mix_audio(&mut self, audio: Self::Audio) {
-    }
+    fn mix_audio(&mut self, audio: Self::Audio) {}
 
-    fn mix(self) -> Self::Audio {
-    }
+    fn mix(self) -> Self::Audio {}
 }
 
 impl MixingContextImpl {
