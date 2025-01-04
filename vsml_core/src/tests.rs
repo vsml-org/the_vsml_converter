@@ -126,10 +126,11 @@ fn test_calc_rendering_info() {
 }
 
 pub struct MockImage {}
+pub struct MockAudio {}
 
 #[test]
 fn test_render_frame_image() {
-    let iv_data = schemas::IVData::<MockImage> {
+    let iv_data = schemas::IVData::<MockImage, MockAudio> {
         resolution_x: 1920,
         resolution_y: 1080,
         fps: 60,

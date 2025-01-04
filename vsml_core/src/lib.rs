@@ -133,7 +133,7 @@ pub trait Renderer {
     fn render(self, width: u32, height: u32) -> Self::Image;
 }
 
-// #[cfg_attr(test, mockall::automock(type Image=tests::MockImage; type Renderer=MockRenderer;))]
+#[cfg_attr(test, mockall::automock(type Image=tests::MockImage; type Renderer=MockRenderer;))]
 pub trait RenderingContext {
     type Image;
     type Renderer: Renderer<Image = Self::Image>;
@@ -290,9 +290,8 @@ where
 }
 
 pub fn mix_audio<M, I>(
-    &schemas::IVData {
-        sampling_rate,
-        ref object,
+    schemas::IVData {
+        object,
         ..
     }: &schemas::IVData<I, M::Audio>,
     mut mixing_context: M,

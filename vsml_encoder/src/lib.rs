@@ -29,6 +29,7 @@ pub fn encode<R, M>(
         frame_image.save(save_path).unwrap();
     }
 
+    #[allow(clippy::let_unit_value)]
     let _audio = mix_audio(&iv_data, &mut mixing_context);
 
     let fps = iv_data.fps.to_string();

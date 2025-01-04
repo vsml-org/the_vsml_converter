@@ -8,7 +8,7 @@ pub struct MixingContextImpl {}
 impl vsml_core::Mixer for MixerImpl {
     type Audio = VsmlAudio;
 
-    fn mix_audio(&mut self, audio: Self::Audio) {}
+    fn mix_audio(&mut self, _audio: Self::Audio) {}
 
     fn mix(self) -> Self::Audio {}
 }
@@ -16,6 +16,12 @@ impl vsml_core::Mixer for MixerImpl {
 impl MixingContextImpl {
     pub fn new() -> Self {
         Self {}
+    }
+}
+
+impl Default for MixingContextImpl {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
