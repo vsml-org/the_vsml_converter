@@ -4,13 +4,13 @@ pub enum VSSSelectorAttributeValue {
     None,
     /// `[src="video.mp4"]` のようなアトリビュートの値の完全一致の指定
     Equal(String),
-    /// `[src="video.mp4"]` のようなアトリビュートの値の部分一致の指定
+    /// `[src~="video.mp4"]` のようなアトリビュートの値の空白区切りリストの1つとの一致の指定
     Contain(String),
-    /// `[src="video.mp4"]` のようなアトリビュートの値の先頭一致の指定
+    /// `[src^="video.mp4"]` のようなアトリビュートの値の先頭一致の指定
     StartWith(String),
-    /// `[src="video.mp4"]` のようなアトリビュートの値の末尾一致の指定
+    /// `[src$="video.mp4"]` のようなアトリビュートの値の末尾一致の指定
     EndWith(String),
-    /// `[src="video.mp4"]` のようなアトリビュートの値の部分一致の指定
+    /// `[src*="video.mp4"]` のようなアトリビュートの値の部分一致の指定
     Include(String),
 }
 
