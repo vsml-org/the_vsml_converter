@@ -10,7 +10,8 @@ use vsml_encoder::encode;
 use vsml_image_renderer::RenderingContextImpl;
 use vsml_iv_converter::convert;
 use vsml_parser::{parse, VSSLoader};
-use vsml_processer::ImageProcessor;
+use vsml_processer::audio::AudioProcessor;
+use vsml_processer::image::ImageProcessor;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -43,10 +44,16 @@ fn main() {
     let vsml = parse(&vsml_string, &VSSFileLoader).unwrap();
     let iv_data = convert(
         &vsml,
-        &HashMap::from([(
-            "img".to_string(),
-            Arc::new(ImageProcessor) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
-        )]),
+        &HashMap::from([
+            (
+                "img".to_string(),
+                Arc::new(ImageProcessor) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+            ),
+            (
+                "aud".to_string(),
+                Arc::new(AudioProcessor) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+            ),
+        ]),
     );
 
     let mut rendering_context = RenderingContextImpl::new();
