@@ -192,10 +192,7 @@ fn test_mix_audio() {
     let mut mock_mc = MockMixingContext::new();
     mock_mc.expect_create_mixer().times(1).returning(|| {
         let mut mock_mixer = MockMixer::new();
-        mock_mixer
-            .expect_mix()
-            .times(1)
-            .returning(|| MockAudio {});
+        mock_mixer.expect_mix().times(1).returning(|| MockAudio {});
         mock_mixer
     });
     mix_audio(&iv_data, mock_mc);
