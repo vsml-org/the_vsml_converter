@@ -261,12 +261,14 @@ where
     renderer.render(resolution_x, resolution_y)
 }
 
+#[cfg_attr(test, mockall::automock(type Audio=tests::MockAudio;))]
 pub trait Mixer {
     type Audio;
     fn mix_audio(&mut self, audio: Self::Audio);
     fn mix(self) -> Self::Audio;
 }
 
+#[cfg_attr(test, mockall::automock(type Audio=tests::MockAudio; type Mixer=MockMixer;))]
 pub trait MixingContext {
     type Audio;
     type Mixer: Mixer<Audio = Self::Audio>;
