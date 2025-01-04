@@ -290,10 +290,7 @@ where
 }
 
 pub fn mix_audio<M, I>(
-    schemas::IVData {
-        object,
-        ..
-    }: &schemas::IVData<I, M::Audio>,
+    schemas::IVData { object, .. }: &schemas::IVData<I, M::Audio>,
     mut mixing_context: M,
 ) -> M::Audio
 where
