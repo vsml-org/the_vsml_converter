@@ -264,15 +264,16 @@ where
 #[cfg_attr(test, mockall::automock(type Audio=tests::MockAudio;))]
 pub trait Mixer {
     type Audio;
-    fn mix_audio(&mut self, audio: Self::Audio);
-    fn mix(self) -> Self::Audio;
+    /// offset_time is the time in seconds from the start of the audio
+    fn mix_audio(&mut self, _audio: Self::Audio, offset_time: f64, duration: f64);
+    fn mix(self, duration: f64) -> Self::Audio;
 }
 
 #[cfg_attr(test, mockall::automock(type Audio=tests::MockAudio; type Mixer=MockMixer;))]
 pub trait MixingContext {
     type Audio;
     type Mixer: Mixer<Audio = Self::Audio>;
-    fn create_mixer(&mut self) -> Self::Mixer;
+    fn create_mixer(&mut self, sampling_rate: u32) -> Self::Mixer;
     fn apply_style(&mut self, audio: Self::Audio, style: AudioEffectStyle) -> Self::Audio;
 }
 
@@ -283,8 +284,8 @@ where
     type Audio = M::Audio;
     type Mixer = M::Mixer;
 
-    fn create_mixer(&mut self) -> Self::Mixer {
-        M::create_mixer(self)
+    fn create_mixer(&mut self, sampling_rate: u32) -> Self::Mixer {
+        M::create_mixer(self, sampling_rate)
     }
     fn apply_style(&mut self, audio: Self::Audio, style: AudioEffectStyle) -> Self::Audio {
         M::apply_style(self, audio, style)
@@ -292,7 +293,11 @@ where
 }
 
 pub fn mix_audio<M, I>(
-    schemas::IVData { object, .. }: &schemas::IVData<I, M::Audio>,
+    &schemas::IVData {
+        ref object,
+        sampling_rate,
+        ..
+    }: &schemas::IVData<I, M::Audio>,
     mut mixing_context: M,
 ) -> M::Audio
 where
@@ -302,48 +307,57 @@ where
         mixing_context: &mut M,
         mixer: &mut M::Mixer,
         object: &ObjectData<I, M::Audio>,
+        sampling_rate: u32,
     ) where
         M: MixingContext,
     {
         match object {
-            ObjectData::Element {
+            &ObjectData::Element {
                 object_type: ObjectType::Wrap,
-                children,
+                duration,
+                start_time,
+                ref children,
                 ..
             } => {
                 if children.is_empty() {
                     return;
                 }
-                let mut inner_mixer = mixing_context.create_mixer();
-                children
-                    .iter()
-                    .for_each(|object| mix_inner(mixing_context, &mut inner_mixer, object));
-                let child_audio = inner_mixer.mix();
-                mixer.mix_audio(child_audio);
+                let mut inner_mixer = mixing_context.create_mixer(sampling_rate);
+                children.iter().for_each(|object| {
+                    mix_inner(mixing_context, &mut inner_mixer, object, sampling_rate)
+                });
+                let child_audio = inner_mixer.mix(duration);
+                mixer.mix_audio(child_audio, start_time, duration);
             }
-            ObjectData::Element {
-                object_type: ObjectType::Other(processor),
-                attributes,
-                children,
+            &ObjectData::Element {
+                object_type: ObjectType::Other(ref processor),
+                duration,
+                start_time,
+                ref attributes,
+                ref children,
                 ..
             } => {
                 let child_audio = (!children.is_empty()).then(|| {
-                    let mut inner_mixer = mixing_context.create_mixer();
-                    children
-                        .iter()
-                        .for_each(|object| mix_inner(mixing_context, &mut inner_mixer, object));
-                    inner_mixer.mix()
+                    let mut inner_mixer = mixing_context.create_mixer(sampling_rate);
+                    children.iter().for_each(|object| {
+                        mix_inner(mixing_context, &mut inner_mixer, object, sampling_rate)
+                    });
+                    inner_mixer.mix(duration)
                 });
                 let result = processor.process_audio(attributes, child_audio);
                 if let Some(result) = result {
-                    mixer.mix_audio(result);
+                    mixer.mix_audio(result, start_time, duration);
                 }
             }
             ObjectData::Text(_) => {}
         }
     }
 
-    let mut mixer = mixing_context.create_mixer();
-    mix_inner(&mut mixing_context, &mut mixer, object);
-    mixer.mix()
+    let mut mixer = mixing_context.create_mixer(sampling_rate);
+    mix_inner(&mut mixing_context, &mut mixer, object, sampling_rate);
+    if let &ObjectData::Element { duration, .. } = object {
+        mixer.mix(duration)
+    } else {
+        unreachable!()
+    }
 }
