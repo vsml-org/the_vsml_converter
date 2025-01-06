@@ -308,6 +308,7 @@ where
         mixer: &mut M::Mixer,
         object: &ObjectData<I, M::Audio>,
         sampling_rate: u32,
+        finite_duration: f64,
     ) where
         M: MixingContext,
     {
@@ -324,10 +325,10 @@ where
                 }
                 let mut inner_mixer = mixing_context.create_mixer(sampling_rate);
                 children.iter().for_each(|object| {
-                    mix_inner(mixing_context, &mut inner_mixer, object, sampling_rate)
+                    mix_inner(mixing_context, &mut inner_mixer, object, sampling_rate, finite_duration.min(duration))
                 });
-                let child_audio = inner_mixer.mix(duration);
-                mixer.mix_audio(child_audio, start_time, duration);
+                let child_audio = inner_mixer.mix(finite_duration.min(duration));
+                mixer.mix_audio(child_audio, start_time, finite_duration.min(duration));
             }
             &ObjectData::Element {
                 object_type: ObjectType::Other(ref processor),
@@ -340,13 +341,13 @@ where
                 let child_audio = (!children.is_empty()).then(|| {
                     let mut inner_mixer = mixing_context.create_mixer(sampling_rate);
                     children.iter().for_each(|object| {
-                        mix_inner(mixing_context, &mut inner_mixer, object, sampling_rate)
+                        mix_inner(mixing_context, &mut inner_mixer, object, sampling_rate, finite_duration.min(duration))
                     });
-                    inner_mixer.mix(duration)
+                    inner_mixer.mix(finite_duration.min(duration))
                 });
                 let result = processor.process_audio(attributes, child_audio);
                 if let Some(result) = result {
-                    mixer.mix_audio(result, start_time, duration);
+                    mixer.mix_audio(result, start_time, finite_duration.min(duration));
                 }
             }
             ObjectData::Text(_) => {}
@@ -354,8 +355,8 @@ where
     }
 
     let mut mixer = mixing_context.create_mixer(sampling_rate);
-    mix_inner(&mut mixing_context, &mut mixer, object, sampling_rate);
     if let &ObjectData::Element { duration, .. } = object {
+        mix_inner(&mut mixing_context, &mut mixer, object, sampling_rate, duration);
         mixer.mix(duration)
     } else {
         unreachable!()
