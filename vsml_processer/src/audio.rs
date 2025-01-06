@@ -15,6 +15,10 @@ impl<I> ObjectProcessor<I, VsmlAudio> for AudioProcessor {
         reader.duration() as f64 / reader.spec().sample_rate as f64
     }
 
+    fn default_size(&self, _attributes: &HashMap<String, String>) -> (f32, f32) {
+        (0.0, 0.0)
+    }
+
     fn process_image(
         &self,
         _: f64,

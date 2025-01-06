@@ -126,6 +126,7 @@ pub enum ObjectType<I, A> {
 pub trait ObjectProcessor<I, A> {
     fn name(&self) -> &str;
     fn default_duration(&self, attributes: &HashMap<String, String>) -> f64;
+    fn default_size(&self, attributes: &HashMap<String, String>) -> (f32, f32);
     fn process_image(
         &self,
         render_sec: f64,

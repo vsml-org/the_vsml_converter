@@ -188,8 +188,7 @@ fn convert_tag_element<'a, I, A>(
     let mut rule_target_duration = None;
     let mut target_size: (f32, f32) = match &object_type {
         ObjectType::Wrap => (0.0, 0.0),
-        // TODO: 取得する処理を実装する
-        ObjectType::Other(_) => (200.0, 200.0),
+        ObjectType::Other(processor) => processor.default_size(attributes),
     };
 
     let mut order: Order = match name {
