@@ -286,7 +286,7 @@ fn convert_tag_element<'a, I, A>(
     }
     if has_infinite_child && target_duration == 0.0 {
         target_duration = f64::INFINITY
-    };
+    }
 
     ObjectData::Element {
         object_type,

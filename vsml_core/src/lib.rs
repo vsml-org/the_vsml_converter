@@ -308,7 +308,7 @@ where
         mixer: &mut M::Mixer,
         object: &ObjectData<I, M::Audio>,
         sampling_rate: u32,
-        finite_duration: f64,
+        ancestor_duration: f64,
     ) where
         M: MixingContext,
     {
@@ -330,11 +330,11 @@ where
                         &mut inner_mixer,
                         object,
                         sampling_rate,
-                        finite_duration.min(duration),
+                        ancestor_duration.min(duration),
                     )
                 });
-                let child_audio = inner_mixer.mix(finite_duration.min(duration));
-                mixer.mix_audio(child_audio, start_time, finite_duration.min(duration));
+                let child_audio = inner_mixer.mix(ancestor_duration.min(duration));
+                mixer.mix_audio(child_audio, start_time, ancestor_duration.min(duration));
             }
             &ObjectData::Element {
                 object_type: ObjectType::Other(ref processor),
@@ -352,14 +352,14 @@ where
                             &mut inner_mixer,
                             object,
                             sampling_rate,
-                            finite_duration.min(duration),
+                            ancestor_duration.min(duration),
                         )
                     });
-                    inner_mixer.mix(finite_duration.min(duration))
+                    inner_mixer.mix(ancestor_duration.min(duration))
                 });
                 let result = processor.process_audio(attributes, child_audio);
                 if let Some(result) = result {
-                    mixer.mix_audio(result, start_time, finite_duration.min(duration));
+                    mixer.mix_audio(result, start_time, ancestor_duration.min(duration));
                 }
             }
             ObjectData::Text(_) => {}
