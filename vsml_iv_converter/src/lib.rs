@@ -242,6 +242,7 @@ fn convert_tag_element<'a, I, A>(
     let mut object_data_children = vec![];
     let mut start_offset = 0.0;
     let mut children_offset_position = (0.0, 0.0);
+    let mut has_infinite_child = false;
 
     for (i, element) in children.iter().enumerate() {
         let child_object_data = vss_scanner.traverse(&children[..=i], |scanner| {
@@ -253,17 +254,24 @@ fn convert_tag_element<'a, I, A>(
                 object_processor_provider,
             )
         });
-        if let ObjectData::Element {
+        if let &ObjectData::Element {
             duration,
-            element_rect,
+            ref element_rect,
             ..
         } = &child_object_data
         {
-            if order == Order::Sequence {
-                start_offset += duration;
-                target_duration += duration;
-            } else if duration.is_finite() {
-                target_duration = target_duration.max(*duration);
+            match order {
+                Order::Sequence => {
+                    start_offset += duration;
+                    target_duration += duration;
+                }
+                Order::Parallel => {
+                    if duration.is_finite() {
+                        target_duration = target_duration.max(duration);
+                    } else {
+                        has_infinite_child = true;
+                    }
+                }
             }
             if layer_mode == LayerMode::Single {
                 children_offset_position.0 += element_rect.width;
@@ -276,6 +284,10 @@ fn convert_tag_element<'a, I, A>(
         }
         object_data_children.push(child_object_data);
     }
+    if has_infinite_child && target_duration == 0.0 {
+        target_duration = f64::INFINITY
+    }
+
     ObjectData::Element {
         object_type,
         // time-margin, time-paddingとかが来たらここまでに計算する
