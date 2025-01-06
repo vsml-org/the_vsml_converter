@@ -13,7 +13,7 @@ impl<A> ObjectProcessor<VsmlImage, A> for ImageProcessor {
         f64::INFINITY
     }
 
-    fn default_size(&self, attributes: &HashMap<String, String>) -> (f32, f32) {
+    fn default_image_size(&self, attributes: &HashMap<String, String>) -> (f32, f32) {
         let src_path = attributes.get("src").unwrap();
         let image = image::open(src_path).unwrap();
         (image.width() as f32, image.height() as f32)
