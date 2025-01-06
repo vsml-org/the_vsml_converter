@@ -19,6 +19,7 @@ pub fn encode<R, M>(
     let ObjectData::Element { duration, .. } = iv_data.object else {
         panic!()
     };
+    assert!(duration.is_finite(), "動画時間が無限になっています");
     let whole_frames = duration * iv_data.fps as f64;
 
     let d = TempDir::new().unwrap();
