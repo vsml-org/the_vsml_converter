@@ -123,7 +123,7 @@ pub enum ObjectType<I, A> {
     Other(Arc<dyn ObjectProcessor<I, A>>),
 }
 
-#[derive(Debug)]
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
 pub struct RectSize {
     pub width: f32,
     pub height: f32,
