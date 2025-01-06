@@ -3,7 +3,8 @@ use std::sync::Arc;
 use vsml_ast::vsml::{Content, Element, Meta, VSML};
 use vsml_ast::vss::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
 use vsml_core::schemas::{
-    Duration, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType, Order, StyleData,
+    Duration, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType, Order, RectSize,
+    StyleData,
 };
 use vsml_core::ElementRect;
 
@@ -186,8 +187,8 @@ fn convert_tag_element<'a, I, A>(
         ObjectType::Other(processor) => processor.default_duration(attributes),
     };
     let mut rule_target_duration = None;
-    let mut target_size: (f32, f32) = match &object_type {
-        ObjectType::Wrap => (0.0, 0.0),
+    let mut target_size: RectSize = match &object_type {
+        ObjectType::Wrap => RectSize::ZERO,
         ObjectType::Other(processor) => processor.default_image_size(attributes),
     };
 
@@ -274,11 +275,11 @@ fn convert_tag_element<'a, I, A>(
             }
             if layer_mode == LayerMode::Single {
                 children_offset_position.0 += element_rect.width;
-                target_size.0 += element_rect.width;
-                target_size.1 = target_size.1.max(element_rect.height);
+                target_size.width += element_rect.width;
+                target_size.height = target_size.height.max(element_rect.height);
             } else {
-                target_size.0 = target_size.0.max(element_rect.width);
-                target_size.1 = target_size.1.max(element_rect.height);
+                target_size.width = target_size.width.max(element_rect.width);
+                target_size.height = target_size.height.max(element_rect.height);
             }
         }
         object_data_children.push(child_object_data);
@@ -298,8 +299,8 @@ fn convert_tag_element<'a, I, A>(
             parent_alignment: Default::default(),
             x: offset_position.0,
             y: offset_position.1,
-            width: target_size.0,
-            height: target_size.1,
+            width: target_size.width,
+            height: target_size.height,
         },
         styles: StyleData::default(),
         children: object_data_children,

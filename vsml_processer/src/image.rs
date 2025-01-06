@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::schemas::ObjectProcessor;
+use vsml_core::schemas::{ObjectProcessor, RectSize};
 
 pub struct ImageProcessor;
 
@@ -13,10 +13,10 @@ impl<A> ObjectProcessor<VsmlImage, A> for ImageProcessor {
         f64::INFINITY
     }
 
-    fn default_image_size(&self, attributes: &HashMap<String, String>) -> (f32, f32) {
+    fn default_image_size(&self, attributes: &HashMap<String, String>) -> RectSize {
         let src_path = attributes.get("src").unwrap();
         let image = image::open(src_path).unwrap();
-        (image.width() as f32, image.height() as f32)
+        RectSize::new(image.width() as f32, image.height() as f32)
     }
 
     fn process_image(
