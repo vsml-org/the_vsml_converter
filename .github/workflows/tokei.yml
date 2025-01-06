@@ -13,15 +13,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Cache tokei binary
+        id: cache-tokei
+        uses: actions/cache@v4
+        with:
+          key: ${{ runner.os }}-tokei-bin
+          path: ~/.cargo/bin/tokei
+
       - name: Set up Rust
+        if: steps.cache-tokei.outputs.cache-hit != 'true'
         uses: dtolnay/rust-toolchain@stable
 
       - name: Install tokei
+        if: steps.cache-tokei.outputs.cache-hit != 'true'
         run: cargo install tokei
 
       - name: Run tokei
         id: tokei_result
-        run: tokei >> tokei_result.txt
+        run: ~/.cargo/bin/tokei >> tokei_result.txt
 
       - name: Send to Discord
         run: |
