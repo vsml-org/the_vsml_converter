@@ -325,7 +325,13 @@ where
                 }
                 let mut inner_mixer = mixing_context.create_mixer(sampling_rate);
                 children.iter().for_each(|object| {
-                    mix_inner(mixing_context, &mut inner_mixer, object, sampling_rate, finite_duration.min(duration))
+                    mix_inner(
+                        mixing_context,
+                        &mut inner_mixer,
+                        object,
+                        sampling_rate,
+                        finite_duration.min(duration),
+                    )
                 });
                 let child_audio = inner_mixer.mix(finite_duration.min(duration));
                 mixer.mix_audio(child_audio, start_time, finite_duration.min(duration));
@@ -341,7 +347,13 @@ where
                 let child_audio = (!children.is_empty()).then(|| {
                     let mut inner_mixer = mixing_context.create_mixer(sampling_rate);
                     children.iter().for_each(|object| {
-                        mix_inner(mixing_context, &mut inner_mixer, object, sampling_rate, finite_duration.min(duration))
+                        mix_inner(
+                            mixing_context,
+                            &mut inner_mixer,
+                            object,
+                            sampling_rate,
+                            finite_duration.min(duration),
+                        )
                     });
                     inner_mixer.mix(finite_duration.min(duration))
                 });
@@ -356,7 +368,13 @@ where
 
     let mut mixer = mixing_context.create_mixer(sampling_rate);
     if let &ObjectData::Element { duration, .. } = object {
-        mix_inner(&mut mixing_context, &mut mixer, object, sampling_rate, duration);
+        mix_inner(
+            &mut mixing_context,
+            &mut mixer,
+            object,
+            sampling_rate,
+            duration,
+        );
         mixer.mix(duration)
     } else {
         unreachable!()
