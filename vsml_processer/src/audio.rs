@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use vsml_common_audio::Audio as VsmlAudio;
-use vsml_core::schemas::ObjectProcessor;
+use vsml_core::schemas::{ObjectProcessor, RectSize};
 
 pub struct AudioProcessor;
 
@@ -13,6 +13,10 @@ impl<I> ObjectProcessor<I, VsmlAudio> for AudioProcessor {
         let src_path = attributes.get("src").unwrap();
         let reader = hound::WavReader::open(src_path).unwrap();
         reader.duration() as f64 / reader.spec().sample_rate as f64
+    }
+
+    fn default_image_size(&self, _attributes: &HashMap<String, String>) -> RectSize {
+        RectSize::ZERO
     }
 
     fn process_image(

@@ -123,9 +123,23 @@ pub enum ObjectType<I, A> {
     Other(Arc<dyn ObjectProcessor<I, A>>),
 }
 
+#[derive(Debug, Default, Clone, Copy, PartialEq)]
+pub struct RectSize {
+    pub width: f32,
+    pub height: f32,
+}
+
+impl RectSize {
+    pub const fn new(width: f32, height: f32) -> RectSize {
+        RectSize { width, height }
+    }
+    pub const ZERO: RectSize = RectSize::new(0.0, 0.0);
+}
+
 pub trait ObjectProcessor<I, A> {
     fn name(&self) -> &str;
     fn default_duration(&self, attributes: &HashMap<String, String>) -> f64;
+    fn default_image_size(&self, attributes: &HashMap<String, String>) -> RectSize;
     fn process_image(
         &self,
         render_sec: f64,
