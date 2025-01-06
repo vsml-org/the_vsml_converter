@@ -12,6 +12,11 @@ impl vsml_core::Mixer for MixerImpl {
     type Audio = VsmlAudio;
 
     fn mix_audio(&mut self, audio: Self::Audio, offset_time: f64, duration: f64) {
+        // TODO: 多分ちがう
+        if duration.is_infinite() {
+            return;
+        }
+
         let signal = signal::from_iter(audio.samples);
 
         let ring_buffer = ring_buffer::Fixed::from([[0.0, 0.0]; 100]);
@@ -40,10 +45,10 @@ impl vsml_core::Mixer for MixerImpl {
     }
 
     fn mix(mut self, duration: f64) -> Self::Audio {
-        self.audio.samples.resize(
-            (duration * self.audio.sampling_rate as f64) as usize,
-            [0.0, 0.0],
-        );
+        if duration.is_finite() {
+            self.audio.samples =
+                self.audio.samples[..(duration * self.audio.sampling_rate as f64) as usize].to_vec()
+        }
         self.audio
     }
 }
