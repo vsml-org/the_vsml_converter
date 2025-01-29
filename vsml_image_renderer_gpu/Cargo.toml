@@ -1,0 +1,10 @@
+[package]
+name = "vsml_image_renderer_gpu"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+vsml_core.workspace = true
+vsml_common_image.workspace = true
+wgpu.workspace = true

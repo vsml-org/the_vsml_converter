@@ -14,6 +14,7 @@ members = [
     "vsml_core",
     "vsml_encoder",
     "vsml_image_renderer",
+    "vsml_image_renderer_gpu",
     "vsml_iv_converter",
     "vsml_parser",
     "vsml_processer",
@@ -41,3 +42,4 @@ regex = "1.11.1"
 roxmltree = "0.20.0"
 temp-dir = "0.1.14"
 thiserror = "2.0.9"
+wgpu = "23.0.1"
