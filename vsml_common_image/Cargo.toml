@@ -5,4 +5,4 @@ edition.workspace = true
 authors.workspace = true
 
 [dependencies]
-image.workspace = true
+wgpu.workspace = true

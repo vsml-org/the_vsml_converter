@@ -8,3 +8,7 @@ authors.workspace = true
 vsml_core.workspace = true
 vsml_common_image.workspace = true
 wgpu.workspace = true
+
+[dev-dependencies]
+image.workspace = true
+pollster.workspace = true
