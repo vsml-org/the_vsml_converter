@@ -141,21 +141,26 @@ impl Renderer for RendererImpl {
                 occlusion_query_set: None,
                 timestamp_writes: None,
             });
-            render_pass.set_pipeline(&self.render_pipeline); // 2.
-            render_pass.set_bind_group(0, &diffuse_bind_group, &[]); // 1.
+            render_pass.set_pipeline(&self.render_pipeline);
+            render_pass.set_bind_group(0, &diffuse_bind_group, &[]);
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-            let max_width = if width < info.x as u32 + info.width as u32 {
+            let scissor_rect_width = if width < info.x as u32 + info.width as u32 {
                 width - info.x as u32
             } else {
                 info.width as u32
             };
-            let max_height = if height < info.y as u32 + info.height as u32 {
+            let scissor_rect_height = if height < info.y as u32 + info.height as u32 {
                 height - info.y as u32
             } else {
                 info.height as u32
             };
-            render_pass.set_scissor_rect(info.x as u32, info.y as u32, max_width, max_height);
-            render_pass.draw(0..3, 0..1); // 3
+            render_pass.set_scissor_rect(
+                info.x as u32,
+                info.y as u32,
+                scissor_rect_width,
+                scissor_rect_height,
+            );
+            render_pass.draw(0..3, 0..1);
         });
         self.queue.submit(std::iter::once(encoder.finish()));
         texture
