@@ -1,1 +1,1 @@
-pub type Image = image::RgbaImage;
+pub type Image = wgpu::Texture;

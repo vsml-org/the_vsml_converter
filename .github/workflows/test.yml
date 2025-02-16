@@ -16,6 +16,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - run: |
+          sudo apt update
+          sudo apt install -y mesa-vulkan-drivers libvulkan-dev
+
       - name: Set up Rust
         uses: dtolnay/rust-toolchain@stable
 

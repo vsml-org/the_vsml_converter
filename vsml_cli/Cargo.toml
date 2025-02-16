@@ -19,3 +19,5 @@ vsml_iv_converter.workspace = true
 vsml_parser.workspace = true
 vsml_processer.workspace = true
 clap.workspace = true
+pollster.workspace = true
+wgpu.workspace = true

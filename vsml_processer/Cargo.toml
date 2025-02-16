@@ -10,3 +10,4 @@ vsml_common_image.workspace = true
 vsml_core.workspace = true
 hound.workspace = true
 image.workspace = true
+wgpu.workspace = true
