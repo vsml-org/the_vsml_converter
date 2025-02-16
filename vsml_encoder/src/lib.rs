@@ -1,11 +1,11 @@
 use std::path::Path;
 use std::process::Command;
 use temp_dir::TempDir;
-use wgpu::util::DeviceExt;
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{IVData, ObjectData};
 use vsml_core::{mix_audio, render_frame_image, MixingContext, RenderingContext};
+use wgpu::util::DeviceExt;
 
 pub fn encode<R, M>(
     iv_data: IVData<R::Image, M::Audio>,
@@ -75,7 +75,7 @@ pub fn encode<R, M>(
             iv_data.resolution_y,
             image::ColorType::Rgba8,
         )
-            .unwrap();
+        .unwrap();
     }
 
     let audio = mix_audio(&iv_data, &mut mixing_context);

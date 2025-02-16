@@ -1,5 +1,5 @@
-use std::collections::HashMap;
 use image::GenericImageView;
+use std::collections::HashMap;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{ObjectProcessor, RectSize};
 

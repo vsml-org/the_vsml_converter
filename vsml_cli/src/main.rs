@@ -47,7 +47,8 @@ fn get_gpu_device() -> (wgpu::Device, wgpu::Queue) {
         power_preference: wgpu::PowerPreference::default(),
         compatible_surface: None,
         force_fallback_adapter: false,
-    })).unwrap();
+    }))
+    .unwrap();
     let (device, queue) = pollster::block_on(adapter.request_device(
         &wgpu::DeviceDescriptor {
             required_features: wgpu::Features::empty(),
@@ -56,7 +57,8 @@ fn get_gpu_device() -> (wgpu::Device, wgpu::Queue) {
             memory_hints: Default::default(),
         },
         None,
-    )).unwrap();
+    ))
+    .unwrap();
     (device, queue)
 }
 
@@ -71,7 +73,8 @@ fn main() {
         &HashMap::from([
             (
                 "img".to_string(),
-                Arc::new(ImageProcessor::new(device.clone(), queue.clone())) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+                Arc::new(ImageProcessor::new(device.clone(), queue.clone()))
+                    as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
             ),
             (
                 "aud".to_string(),
