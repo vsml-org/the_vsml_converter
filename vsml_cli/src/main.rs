@@ -37,17 +37,41 @@ impl VSSLoader for VSSFileLoader {
     }
 }
 
+fn get_gpu_device() -> (wgpu::Device, wgpu::Queue) {
+    // GPUのdeviceとqueueを作成
+    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
+        backends: wgpu::Backends::PRIMARY,
+        ..Default::default()
+    });
+    let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+        power_preference: wgpu::PowerPreference::default(),
+        compatible_surface: None,
+        force_fallback_adapter: false,
+    })).unwrap();
+    let (device, queue) = pollster::block_on(adapter.request_device(
+        &wgpu::DeviceDescriptor {
+            required_features: wgpu::Features::empty(),
+            required_limits: wgpu::Limits::default(),
+            label: None,
+            memory_hints: Default::default(),
+        },
+        None,
+    )).unwrap();
+    (device, queue)
+}
+
 fn main() {
     let args = Args::parse();
 
     let vsml_string = std::fs::read_to_string(args.input_path).unwrap();
     let vsml = parse(&vsml_string, &VSSFileLoader).unwrap();
+    let (device, queue) = get_gpu_device();
     let iv_data = convert(
         &vsml,
         &HashMap::from([
             (
                 "img".to_string(),
-                Arc::new(ImageProcessor) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+                Arc::new(ImageProcessor::new(device.clone(), queue.clone())) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
             ),
             (
                 "aud".to_string(),
@@ -56,7 +80,7 @@ fn main() {
         ]),
     );
 
-    let mut rendering_context = RenderingContextImpl::new();
+    let mut rendering_context = RenderingContextImpl::new(device.clone(), queue.clone());
     let mut mixing_context = MixingContextImpl::new();
 
     encode(
@@ -65,5 +89,7 @@ fn main() {
         &mut mixing_context,
         args.output_path.as_deref(),
         args.overwrite,
+        device,
+        queue,
     );
 }
