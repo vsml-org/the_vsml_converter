@@ -19,7 +19,7 @@ fn vs_main(
 ) -> VertexOutput {
     var output: VertexOutput;
 
-    let x = 2 * (in.x + (2 * in.width * f32(in_vertex_index & 1)) / f32(in.base_width)) - 1;
+    let x = 2 * ((in.x + (2 * in.width * f32(in_vertex_index & 1))) / f32(in.base_width)) - 1;
     let y = 2 * (1 - (in.y + in.height - (in.height * f32(in_vertex_index & 2))) / f32(in.base_height)) - 1;
     let u = f32(in_vertex_index & 1) * 2;
     let v = 1 - f32(in_vertex_index & 2);
