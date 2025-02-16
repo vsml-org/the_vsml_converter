@@ -6,5 +6,10 @@ authors.workspace = true
 
 [dependencies]
 vsml_core.workspace = true
-image.workspace = true
 vsml_common_image.workspace = true
+bytemuck.workspace = true
+wgpu.workspace = true
+
+[dev-dependencies]
+image.workspace = true
+pollster.workspace = true

@@ -14,7 +14,6 @@ members = [
     "vsml_core",
     "vsml_encoder",
     "vsml_image_renderer",
-    "vsml_image_renderer_gpu",
     "vsml_iv_converter",
     "vsml_parser",
     "vsml_processer",

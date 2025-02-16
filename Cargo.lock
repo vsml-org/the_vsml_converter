@@ -1844,15 +1844,6 @@ dependencies = [
 name = "vsml_image_renderer"
 version = "0.1.0"
 dependencies = [
- "image",
- "vsml_common_image",
- "vsml_core",
-]
-
-[[package]]
-name = "vsml_image_renderer_gpu"
-version = "0.1.0"
-dependencies = [
  "bytemuck",
  "image",
  "pollster",
