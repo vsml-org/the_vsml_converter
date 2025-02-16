@@ -150,7 +150,7 @@ fn test_render() {
 
     image::save_buffer(
         "output.png",
-        &slice.get_mapped_range().to_vec(),
+        &slice.get_mapped_range(),
         output_dimensions.0,
         output_dimensions.1,
         image::ColorType::Rgba8,
