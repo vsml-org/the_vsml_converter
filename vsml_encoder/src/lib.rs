@@ -70,7 +70,7 @@ pub fn encode<R, M>(
 
         image::save_buffer(
             save_path,
-            &slice.get_mapped_range().to_vec(),
+            &slice.get_mapped_range(),
             iv_data.resolution_x,
             iv_data.resolution_y,
             image::ColorType::Rgba8,

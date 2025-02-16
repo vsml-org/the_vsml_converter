@@ -61,11 +61,11 @@ impl Renderer for RendererImpl {
         self.images.push((image, info));
     }
 
-    fn render_text(&mut self, text_data: &[TextData], info: TextRenderingInfo) -> Rect {
+    fn render_text(&mut self, _text_data: &[TextData], _info: TextRenderingInfo) -> Rect {
         todo!()
     }
 
-    fn render_box(&mut self, property: Property, info: RenderingInfo) {
+    fn render_box(&mut self, _property: Property, _info: RenderingInfo) {
         todo!()
     }
 
@@ -177,7 +177,7 @@ impl RenderingContext for RenderingContextImpl {
         }
     }
 
-    fn apply_style(&mut self, image: Self::Image, style: ImageEffectStyle) -> Self::Image {
+    fn apply_style(&mut self, _image: Self::Image, _style: ImageEffectStyle) -> Self::Image {
         todo!()
     }
 }

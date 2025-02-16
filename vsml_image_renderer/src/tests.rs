@@ -1,6 +1,5 @@
 use super::*;
 use image::GenericImageView;
-use std::sync::Arc;
 use wgpu::util::DeviceExt;
 
 fn create_image_data(
