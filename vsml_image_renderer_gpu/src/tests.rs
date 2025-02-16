@@ -78,11 +78,13 @@ fn test_render() {
     let mut renderer = context.create_renderer();
 
     // 合成するテクスチャの作成
-    // let (texture, info) = create_image_data(device.clone(), queue.clone(), include_bytes!("origin.png"));
-    // renderer.render_image(texture, info);
-    let (texture, info) = create_image_data(device.clone(), queue.clone(), include_bytes!("red.png"));
+    let (texture, info) = create_image_data(device.clone(), queue.clone(), include_bytes!("../test_assets/origin.png"));
     renderer.render_image(texture, info);
-    let (texture, info) = create_image_data(device.clone(), queue.clone(), include_bytes!("icon.png"));
+    let (texture, info) = create_image_data(device.clone(), queue.clone(), include_bytes!("../test_assets/red.png"));
+    renderer.render_image(texture, info);
+    let (texture, info) = create_image_data(device.clone(), queue.clone(), include_bytes!("../test_assets/portrait-alpha.png"));
+    renderer.render_image(texture, info);
+    let (texture, info) = create_image_data(device.clone(), queue.clone(), include_bytes!("../test_assets/icon.png"));
     renderer.render_image(texture, info);
 
     // テクスチャを合成

@@ -1,6 +1,7 @@
 #[cfg(test)]
 mod tests;
 
+use wgpu::util::DeviceExt;
 use vsml_core::{ImageEffectStyle, Property, Rect, Renderer, RenderingContext, RenderingInfo, TextData, TextRenderingInfo};
 use vsml_common_image::Image as VsmlImage;
 
@@ -19,6 +20,35 @@ pub struct RenderingContextImpl {
     render_pipeline: wgpu::RenderPipeline,
     texture_bind_group_layout: wgpu::BindGroupLayout,
     sampler: wgpu::Sampler,
+}
+
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct Vertex {
+    base_width: u32,
+    base_height: u32,
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+}
+
+impl Vertex {
+    const ATTRIBUTES: [wgpu::VertexAttribute; 6] = wgpu::vertex_attr_array![
+        0 => Uint32,
+        1 => Uint32,
+        2 => Float32,
+        3 => Float32,
+        4 => Float32,
+        5 => Float32,
+    ];
+    fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: size_of::<Vertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &Self::ATTRIBUTES,
+        }
+    }
 }
 
 impl Renderer for RendererImpl {
@@ -77,6 +107,24 @@ impl Renderer for RendererImpl {
                 label: None,
             });
 
+            let vertex: &[Vertex] = &[
+                Vertex {
+                    base_width: width,
+                    base_height: height,
+                    x: info.x,
+                    y: info.y,
+                    width: info.width,
+                    height: info.height,
+                },
+            ];
+            let vertex_buffer = self.device.create_buffer_init(
+                &wgpu::util::BufferInitDescriptor {
+                    label: Some("Vertex Buffer"),
+                    contents: bytemuck::cast_slice(vertex),
+                    usage: wgpu::BufferUsages::VERTEX,
+                }
+            );
+
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
@@ -93,8 +141,10 @@ impl Renderer for RendererImpl {
             });
             render_pass.set_pipeline(&self.render_pipeline); // 2.
             render_pass.set_bind_group(0, &diffuse_bind_group, &[]); // 1.
-            render_pass.set_scissor_rect(0, 0, width, height);
-            render_pass.set_viewport(info.x, info.y, info.width, info.height, 0.0, 1.0);
+            render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+            let max_width = if width < info.x as u32 + info.width as u32 { width - info.x as u32 } else { info.width as u32 };
+            let max_height = if height < info.y as u32 + info.height as u32 { height - info.y as u32 } else { info.height as u32 };
+            render_pass.set_scissor_rect(info.x as u32, info.y as u32, max_width, max_height);
             render_pass.draw(0..3,  0..1); // 3
         });
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -166,7 +216,7 @@ impl RenderingContextImpl {
                 module: &shader,
                 entry_point: Some("vs_main"),
                 buffers: &[
-
+                    Vertex::desc(),
                 ],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
