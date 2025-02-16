@@ -1,9 +1,13 @@
-use std::sync::Arc;
-use image::GenericImageView;
-use wgpu::util::DeviceExt;
 use super::*;
+use image::GenericImageView;
+use std::sync::Arc;
+use wgpu::util::DeviceExt;
 
-fn create_image_data(device: wgpu::Device, queue: wgpu::Queue, image_bytes: &[u8]) -> (VsmlImage, RenderingInfo) {
+fn create_image_data(
+    device: wgpu::Device,
+    queue: wgpu::Queue,
+    image_bytes: &[u8],
+) -> (VsmlImage, RenderingInfo) {
     // 合成するテクスチャの作成
     let image = image::load_from_memory(image_bytes).unwrap();
     let rgba = image.to_rgba8();
@@ -13,18 +17,16 @@ fn create_image_data(device: wgpu::Device, queue: wgpu::Queue, image_bytes: &[u8
         height: dimensions.1,
         depth_or_array_layers: 1,
     };
-    let texture = device.create_texture(
-        &wgpu::TextureDescriptor {
-            label: None,
-            size,
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        }
-    );
+    let texture = device.create_texture(&wgpu::TextureDescriptor {
+        label: None,
+        size,
+        mip_level_count: 1,
+        sample_count: 1,
+        dimension: wgpu::TextureDimension::D2,
+        format: wgpu::TextureFormat::Rgba8UnormSrgb,
+        usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+        view_formats: &[],
+    });
     queue.write_texture(
         wgpu::TexelCopyTextureInfo {
             aspect: wgpu::TextureAspect::All,
@@ -56,13 +58,12 @@ fn test_render() {
         backends: wgpu::Backends::PRIMARY,
         ..Default::default()
     });
-    let adapter = pollster::block_on(instance.request_adapter(
-        &wgpu::RequestAdapterOptions {
-            power_preference: wgpu::PowerPreference::default(),
-            compatible_surface: None,
-            force_fallback_adapter: false,
-        },
-    )).unwrap();
+    let adapter = pollster::block_on(instance.request_adapter(&wgpu::RequestAdapterOptions {
+        power_preference: wgpu::PowerPreference::default(),
+        compatible_surface: None,
+        force_fallback_adapter: false,
+    }))
+    .unwrap();
     let (device, queue) = pollster::block_on(adapter.request_device(
         &wgpu::DeviceDescriptor {
             required_features: wgpu::Features::empty(),
@@ -71,20 +72,37 @@ fn test_render() {
             memory_hints: Default::default(),
         },
         None,
-    )).unwrap();
+    ))
+    .unwrap();
 
     // rendering_contextとrendererを作成
     let mut context = RenderingContextImpl::new(device.clone(), queue.clone());
     let mut renderer = context.create_renderer();
 
     // 合成するテクスチャの作成
-    let (texture, info) = create_image_data(device.clone(), queue.clone(), include_bytes!("../test_assets/origin.png"));
+    let (texture, info) = create_image_data(
+        device.clone(),
+        queue.clone(),
+        include_bytes!("../test_assets/origin.png"),
+    );
     renderer.render_image(texture, info);
-    let (texture, info) = create_image_data(device.clone(), queue.clone(), include_bytes!("../test_assets/red.png"));
+    let (texture, info) = create_image_data(
+        device.clone(),
+        queue.clone(),
+        include_bytes!("../test_assets/red.png"),
+    );
     renderer.render_image(texture, info);
-    let (texture, info) = create_image_data(device.clone(), queue.clone(), include_bytes!("../test_assets/portrait-alpha.png"));
+    let (texture, info) = create_image_data(
+        device.clone(),
+        queue.clone(),
+        include_bytes!("../test_assets/portrait-alpha.png"),
+    );
     renderer.render_image(texture, info);
-    let (texture, info) = create_image_data(device.clone(), queue.clone(), include_bytes!("../test_assets/icon.png"));
+    let (texture, info) = create_image_data(
+        device.clone(),
+        queue.clone(),
+        include_bytes!("../test_assets/icon.png"),
+    );
     renderer.render_image(texture, info);
 
     // テクスチャを合成
@@ -96,16 +114,13 @@ fn test_render() {
     assert_eq!(result.height(), 1080);
 
     // 試しに画像を保存
-    let mut encoder = device.create_command_encoder(
-        &wgpu::CommandEncoderDescriptor { label: None }
-    );
-    let buffer = device.create_buffer_init(
-                &wgpu::util::BufferInitDescriptor {
-                    label: None,
-                    contents: &vec![0u8; output_dimensions.0 as usize * output_dimensions.1 as usize * 4],
-                    usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-                }
-            );
+    let mut encoder =
+        device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+    let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+        label: None,
+        contents: &vec![0u8; output_dimensions.0 as usize * output_dimensions.1 as usize * 4],
+        usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+    });
     encoder.copy_texture_to_buffer(
         wgpu::TexelCopyTextureInfo {
             texture: &result,
@@ -140,5 +155,6 @@ fn test_render() {
         output_dimensions.0,
         output_dimensions.1,
         image::ColorType::Rgba8,
-    ).unwrap();
+    )
+    .unwrap();
 }

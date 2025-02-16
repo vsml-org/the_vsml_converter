@@ -1,9 +1,12 @@
 #[cfg(test)]
 mod tests;
 
-use wgpu::util::DeviceExt;
-use vsml_core::{ImageEffectStyle, Property, Rect, Renderer, RenderingContext, RenderingInfo, TextData, TextRenderingInfo};
 use vsml_common_image::Image as VsmlImage;
+use vsml_core::{
+    ImageEffectStyle, Property, Rect, Renderer, RenderingContext, RenderingInfo, TextData,
+    TextRenderingInfo,
+};
+use wgpu::util::DeviceExt;
 
 pub struct RendererImpl {
     images: Vec<(VsmlImage, RenderingInfo)>,
@@ -67,27 +70,28 @@ impl Renderer for RendererImpl {
     }
 
     fn render(self, width: u32, height: u32) -> Self::Image {
-        let texture = self.device.create_texture(
-            &wgpu::TextureDescriptor {
-                label: None,
-                size: wgpu::Extent3d {
-                    width,
-                    height,
-                    depth_or_array_layers: 1,
-                },
-                mip_level_count: 1,
-                sample_count: 1,
-                dimension: wgpu::TextureDimension::D2,
-                format: wgpu::TextureFormat::Rgba8UnormSrgb,
-                usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST | wgpu::TextureUsages::RENDER_ATTACHMENT | wgpu::TextureUsages::COPY_SRC,
-                view_formats: &[],
-            }
-        );
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: None,
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::RENDER_ATTACHMENT
+                | wgpu::TextureUsages::COPY_SRC,
+            view_formats: &[],
+        });
 
         let view = texture.create_view(&wgpu::TextureViewDescriptor::default());
-        let mut encoder = self.device.create_command_encoder(
-            &wgpu::CommandEncoderDescriptor { label: None }
-        );
+        let mut encoder = self
+            .device
+            .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
         self.images.iter().for_each(|(image, info)| {
             let child_view = image.create_view(&wgpu::TextureViewDescriptor::default());
@@ -107,23 +111,21 @@ impl Renderer for RendererImpl {
                 label: None,
             });
 
-            let vertex: &[Vertex] = &[
-                Vertex {
-                    base_width: width,
-                    base_height: height,
-                    x: info.x,
-                    y: info.y,
-                    width: info.width,
-                    height: info.height,
-                },
-            ];
-            let vertex_buffer = self.device.create_buffer_init(
-                &wgpu::util::BufferInitDescriptor {
+            let vertex: &[Vertex] = &[Vertex {
+                base_width: width,
+                base_height: height,
+                x: info.x,
+                y: info.y,
+                width: info.width,
+                height: info.height,
+            }];
+            let vertex_buffer = self
+                .device
+                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
                     label: Some("Vertex Buffer"),
                     contents: bytemuck::cast_slice(vertex),
                     usage: wgpu::BufferUsages::VERTEX,
-                }
-            );
+                });
 
             let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                 label: Some("Render Pass"),
@@ -142,10 +144,18 @@ impl Renderer for RendererImpl {
             render_pass.set_pipeline(&self.render_pipeline); // 2.
             render_pass.set_bind_group(0, &diffuse_bind_group, &[]); // 1.
             render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-            let max_width = if width < info.x as u32 + info.width as u32 { width - info.x as u32 } else { info.width as u32 };
-            let max_height = if height < info.y as u32 + info.height as u32 { height - info.y as u32 } else { info.height as u32 };
+            let max_width = if width < info.x as u32 + info.width as u32 {
+                width - info.x as u32
+            } else {
+                info.width as u32
+            };
+            let max_height = if height < info.y as u32 + info.height as u32 {
+                height - info.y as u32
+            } else {
+                info.height as u32
+            };
             render_pass.set_scissor_rect(info.x as u32, info.y as u32, max_width, max_height);
-            render_pass.draw(0..3,  0..1); // 3
+            render_pass.draw(0..3, 0..1); // 3
         });
         self.queue.submit(std::iter::once(encoder.finish()));
         texture
@@ -204,9 +214,7 @@ impl RenderingContextImpl {
         let render_pipeline_layout =
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
-                bind_group_layouts: &[
-                    &texture_bind_group_layout,
-                ],
+                bind_group_layouts: &[&texture_bind_group_layout],
                 push_constant_ranges: &[],
             });
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -215,9 +223,7 @@ impl RenderingContextImpl {
             vertex: wgpu::VertexState {
                 module: &shader,
                 entry_point: Some("vs_main"),
-                buffers: &[
-                    Vertex::desc(),
-                ],
+                buffers: &[Vertex::desc()],
                 compilation_options: wgpu::PipelineCompilationOptions::default(),
             },
             fragment: Some(wgpu::FragmentState {
@@ -248,17 +254,15 @@ impl RenderingContextImpl {
             multiview: None,
             cache: None,
         });
-        let sampler = device.create_sampler(
-            &wgpu::SamplerDescriptor {
-                address_mode_u: wgpu::AddressMode::ClampToEdge,
-                address_mode_v: wgpu::AddressMode::ClampToEdge,
-                address_mode_w: wgpu::AddressMode::ClampToEdge,
-                mag_filter: wgpu::FilterMode::Linear,
-                min_filter: wgpu::FilterMode::Nearest,
-                mipmap_filter: wgpu::FilterMode::Nearest,
-                ..Default::default()
-            }
-        );
+        let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+            address_mode_u: wgpu::AddressMode::ClampToEdge,
+            address_mode_v: wgpu::AddressMode::ClampToEdge,
+            address_mode_w: wgpu::AddressMode::ClampToEdge,
+            mag_filter: wgpu::FilterMode::Linear,
+            min_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::FilterMode::Nearest,
+            ..Default::default()
+        });
 
         Self {
             device,
@@ -269,4 +273,3 @@ impl RenderingContextImpl {
         }
     }
 }
-
