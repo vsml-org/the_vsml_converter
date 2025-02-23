@@ -2,11 +2,11 @@ use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use vsml_ast::vsml::{Content, Element, Meta, VSML};
 use vsml_ast::vss::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
+use vsml_core::ElementRect;
 use vsml_core::schemas::{
     Duration, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType, Order, RectSize,
     StyleData,
 };
-use vsml_core::ElementRect;
 
 pub fn convert<I, A>(
     vsml: &VSML,

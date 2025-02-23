@@ -1,11 +1,11 @@
+use nom::IResult;
+use nom::Parser;
 use nom::branch::alt;
 use nom::bytes::complete::tag;
 use nom::character::complete::{crlf, newline, space1};
 use nom::combinator::{all_consuming, iterator, map, peek, success};
 use nom::multi::{many0, many1};
 use nom::sequence::terminated;
-use nom::IResult;
-use nom::Parser;
 use regex::Regex;
 use std::sync::LazyLock;
 use thiserror::Error;
