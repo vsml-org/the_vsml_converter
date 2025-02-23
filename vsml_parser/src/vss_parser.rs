@@ -3,8 +3,9 @@ use nom::bytes::complete::tag;
 use nom::character::complete::{crlf, newline, space1};
 use nom::combinator::{all_consuming, iterator, map, peek, success};
 use nom::multi::{many0, many1};
-use nom::sequence::{terminated, tuple};
+use nom::sequence::terminated;
 use nom::IResult;
+use nom::Parser;
 use regex::Regex;
 use std::sync::LazyLock;
 use thiserror::Error;
@@ -27,18 +28,16 @@ fn parse_vss_item_list(input: &str) -> IResult<&str, Vec<VSSItem>> {
     all_consuming(many0(terminated(
         parse_vss_item,
         skip_comment_or_whitespace,
-    )))(input)
+    )))
+    .parse(input)
 }
 
 fn parse_vss_item(input: &str) -> IResult<&str, VSSItem> {
     let mut iter = iterator(
         input,
-        terminated(
-            parse_vss_selector,
-            tuple((tag(","), skip_comment_or_whitespace)),
-        ),
+        terminated(parse_vss_selector, (tag(","), skip_comment_or_whitespace)),
     );
-    let mut selectors = iter.collect::<Vec<_>>();
+    let mut selectors = iter.by_ref().collect::<Vec<_>>();
     let (mut input, _) = iter.finish()?;
     if let Ok((i, selector)) = parse_vss_selector(input) {
         input = i;
@@ -49,12 +48,9 @@ fn parse_vss_item(input: &str) -> IResult<&str, VSSItem> {
     let (input, _) = skip_comment_or_whitespace(input)?;
     let mut iter = iterator(
         input,
-        terminated(
-            parse_vss_rule,
-            tuple((tag(";"), skip_comment_or_whitespace)),
-        ),
+        terminated(parse_vss_rule, (tag(";"), skip_comment_or_whitespace)),
     );
-    let mut rules = iter.collect::<Vec<_>>();
+    let mut rules = iter.by_ref().collect::<Vec<_>>();
     let (mut input, _) = iter.finish()?;
     if let Ok((i, rule)) = parse_vss_rule(input) {
         input = i;
@@ -78,13 +74,16 @@ fn parse_vss_selector(input: &str) -> IResult<&str, VSSSelectorTree> {
     let mut buffer = Vec::new();
     loop {
         let (input, selectors) = parse_vss_selector_selectors(i)?;
-        let (input, op) = alt((tag("+"), tag(">"), tag("~"), success("")))(input)?;
+        let (input, op) = alt((tag("+"), tag(">"), tag("~"), success(""))).parse(input)?;
         let op = match op {
             ">" => Operator::Child,
             "+" => Operator::Sibling,
             "~" => Operator::AdjSibling,
             "" => {
-                if peek::<_, _, (), _>(alt((tag(","), tag("{"))))(input).is_ok() {
+                if peek(alt((tag::<_, _, ()>(","), tag("{"))))
+                    .parse(input)
+                    .is_ok()
+                {
                     return Ok((
                         input,
                         buffer.into_iter().rev().fold(
@@ -154,7 +153,8 @@ fn parse_vss_selector_selectors(input: &str) -> IResult<&str, Vec<VSSSelector>> 
             },
         )),
         skip_comment_or_whitespace,
-    )(input)
+    )
+    .parse(input)
 }
 
 // <property>: <value>
@@ -163,7 +163,8 @@ fn parse_vss_rule(input: &str) -> IResult<&str, Rule> {
     let (input, property) = map(
         regex_matches(&Regex::new(r"^[a-zA-Z-]+").unwrap()),
         |s: &str| s.to_owned(),
-    )(input)?;
+    )
+    .parse(input)?;
     let (input, _) = skip_comment_or_whitespace(input)?;
     let (input, _) = tag(":")(input)?;
     let (input, _) = skip_comment_or_whitespace(input)?;
@@ -183,7 +184,7 @@ fn parse_vss_rule(input: &str) -> IResult<&str, Rule> {
             skip_comments,
         ),
     );
-    let value = iter.fold(String::new(), |mut acc, s| {
+    let value = iter.by_ref().fold(String::new(), |mut acc, s| {
         if s.is_empty() {
             return acc;
         }
@@ -213,7 +214,8 @@ fn skip_comment_or_whitespace(mut input: &str) -> IResult<&str, ()> {
             map(crlf, |_| ()),
             skip_comments,
             success(()),
-        ))(input)
+        ))
+        .parse(input)
         .unwrap();
         if input.len() == len {
             return Ok((input, ()));
