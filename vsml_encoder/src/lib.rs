@@ -4,7 +4,7 @@ use temp_dir::TempDir;
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{IVData, ObjectData};
-use vsml_core::{mix_audio, render_frame_image, MixingContext, RenderingContext};
+use vsml_core::{MixingContext, RenderingContext, mix_audio, render_frame_image};
 use wgpu::util::DeviceExt;
 
 pub fn encode<R, M>(
