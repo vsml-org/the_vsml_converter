@@ -1,9 +1,9 @@
+use mp4parse::{read_mp4, SampleEntry};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{Cursor, Read};
-use mp4parse::{read_mp4, SampleEntry};
-use vsml_common_image::Image as VsmlImage;
 use vsml_common_audio::Audio as VsmlAudio;
+use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{ObjectProcessor, RectSize};
 
 pub struct VideoProcessor {
@@ -17,7 +17,7 @@ impl VideoProcessor {
     }
 }
 
-impl<A> ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
+impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
     fn name(&self) -> &str {
         "video"
     }
@@ -38,7 +38,7 @@ impl<A> ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
                 }
                 panic!("Error reading mp4: {:?}", src_path);
             }
-            Err(e) => {
+            Err(_) => {
                 panic!("Error reading mp4: {:?}", src_path);
             }
         }
@@ -64,7 +64,7 @@ impl<A> ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
                 }
                 panic!("Error reading mp4: {:?}", src_path);
             }
-            Err(e) => {
+            Err(_) => {
                 panic!("Error reading mp4: {:?}", src_path);
             }
         }
@@ -73,13 +73,13 @@ impl<A> ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
     fn process_image(
         &self,
         _: f64,
-        attributes: &HashMap<String, String>,
+        _attributes: &HashMap<String, String>,
         _: Option<VsmlImage>,
     ) -> Option<VsmlImage> {
         todo!();
     }
 
-    fn process_audio(&self, _attributes: &HashMap<String, String>, _audio: Option<A>) -> Option<A> {
+    fn process_audio(&self, _attributes: &HashMap<String, String>, _audio: Option<VsmlAudio>) -> Option<VsmlAudio> {
         todo!();
     }
 }
