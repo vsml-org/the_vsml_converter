@@ -1,5 +1,5 @@
 [package]
-name = "vsml_processer"
+name = "vsml_processor"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

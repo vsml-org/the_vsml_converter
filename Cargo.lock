@@ -1812,7 +1812,7 @@ dependencies = [
  "vsml_image_renderer",
  "vsml_iv_converter",
  "vsml_parser",
- "vsml_processer",
+ "vsml_processor",
  "wgpu",
 ]
 
@@ -1881,7 +1881,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "vsml_processer"
+name = "vsml_processor"
 version = "0.1.0"
 dependencies = [
  "hound",
