@@ -79,7 +79,11 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
         todo!();
     }
 
-    fn process_audio(&self, _attributes: &HashMap<String, String>, _audio: Option<VsmlAudio>) -> Option<VsmlAudio> {
+    fn process_audio(
+        &self,
+        _attributes: &HashMap<String, String>,
+        _audio: Option<VsmlAudio>,
+    ) -> Option<VsmlAudio> {
         todo!();
     }
 }
