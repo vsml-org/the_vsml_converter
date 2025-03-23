@@ -30,17 +30,17 @@ vsml_image_renderer = { path = "vsml_image_renderer" }
 vsml_iv_converter = { path = "vsml_iv_converter" }
 vsml_parser = { path = "vsml_parser" }
 vsml_processer = { path = "vsml_processer" }
-bytemuck = { version = "1.21.0", features = [ "derive" ] }
-clap = { version = "4.5.23", features = ["derive"] }
+bytemuck = { version = "1.22.0", features = [ "derive" ] }
+clap = { version = "4.5.32", features = ["derive"] }
 dasp = {version = "0.11.0", features = ["all"]}
 hound = "3.5.1"
 image = "0.25.5"
 imageproc = "0.25.0"
 mockall = "0.13.1"
-nom = "7.1.3"
+nom = "8.0.0"
 pollster = "0.4.0"
 regex = "1.11.1"
 roxmltree = "0.20.0"
 temp-dir = "0.1.14"
-thiserror = "2.0.9"
-wgpu = "24.0.1"
+thiserror = "2.0.12"
+wgpu = "24.0.3"
