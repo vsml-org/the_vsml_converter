@@ -310,4 +310,37 @@ mod tests {
             })
         );
     }
+
+    #[test]
+    fn test_parse_vsml_ecsaping() {
+        let vsml = r#"<vsml>
+<meta></meta>
+<cont resolution="1920x1080" fps="30">
+    <txt attribute="&lt;&gt;&amp;&quot;&apos;&#x32D0;">
+        &#xA0;&#x0A;&#x09;&lt;&gt;&amp;&quot;&apos;&#x32D0;
+    </txt>
+</cont>
+</vsml>"#;
+        let mock_vss_loader = MockVSSLoader::new();
+        assert_eq!(
+            parse(vsml, &mock_vss_loader),
+            Ok(VSML {
+                meta: Meta { vss_items: vec![] },
+                content: Content {
+                    width: 1920,
+                    height: 1080,
+                    fps: Some(30),
+                    sampling_rate: None,
+                    elements: vec![Element::Tag {
+                        name: "txt".to_owned(),
+                        attributes: HashMap::from([(
+                            "attribute".to_owned(),
+                            "<>&\"'㋐".to_owned()
+                        )]),
+                        children: vec![Element::Text("<>&\"'㋐".to_owned())]
+                    }],
+                },
+            })
+        );
+    }
 }
