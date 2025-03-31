@@ -316,8 +316,9 @@ mod tests {
         let vsml = r#"<vsml>
 <meta></meta>
 <cont resolution="1920x1080" fps="30">
-    <txt attribute="&lt;&gt;&amp;&quot;&apos;&#x32D0;">
-        &#xA0;&#x0A;&#x09;&lt;&gt;&amp;&quot;&apos;&#x32D0;
+    <!-- 半角スペース 改行 タブ < > & " ' ㋐ -->
+    <txt attribute="&#x20;&#x0A;&#x09;&lt;&gt;&amp;&quot;&apos;&#x32D0;">
+        &#x20;&#x0A;&#x09;&lt;&gt;&amp;&quot;&apos;&#x32D0;
     </txt>
 </cont>
 </vsml>"#;
@@ -333,12 +334,12 @@ mod tests {
                     sampling_rate: None,
                     elements: vec![Element::Tag {
                         name: "txt".to_owned(),
-                        // TODO: 現状はattributeのvalueや生文字列は前後がtrimされる
-                        // この挙動が正しいかどうかは要検討
                         attributes: HashMap::from([(
                             "attribute".to_owned(),
-                            "<>&\"'㋐".to_owned()
+                            " \n\t<>&\"'㋐".to_owned()
                         )]),
+                        // TODO: 現状生文字列は前後がtrimされる
+                        // この挙動が正しいかどうかは要検討
                         children: vec![Element::Text("<>&\"'㋐".to_owned())]
                     }],
                 },
