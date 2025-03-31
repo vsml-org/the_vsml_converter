@@ -333,6 +333,8 @@ mod tests {
                     sampling_rate: None,
                     elements: vec![Element::Tag {
                         name: "txt".to_owned(),
+                        // TODO: 現状はattributeのvalueや生文字列は前後がtrimされる
+                        // この挙動が正しいかどうかは要検討
                         attributes: HashMap::from([(
                             "attribute".to_owned(),
                             "<>&\"'㋐".to_owned()
