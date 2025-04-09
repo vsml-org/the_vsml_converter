@@ -1,3 +1,4 @@
+use image::GenericImageView;
 use mp4parse::{read_mp4, SampleEntry};
 use std::collections::HashMap;
 use std::fs::File;
@@ -72,11 +73,46 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
 
     fn process_image(
         &self,
-        _: f64,
-        _attributes: &HashMap<String, String>,
+        target_time: f64,
+        attributes: &HashMap<String, String>,
         _: Option<VsmlImage>,
     ) -> Option<VsmlImage> {
-        todo!();
+        let src_path = attributes.get("src").unwrap();
+
+        // todo: ここで動画から1フレームを取得する
+
+        let dimensions = image.dimensions();
+        let size = wgpu::Extent3d {
+            width: dimensions.0,
+            height: dimensions.1,
+            depth_or_array_layers: 1,
+        };
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: None,
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+        self.queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                aspect: wgpu::TextureAspect::All,
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            &rgba,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * dimensions.0),
+                rows_per_image: Some(dimensions.1),
+            },
+            size,
+        );
+        Some(texture)
     }
 
     fn process_audio(
