@@ -318,7 +318,8 @@ mod tests {
 <cont resolution="1920x1080" fps="30">
     <!-- 半角スペース 改行 タブ < > & " ' ㋐ -->
     <txt attribute="&#x20;&#x0A;&#x09;&lt;&gt;&amp;&quot;&apos;&#x32D0;">
-        &#x20;&#x0A;&#x09;&lt;&gt;&amp;&quot;&apos;&#x32D0;
+        <!-- 半角スペース 改行 タブ < 半角スペース*3 改行 タブ > & " ' ㋐ -->
+        &#x20;&#x0A;&#x09;&lt;&#x20;  &#x0A;&#x09;&gt;&amp;&quot;&apos;&#x32D0;
     </txt>
 </cont>
 </vsml>"#;
@@ -340,7 +341,7 @@ mod tests {
                         )]),
                         // TODO: 現状生文字列は前後がtrimされる
                         // この挙動が正しいかどうかは要検討
-                        children: vec![Element::Text("<>&\"'㋐".to_owned())]
+                        children: vec![Element::Text("<   \n\t>&\"'㋐".to_owned())]
                     }],
                 },
             })
