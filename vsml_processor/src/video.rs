@@ -1,3 +1,4 @@
+use ffmpeg_next as ffmpeg;
 use image::GenericImageView;
 use mp4parse::{read_mp4, SampleEntry};
 use std::collections::HashMap;
@@ -15,6 +16,52 @@ pub struct VideoProcessor {
 impl VideoProcessor {
     pub fn new(device: wgpu::Device, queue: wgpu::Queue) -> Self {
         Self { device, queue }
+    }
+
+    fn get_frame(&self, src_path: &str, target_time: f64) -> Result<ffmpeg::frame::Video, ()> {
+        ffmpeg::init().unwrap();
+
+        let mut ictx = ffmpeg::format::input(&src_path).unwrap();
+        let input = ictx.streams().best(ffmpeg::media::Type::Video).unwrap();
+        let video_stream_index = input.index();
+        let time_base = input.time_base();
+
+        let decoder = input.codec().decoder().video().unwrap();
+        let mut scaler = ffmpeg::software::scaling::Context::get(
+            decoder.format(),
+            decoder.width(),
+            decoder.height(),
+            ffmpeg::format::Pixel::RGBA,
+            decoder.width(),
+            decoder.height(),
+            ffmpeg::software::scaling::Flags::BILINEAR,
+        )
+        .unwrap();
+
+        let mut decoder = decoder;
+        let mut received_frame = ffmpeg::frame::Video::empty();
+        let mut rgba_frame = ffmpeg::frame::Video::empty();
+
+        let target_pts = target_time / time_base.into();
+
+        for (stream, packet) in ictx.packets() {
+            if stream.index() == video_stream_index {
+                if let Some(packet_pts) = packet.pts() {
+                    if packet_pts >= target_pts {
+                        decoder.send_packet(&packet).unwrap();
+                        while decoder.receive_frame(&mut received_frame).is_ok() {
+                            if let Some(frame_pts) = received_frame.pts() {
+                                if frame_pts >= target_pts {
+                                    scaler.run(&received_frame, &mut rgba_frame)?;
+                                    return Ok(rgba_frame);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        Err(())
     }
 }
 
@@ -79,9 +126,13 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
     ) -> Option<VsmlImage> {
         let src_path = attributes.get("src").unwrap();
 
-        // todo: ここで動画から1フレームを取得する
+        let frame = self.get_frame(src_path, target_time).unwrap();
 
-        let dimensions = image.dimensions();
+        let data = frame.data(0);
+        let width = frame.width();
+        let height = frame.height();
+
+        let dimensions = (width, height);
         let size = wgpu::Extent3d {
             width: dimensions.0,
             height: dimensions.1,
@@ -104,7 +155,7 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
-            &rgba,
+            data,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
                 bytes_per_row: Some(4 * dimensions.0),
@@ -120,6 +171,7 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
         _attributes: &HashMap<String, String>,
         _audio: Option<VsmlAudio>,
     ) -> Option<VsmlAudio> {
-        todo!();
+        // TODO: Implement audio processing for video
+        None
     }
 }
