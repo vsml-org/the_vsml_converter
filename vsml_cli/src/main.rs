@@ -10,8 +10,8 @@ use vsml_encoder::encode;
 use vsml_image_renderer::RenderingContextImpl;
 use vsml_iv_converter::convert;
 use vsml_parser::{VSSLoader, parse};
-use vsml_processer::audio::AudioProcessor;
-use vsml_processer::image::ImageProcessor;
+use vsml_processor::audio::AudioProcessor;
+use vsml_processor::image::ImageProcessor;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
