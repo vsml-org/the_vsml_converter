@@ -37,13 +37,28 @@ impl<I> ObjectProcessor<I, VsmlAudio> for AudioProcessor {
         let mut reader = hound::WavReader::open(src_path).unwrap();
         let spec = reader.spec();
 
-        let samples = match spec.sample_format {
+        // attributesから時間情報を取得（存在しない場合は音声ファイル全体を読み込む）
+        let effective_duration = attributes
+            .get("_effective_duration")
+            .and_then(|s| s.parse::<f64>().ok());
+
+        let samples_to_read = if let Some(duration) = effective_duration {
+            // 時間情報がある場合は、+1秒のバッファを読み込む
+            let max_samples = ((duration + 1.0) * spec.sample_rate as f64 * spec.channels as f64) as u32;
+            reader.duration().min(max_samples)
+        } else {
+            reader.duration()
+        };
+
+        let samples: Vec<f32> = match spec.sample_format {
             hound::SampleFormat::Float => reader
                 .samples::<f32>()
+                .take(samples_to_read as usize)
                 .collect::<Result<Vec<_>, _>>()
                 .unwrap(),
             hound::SampleFormat::Int => reader
                 .samples::<i32>()
+                .take(samples_to_read as usize)
                 .map(|s| (s.unwrap() as f64 / (1i64 << (spec.bits_per_sample - 1)) as f64) as f32)
                 .collect(),
         };

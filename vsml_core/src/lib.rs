@@ -357,7 +357,13 @@ where
                     });
                     inner_mixer.mix(ancestor_duration.min(duration))
                 });
-                let result = processor.process_audio(attributes, child_audio);
+                // 時間情報を含む新しいattributesを作成
+                let mut attrs_with_time = attributes.clone();
+                attrs_with_time.insert("_start_time".to_string(), start_time.to_string());
+                attrs_with_time.insert("_duration".to_string(), duration.to_string());
+                attrs_with_time.insert("_effective_duration".to_string(), ancestor_duration.min(duration).to_string());
+
+                let result = processor.process_audio(&attrs_with_time, child_audio);
                 if let Some(result) = result {
                     mixer.mix_audio(result, start_time, ancestor_duration.min(duration));
                 }
