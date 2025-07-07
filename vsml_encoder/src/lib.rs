@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::Path;
 use std::process::Command;
 use temp_dir::TempDir;
@@ -6,12 +7,9 @@ use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{IVData, ObjectData};
 use vsml_core::{MixingContext, RenderingContext, mix_audio, render_frame_image};
 use wgpu::util::DeviceExt;
-use std::collections::HashSet;
 
 /// フレームごとのアクティブな要素を計算
-fn calculate_frame_changes<I, A>(
-    iv_data: &IVData<I, A>,
-) -> Vec<HashSet<String>> {
+fn calculate_frame_changes<I, A>(iv_data: &IVData<I, A>) -> Vec<HashSet<String>> {
     let ObjectData::Element { duration, .. } = &iv_data.object else {
         panic!()
     };
@@ -57,7 +55,13 @@ fn calculate_frame_changes<I, A>(
         }
     }
 
-    collect_active_elements(&iv_data.object, &mut frame_elements, iv_data.fps, "root".to_string(), 0.0);
+    collect_active_elements(
+        &iv_data.object,
+        &mut frame_elements,
+        iv_data.fps,
+        "root".to_string(),
+        0.0,
+    );
     frame_elements
 }
 
@@ -96,7 +100,8 @@ pub fn encode<R, M>(
         let current_elements = &frame_changes[f as usize];
 
         // フレーム間の変化をチェック
-        let should_reuse = last_frame_elements.as_ref()
+        let should_reuse = last_frame_elements
+            .as_ref()
             .map(|last| last == current_elements)
             .unwrap_or(false);
 
@@ -108,49 +113,52 @@ pub fn encode<R, M>(
             // 新規レンダリング
             let frame_image = render_frame_image(&iv_data, f, &mut rendering_context);
 
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: &vec![0u8; iv_data.resolution_x as usize * iv_data.resolution_y as usize * 4],
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-        });
-        encoder.copy_texture_to_buffer(
-            wgpu::TexelCopyTextureInfo {
-                texture: &frame_image,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::TexelCopyBufferInfo {
-                buffer: &buffer,
-                layout: wgpu::TexelCopyBufferLayout {
-                    offset: 0,
-                    bytes_per_row: Some(4 * iv_data.resolution_x),
-                    rows_per_image: Some(iv_data.resolution_y),
+            let mut encoder =
+                device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: &vec![
+                    0u8;
+                    iv_data.resolution_x as usize * iv_data.resolution_y as usize * 4
+                ],
+                usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            });
+            encoder.copy_texture_to_buffer(
+                wgpu::TexelCopyTextureInfo {
+                    texture: &frame_image,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                    aspect: wgpu::TextureAspect::All,
                 },
-            },
-            wgpu::Extent3d {
-                width: iv_data.resolution_x,
-                height: iv_data.resolution_y,
-                depth_or_array_layers: 1,
-            },
-        );
-        queue.submit(std::iter::once(encoder.finish()));
+                wgpu::TexelCopyBufferInfo {
+                    buffer: &buffer,
+                    layout: wgpu::TexelCopyBufferLayout {
+                        offset: 0,
+                        bytes_per_row: Some(4 * iv_data.resolution_x),
+                        rows_per_image: Some(iv_data.resolution_y),
+                    },
+                },
+                wgpu::Extent3d {
+                    width: iv_data.resolution_x,
+                    height: iv_data.resolution_y,
+                    depth_or_array_layers: 1,
+                },
+            );
+            queue.submit(std::iter::once(encoder.finish()));
 
-        let slice = &buffer.slice(..);
-        slice.map_async(wgpu::MapMode::Read, |_| {});
+            let slice = &buffer.slice(..);
+            slice.map_async(wgpu::MapMode::Read, |_| {});
 
-        device.poll(wgpu::MaintainBase::Wait);
+            device.poll(wgpu::MaintainBase::Wait);
 
-        image::save_buffer(
-            &save_path,
-            &slice.get_mapped_range(),
-            iv_data.resolution_x,
-            iv_data.resolution_y,
-            image::ColorType::Rgba8,
-        )
-        .unwrap();
+            image::save_buffer(
+                &save_path,
+                &slice.get_mapped_range(),
+                iv_data.resolution_x,
+                iv_data.resolution_y,
+                image::ColorType::Rgba8,
+            )
+            .unwrap();
 
             // 現在のフレーム情報を保存
             last_frame_elements = Some(current_elements.clone());
