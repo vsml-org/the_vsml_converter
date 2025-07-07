@@ -361,7 +361,10 @@ where
                 let mut attrs_with_time = attributes.clone();
                 attrs_with_time.insert("_start_time".to_string(), start_time.to_string());
                 attrs_with_time.insert("_duration".to_string(), duration.to_string());
-                attrs_with_time.insert("_effective_duration".to_string(), ancestor_duration.min(duration).to_string());
+                attrs_with_time.insert(
+                    "_effective_duration".to_string(),
+                    ancestor_duration.min(duration).to_string(),
+                );
 
                 let result = processor.process_audio(&attrs_with_time, child_audio);
                 if let Some(result) = result {

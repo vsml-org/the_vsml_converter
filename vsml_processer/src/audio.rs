@@ -44,7 +44,8 @@ impl<I> ObjectProcessor<I, VsmlAudio> for AudioProcessor {
 
         let samples_to_read = if let Some(duration) = effective_duration {
             // 時間情報がある場合は、+1秒のバッファを読み込む
-            let max_samples = ((duration + 1.0) * spec.sample_rate as f64 * spec.channels as f64) as u32;
+            let max_samples =
+                ((duration + 1.0) * spec.sample_rate as f64 * spec.channels as f64) as u32;
             reader.duration().min(max_samples)
         } else {
             reader.duration()
