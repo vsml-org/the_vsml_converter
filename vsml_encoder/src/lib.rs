@@ -100,6 +100,7 @@ pub fn encode<R, M>(
         let current_elements = &frame_changes[f as usize];
 
         // フレーム間の変化をチェック
+        // TODO: アニメーション対応時は、要素の存在だけでなく属性値の変化も考慮する必要がある
         let should_reuse = last_frame_elements
             .as_ref()
             .map(|last| last == current_elements)
