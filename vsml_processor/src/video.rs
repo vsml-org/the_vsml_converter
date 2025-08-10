@@ -1,9 +1,9 @@
-use ffmpeg_next as ffmpeg;
-use image::GenericImageView;
+use image::load_from_memory;
 use mp4parse::{read_mp4, SampleEntry};
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{Cursor, Read};
+use std::io::{BufRead, Cursor, Read};
+use std::process::{Command, Stdio};
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{ObjectProcessor, RectSize};
@@ -18,50 +18,68 @@ impl VideoProcessor {
         Self { device, queue }
     }
 
-    fn get_frame(&self, src_path: &str, target_time: f64) -> Result<ffmpeg::frame::Video, ()> {
-        ffmpeg::init().unwrap();
+    fn get_frame(&self, src_path: &str, target_time: f64) -> Result<(Vec<u8>, u32, u32), ()> {
+        // ffmpegのコマンドを構築して、指定された時間のフレームの画像を取得
+        let mut command = Command::new("ffmpeg")
+            .arg("-ss")
+            .arg(target_time.to_string())
+            .arg("-i")
+            .arg(src_path)
+            .arg("-frames:v")
+            .arg("1")
+            .arg("-f")
+            .arg("image2pipe")
+            .arg("-vcodec")
+            .arg("png")
+            .arg("-")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
 
-        let mut ictx = ffmpeg::format::input(&src_path).unwrap();
-        let input = ictx.streams().best(ffmpeg::media::Type::Video).unwrap();
-        let video_stream_index = input.index();
-        let time_base = input.time_base();
-
-        let decoder = input.codec().decoder().video().unwrap();
-        let mut scaler = ffmpeg::software::scaling::Context::get(
-            decoder.format(),
-            decoder.width(),
-            decoder.height(),
-            ffmpeg::format::Pixel::RGBA,
-            decoder.width(),
-            decoder.height(),
-            ffmpeg::software::scaling::Flags::BILINEAR,
-        )
-        .unwrap();
-
-        let mut decoder = decoder;
-        let mut received_frame = ffmpeg::frame::Video::empty();
-        let mut rgba_frame = ffmpeg::frame::Video::empty();
-
-        let target_pts = target_time / time_base.into();
-
-        for (stream, packet) in ictx.packets() {
-            if stream.index() == video_stream_index {
-                if let Some(packet_pts) = packet.pts() {
-                    if packet_pts >= target_pts {
-                        decoder.send_packet(&packet).unwrap();
-                        while decoder.receive_frame(&mut received_frame).is_ok() {
-                            if let Some(frame_pts) = received_frame.pts() {
-                                if frame_pts >= target_pts {
-                                    scaler.run(&received_frame, &mut rgba_frame)?;
-                                    return Ok(rgba_frame);
-                                }
-                            }
-                        }
-                    }
-                }
-            }
+        let mut output = vec![];
+        if let Some(mut stdout) = command.stdout.take() {
+            stdout.read_to_end(&mut output).unwrap();
         }
-        Err(())
+        command.wait().unwrap();
+
+        // PNG画像をデコードして、幅と高さを取得
+        let img = match load_from_memory(&output) {
+            Ok(img) => img.to_rgba8(),
+            Err(_) => {
+                println!("output: {:?}", output);
+                println!("target_time: {}", target_time);
+                panic!("failed to decode image from video frame");
+            }
+        };
+        let (width, height) = img.dimensions();
+        let data = img.into_raw();
+
+        Ok((data, width, height))
+    }
+
+    fn get_pts_frame(&self, src_path: &str) -> Result<f64, ()> {
+        let mut output = Command::new("ffprobe")
+            .arg("-v")
+            .arg("error")
+            .arg("-select_streams")
+            .arg("v:0")
+            .arg("-show_entries")
+            .arg("frame=pts_time")
+            .arg("-of")
+            .arg("default=noprint_wrappers=1:nokey=1")
+            .arg(src_path)
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+        let stdout = output.stdout.take().unwrap();
+        output.wait().unwrap();
+
+        let reader = std::io::BufReader::new(stdout);
+
+        let pts_frame = reader.lines().last().unwrap().unwrap();
+        Ok(pts_frame.parse().unwrap())
     }
 }
 
@@ -72,24 +90,27 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
 
     fn default_duration(&self, attributes: &HashMap<String, String>) -> f64 {
         let src_path = attributes.get("src").unwrap();
-        let mut file = File::open(src_path).unwrap();
-        let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer).unwrap();
 
-        let mut reader = Cursor::new(&buffer);
-        match read_mp4(&mut reader) {
-            Ok(context) => {
-                for track in &context.tracks {
-                    if let (Some(timescale), Some(duration)) = (track.timescale, track.duration) {
-                        return duration.0 as f64 / timescale.0 as f64;
-                    }
-                }
-                panic!("Error reading mp4: {:?}", src_path);
-            }
-            Err(_) => {
-                panic!("Error reading mp4: {:?}", src_path);
-            }
-        }
+        let output = Command::new("ffprobe")
+            .arg("-v")
+            .arg("error")
+            .arg("-show_entries")
+            .arg("format=duration")
+            .arg("-of")
+            .arg("default=noprint_wrappers=1:nokey=1")
+            .arg(src_path)
+            .output()
+            .ok()
+            .unwrap();
+        let timestamps = String::from_utf8_lossy(&output.stdout);
+        timestamps
+            .lines()
+            .last()
+            .unwrap()
+            .trim()
+            .parse::<f64>()
+            .ok()
+            .unwrap()
     }
 
     fn default_image_size(&self, attributes: &HashMap<String, String>) -> RectSize {
@@ -126,16 +147,12 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
     ) -> Option<VsmlImage> {
         let src_path = attributes.get("src").unwrap();
 
+        let target_time = target_time.min(self.get_pts_frame(src_path).unwrap());
         let frame = self.get_frame(src_path, target_time).unwrap();
 
-        let data = frame.data(0);
-        let width = frame.width();
-        let height = frame.height();
-
-        let dimensions = (width, height);
         let size = wgpu::Extent3d {
-            width: dimensions.0,
-            height: dimensions.1,
+            width: frame.1,
+            height: frame.2,
             depth_or_array_layers: 1,
         };
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
@@ -155,11 +172,11 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
-            data,
+            &frame.0,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * dimensions.0),
-                rows_per_image: Some(dimensions.1),
+                bytes_per_row: Some(4 * frame.1),
+                rows_per_image: Some(frame.2),
             },
             size,
         );

@@ -12,6 +12,7 @@ use vsml_iv_converter::convert;
 use vsml_parser::{VSSLoader, parse};
 use vsml_processor::audio::AudioProcessor;
 use vsml_processor::image::ImageProcessor;
+use vsml_processor::video::VideoProcessor;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -68,19 +69,24 @@ fn main() {
     let vsml_string = std::fs::read_to_string(args.input_path).unwrap();
     let vsml = parse(&vsml_string, &VSSFileLoader).unwrap();
     let (device, queue) = get_gpu_device();
+    let provider = HashMap::from([
+        (
+            "img".to_string(),
+            Arc::new(ImageProcessor::new(device.clone(), queue.clone()))
+                as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+        ),
+        (
+            "aud".to_string(),
+            Arc::new(AudioProcessor) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+        ),
+        (
+            "vid".to_string(),
+            Arc::new(VideoProcessor::new(device.clone(), queue.clone())) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+        ),
+    ]);
     let iv_data = convert(
         &vsml,
-        &HashMap::from([
-            (
-                "img".to_string(),
-                Arc::new(ImageProcessor::new(device.clone(), queue.clone()))
-                    as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
-            ),
-            (
-                "aud".to_string(),
-                Arc::new(AudioProcessor) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
-            ),
-        ]),
+        &provider,
     );
 
     let mut rendering_context = RenderingContextImpl::new(device.clone(), queue.clone());

@@ -236,6 +236,7 @@ where
                                 element_rect.height.ceil() as u32,
                             )
                         });
+                        println!("[debug] target_time: {}", target_time);
                         let result = processor.process_image(target_time, attributes, child_image);
                         if let Some(result) = result {
                             let rendering_info =
