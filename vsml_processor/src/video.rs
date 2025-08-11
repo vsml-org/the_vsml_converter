@@ -185,10 +185,63 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
 
     fn process_audio(
         &self,
-        _attributes: &HashMap<String, String>,
+        attributes: &HashMap<String, String>,
         _audio: Option<VsmlAudio>,
     ) -> Option<VsmlAudio> {
-        // TODO: Implement audio processing for video
-        None
+        let src_path = attributes.get("src").unwrap();
+        let rate_output = Command::new("ffprobe")
+            .arg("-v")
+            .arg("error")
+            .arg("-select_streams")
+            .arg("a:0")
+            .arg("-show_entries")
+            .arg("stream=sample_rate")
+            .arg("-of")
+            .arg("default=noprint_wrappers=1:nokey=1")
+            .arg(src_path)
+            .stderr(Stdio::null())
+            .output()
+            .unwrap();
+        let sampling_rate: u32 = String::from_utf8_lossy(&rate_output.stdout)
+            .trim()
+            .parse()
+            .unwrap_or(44100);
+        // ffmpegでPCM(f32, stereo)を出力
+        let mut child = Command::new("ffmpeg")
+            .arg("-i")
+            .arg(src_path)
+            .arg("-f")
+            .arg("f32le") // raw PCM float32
+            .arg("-ac")
+            .arg("2") // stereo
+            .arg("-acodec")
+            .arg("pcm_f32le")
+            .arg("-") // stdout
+            .stdout(Stdio::piped())
+            .stderr(Stdio::null())
+            .spawn()
+            .unwrap();
+
+        let mut raw_data = Vec::new();
+        if let Some(mut stdout) = child.stdout.take() {
+            stdout.read_to_end(&mut raw_data).unwrap();
+        }
+        child.wait().unwrap();
+
+        // バイナリ → f32 に変換
+        let floats: &[f32] = unsafe {
+            std::slice::from_raw_parts(raw_data.as_ptr() as *const f32, raw_data.len() / 4)
+        };
+
+        // L,R でまとめる
+        let mut samples = Vec::with_capacity(floats.len() / 2);
+        for chunk in floats.chunks_exact(2) {
+            samples.push([chunk[0], chunk[1]]);
+        }
+
+        Some(VsmlAudio {
+            samples,
+            sampling_rate,
+        })
     }
 }
