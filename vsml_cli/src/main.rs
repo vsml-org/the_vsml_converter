@@ -9,7 +9,7 @@ use vsml_core::schemas::ObjectProcessor;
 use vsml_encoder::encode;
 use vsml_image_renderer::RenderingContextImpl;
 use vsml_iv_converter::convert;
-use vsml_parser::{VSSLoader, parse};
+use vsml_parser::{parse, VSSLoader};
 use vsml_processor::audio::AudioProcessor;
 use vsml_processor::image::ImageProcessor;
 use vsml_processor::video::VideoProcessor;
@@ -81,13 +81,11 @@ fn main() {
         ),
         (
             "vid".to_string(),
-            Arc::new(VideoProcessor::new(device.clone(), queue.clone())) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+            Arc::new(VideoProcessor::new(device.clone(), queue.clone()))
+                as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
         ),
     ]);
-    let iv_data = convert(
-        &vsml,
-        &provider,
-    );
+    let iv_data = convert(&vsml, &provider);
 
     let mut rendering_context = RenderingContextImpl::new(device.clone(), queue.clone());
     let mut mixing_context = MixingContextImpl::new();
