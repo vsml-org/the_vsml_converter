@@ -1,4 +1,4 @@
-use dasp::{Signal, interpolate::sinc::Sinc, ring_buffer, signal, slice::add_in_place};
+use dasp::{interpolate::sinc::Sinc, ring_buffer, signal, slice::add_in_place, Signal};
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_core::AudioEffectStyle;
 
@@ -25,7 +25,8 @@ impl vsml_core::Mixer for MixerImpl {
 
         let sampling_rate = self.audio.sampling_rate as f64;
         let offset_sample = (offset_time * sampling_rate) as usize;
-        let duration_sample = (duration * sampling_rate) as usize;
+        let duration_sample =
+            ((duration * sampling_rate) as usize).min(resampled_samples.len() - 1);
 
         if offset_sample + duration_sample + 1 > self.audio.samples.len() {
             self.audio

@@ -1,9 +1,6 @@
-use image::load_from_memory;
-use mp4parse::{read_mp4, SampleEntry};
+use image::{load_from_memory, RgbaImage};
 use std::collections::HashMap;
-use std::fs::File;
-use std::io::{BufRead, Cursor, Read};
-use std::process::{Command, Stdio};
+use std::process::Command;
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{ObjectProcessor, RectSize};
@@ -18,9 +15,9 @@ impl VideoProcessor {
         Self { device, queue }
     }
 
-    fn get_frame(&self, src_path: &str, target_time: f64) -> Result<(Vec<u8>, u32, u32), ()> {
+    fn get_frame(&self, src_path: &str, target_time: f64) -> Result<RgbaImage, ()> {
         // ffmpegのコマンドを構築して、指定された時間のフレームの画像を取得
-        let mut command = Command::new("ffmpeg")
+        let output = Command::new("ffmpeg")
             .arg("-ss")
             .arg(target_time.to_string())
             .arg("-i")
@@ -32,16 +29,9 @@ impl VideoProcessor {
             .arg("-vcodec")
             .arg("png")
             .arg("-")
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
-            .unwrap();
-
-        let mut output = vec![];
-        if let Some(mut stdout) = command.stdout.take() {
-            stdout.read_to_end(&mut output).unwrap();
-        }
-        command.wait().unwrap();
+            .output()
+            .unwrap()
+            .stdout;
 
         // PNG画像をデコードして、幅と高さを取得
         let img = match load_from_memory(&output) {
@@ -52,14 +42,11 @@ impl VideoProcessor {
                 panic!("failed to decode image from video frame");
             }
         };
-        let (width, height) = img.dimensions();
-        let data = img.into_raw();
-
-        Ok((data, width, height))
+        Ok(img)
     }
 
     fn get_pts_frame(&self, src_path: &str) -> Result<f64, ()> {
-        let mut output = Command::new("ffprobe")
+        let output = Command::new("ffprobe")
             .arg("-v")
             .arg("error")
             .arg("-select_streams")
@@ -69,17 +56,12 @@ impl VideoProcessor {
             .arg("-of")
             .arg("default=noprint_wrappers=1:nokey=1")
             .arg(src_path)
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
-            .unwrap();
-        let stdout = output.stdout.take().unwrap();
-        output.wait().unwrap();
+            .output()
+            .unwrap()
+            .stdout;
 
-        let reader = std::io::BufReader::new(stdout);
-
-        let pts_frame = reader.lines().last().unwrap().unwrap();
-        Ok(pts_frame.parse().unwrap())
+        let pts_frame = output.last().unwrap().to_string().parse().unwrap();
+        Ok(pts_frame)
     }
 }
 
@@ -100,43 +82,30 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
             .arg("default=noprint_wrappers=1:nokey=1")
             .arg(src_path)
             .output()
-            .ok()
             .unwrap();
         let timestamps = String::from_utf8_lossy(&output.stdout);
-        timestamps
-            .lines()
-            .last()
-            .unwrap()
-            .trim()
-            .parse::<f64>()
-            .ok()
-            .unwrap()
+        timestamps.lines().last().unwrap().trim().parse().unwrap()
     }
 
     fn default_image_size(&self, attributes: &HashMap<String, String>) -> RectSize {
         let src_path = attributes.get("src").unwrap();
-        let mut file = File::open(src_path).unwrap();
-        let mut buffer = Vec::new();
-        file.read_to_end(&mut buffer).unwrap();
+        let output = Command::new("ffprobe")
+            .arg("-v")
+            .arg("error")
+            .arg("-select_streams")
+            .arg("v:0")
+            .arg("-show_entries")
+            .arg("stream=width,height")
+            .arg("-of")
+            .arg("csv=p=0")
+            .arg(src_path)
+            .output()
+            .unwrap()
+            .stdout;
 
-        let mut reader = Cursor::new(&buffer);
-        match read_mp4(&mut reader) {
-            Ok(context) => {
-                for track in &context.tracks {
-                    if let Some(ref stsd) = track.stsd {
-                        for sample in &stsd.descriptions {
-                            if let SampleEntry::Video(video) = sample {
-                                return RectSize::new(video.width as f32, video.height as f32);
-                            }
-                        }
-                    }
-                }
-                panic!("Error reading mp4: {:?}", src_path);
-            }
-            Err(_) => {
-                panic!("Error reading mp4: {:?}", src_path);
-            }
-        }
+        let rect = String::from_utf8_lossy(&output);
+        let rect: Vec<&str> = rect.trim().split(",").collect();
+        RectSize::new(rect[0].parse().unwrap(), rect[1].parse().unwrap())
     }
 
     fn process_image(
@@ -150,9 +119,12 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
         let target_time = target_time.min(self.get_pts_frame(src_path).unwrap());
         let frame = self.get_frame(src_path, target_time).unwrap();
 
+        let (width, height) = frame.dimensions();
+        let data = &frame.into_raw();
+
         let size = wgpu::Extent3d {
-            width: frame.1,
-            height: frame.2,
+            width,
+            height,
             depth_or_array_layers: 1,
         };
         let texture = self.device.create_texture(&wgpu::TextureDescriptor {
@@ -172,11 +144,11 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
                 mip_level: 0,
                 origin: wgpu::Origin3d::ZERO,
             },
-            &frame.0,
+            data,
             wgpu::TexelCopyBufferLayout {
                 offset: 0,
-                bytes_per_row: Some(4 * frame.1),
-                rows_per_image: Some(frame.2),
+                bytes_per_row: Some(4 * width),
+                rows_per_image: Some(height),
             },
             size,
         );
@@ -189,6 +161,8 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
         _audio: Option<VsmlAudio>,
     ) -> Option<VsmlAudio> {
         let src_path = attributes.get("src").unwrap();
+
+        // サンプリングレートの取得
         let rate_output = Command::new("ffprobe")
             .arg("-v")
             .arg("error")
@@ -199,41 +173,31 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
             .arg("-of")
             .arg("default=noprint_wrappers=1:nokey=1")
             .arg(src_path)
-            .stderr(Stdio::null())
             .output()
             .unwrap();
         let sampling_rate: u32 = String::from_utf8_lossy(&rate_output.stdout)
             .trim()
             .parse()
-            .unwrap_or(44100);
-        // ffmpegでPCM(f32, stereo)を出力
-        let mut child = Command::new("ffmpeg")
+            .unwrap();
+
+        let raw_data = Command::new("ffmpeg")
             .arg("-i")
             .arg(src_path)
             .arg("-f")
-            .arg("f32le") // raw PCM float32
+            .arg("f32le")
             .arg("-ac")
-            .arg("2") // stereo
+            .arg("2")
             .arg("-acodec")
             .arg("pcm_f32le")
-            .arg("-") // stdout
-            .stdout(Stdio::piped())
-            .stderr(Stdio::null())
-            .spawn()
-            .unwrap();
+            .arg("-")
+            .output()
+            .unwrap()
+            .stdout;
 
-        let mut raw_data = Vec::new();
-        if let Some(mut stdout) = child.stdout.take() {
-            stdout.read_to_end(&mut raw_data).unwrap();
-        }
-        child.wait().unwrap();
-
-        // バイナリ → f32 に変換
         let floats: &[f32] = unsafe {
             std::slice::from_raw_parts(raw_data.as_ptr() as *const f32, raw_data.len() / 4)
         };
 
-        // L,R でまとめる
         let mut samples = Vec::with_capacity(floats.len() / 2);
         for chunk in floats.chunks_exact(2) {
             samples.push([chunk[0], chunk[1]]);
