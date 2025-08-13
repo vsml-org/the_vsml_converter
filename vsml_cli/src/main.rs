@@ -9,7 +9,7 @@ use vsml_core::schemas::ObjectProcessor;
 use vsml_encoder::encode;
 use vsml_image_renderer::RenderingContextImpl;
 use vsml_iv_converter::convert;
-use vsml_parser::{parse, VSSLoader};
+use vsml_parser::{VSSLoader, parse};
 use vsml_processor::audio::AudioProcessor;
 use vsml_processor::image::ImageProcessor;
 use vsml_processor::video::VideoProcessor;

@@ -1,4 +1,4 @@
-use dasp::{interpolate::sinc::Sinc, ring_buffer, signal, slice::add_in_place, Signal};
+use dasp::{Signal, interpolate::sinc::Sinc, ring_buffer, signal, slice::add_in_place};
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_core::AudioEffectStyle;
 

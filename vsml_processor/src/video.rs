@@ -1,4 +1,4 @@
-use image::{load_from_memory, RgbaImage};
+use image::{RgbaImage, load_from_memory};
 use std::collections::HashMap;
 use std::process::Command;
 use vsml_common_audio::Audio as VsmlAudio;
