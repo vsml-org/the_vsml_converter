@@ -1,4 +1,4 @@
-use image::{RgbaImage, load_from_memory};
+use image::{load_from_memory, RgbaImage};
 use std::collections::HashMap;
 use std::process::Command;
 use vsml_common_audio::Audio as VsmlAudio;
@@ -45,7 +45,7 @@ impl VideoProcessor {
         Ok(img)
     }
 
-    fn get_pts_frame(&self, src_path: &str) -> Result<f64, ()> {
+    fn get_last_pts_time(&self, src_path: &str) -> Result<f64, ()> {
         let output = Command::new("ffprobe")
             .arg("-v")
             .arg("error")
@@ -60,8 +60,15 @@ impl VideoProcessor {
             .unwrap()
             .stdout;
 
-        let pts_frame = output.last().unwrap().to_string().parse().unwrap();
-        Ok(pts_frame)
+        let pts_times = String::from_utf8_lossy(&output);
+        let last_pts_time = pts_times
+            .trim()
+            .split("\n")
+            .last()
+            .unwrap()
+            .parse()
+            .unwrap();
+        Ok(last_pts_time)
     }
 }
 
@@ -116,7 +123,8 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
     ) -> Option<VsmlImage> {
         let src_path = attributes.get("src").unwrap();
 
-        let target_time = target_time.min(self.get_pts_frame(src_path).unwrap());
+        let last_pts_time = self.get_last_pts_time(src_path).unwrap();
+        let target_time = target_time.min(last_pts_time);
         let frame = self.get_frame(src_path, target_time).unwrap();
 
         let (width, height) = frame.dimensions();
