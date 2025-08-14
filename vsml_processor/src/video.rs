@@ -1,4 +1,4 @@
-use image::{load_from_memory, RgbaImage};
+use image::{RgbaImage, load_from_memory};
 use std::collections::HashMap;
 use std::process::Command;
 use vsml_common_audio::Audio as VsmlAudio;
@@ -198,13 +198,14 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
             .unwrap()
             .stdout;
 
-        let (floats, _) = raw_data.as_chunks::<4>();
-        let mut samples = Vec::with_capacity(floats.len() / 2);
-        for chunk in floats.chunks_exact(2) {
-            let left = f32::from_le_bytes(chunk[0]);
-            let right = f32::from_le_bytes(chunk[1]);
-            samples.push([left, right]);
-        }
+        let samples: Vec<[f32; 2]> = raw_data
+            .as_chunks::<4>() // f32は4バイトなので、4バイトずつ読み込む
+            .0 // as_chunksの余りは無視
+            .as_chunks::<2>() // 2チャンネルなので、2つずつ読み込む
+            .0 // as_chunksの余りは無視
+            .iter()
+            .map(|chunk| chunk.map(f32::from_le_bytes))
+            .collect();
 
         Some(VsmlAudio {
             samples,
