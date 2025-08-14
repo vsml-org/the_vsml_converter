@@ -118,7 +118,9 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
         let src_path = attributes.get("src").unwrap();
 
         let last_pts_time = self.get_last_pts_time(src_path).unwrap();
-        let target_time = target_time.min(last_pts_time);
+        if target_time < 0.0 || target_time > last_pts_time {
+            return None;
+        }
         let frame = self.get_frame(src_path, target_time).unwrap();
 
         let (width, height) = frame.dimensions();
