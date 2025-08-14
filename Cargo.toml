@@ -16,7 +16,7 @@ members = [
     "vsml_image_renderer",
     "vsml_iv_converter",
     "vsml_parser",
-    "vsml_processer",
+    "vsml_processor",
 ]
 
 [workspace.dependencies]
@@ -29,13 +29,12 @@ vsml_encoder = { path = "vsml_encoder" }
 vsml_image_renderer = { path = "vsml_image_renderer" }
 vsml_iv_converter = { path = "vsml_iv_converter" }
 vsml_parser = { path = "vsml_parser" }
-vsml_processer = { path = "vsml_processer" }
-bytemuck = { version = "1.22.0", features = [ "derive" ] }
+vsml_processor = { path = "vsml_processor" }
+bytemuck = { version = "1.22.0", features = ["derive"] }
 clap = { version = "4.5.32", features = ["derive"] }
-dasp = {version = "0.11.0", features = ["all"]}
+dasp = { version = "0.11.0", features = ["all"] }
 hound = "3.5.1"
 image = "0.25.5"
-imageproc = "0.25.0"
 mockall = "0.13.1"
 nom = "8.0.0"
 pollster = "0.4.0"
