@@ -33,7 +33,7 @@ impl VideoProcessor {
             .unwrap()
             .stdout;
 
-        // PNGデータを解析して、幅と高さを取得
+        // PNGデータをデコードして、RgbaImageに変換
         let img = match load_from_memory(&output) {
             Ok(img) => img.to_rgba8(),
             Err(_) => {
