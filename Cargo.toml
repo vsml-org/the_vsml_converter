@@ -36,7 +36,6 @@ dasp = { version = "0.11.0", features = ["all"] }
 hound = "3.5.1"
 image = "0.25.5"
 mockall = "0.13.1"
-mp4parse = "0.17.0"
 nom = "8.0.0"
 pollster = "0.4.0"
 regex = "1.11.1"
