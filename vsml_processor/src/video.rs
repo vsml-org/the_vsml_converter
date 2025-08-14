@@ -1,4 +1,4 @@
-use image::{RgbaImage, load_from_memory};
+use image::{load_from_memory, RgbaImage};
 use std::collections::HashMap;
 use std::process::Command;
 use vsml_common_audio::Audio as VsmlAudio;
@@ -118,7 +118,7 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
         let src_path = attributes.get("src").unwrap();
 
         let last_pts_time = self.get_last_pts_time(src_path).unwrap();
-        if target_time < 0.0 || target_time > last_pts_time {
+        if !(0.0..=last_pts_time).contains(&target_time) {
             return None;
         }
         let frame = self.get_frame(src_path, target_time).unwrap();
