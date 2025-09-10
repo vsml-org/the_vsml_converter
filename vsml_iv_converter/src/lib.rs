@@ -52,6 +52,7 @@ pub fn convert<I, A>(
 
 struct VssScanner<'a> {
     vss_items: &'a [VSSItem],
+    /// ルート要素からscan対象の要素までの要素のリスト
     traverse_stack: Vec<&'a [Element]>,
 }
 
@@ -63,63 +64,83 @@ impl<'a> VssScanner<'a> {
         }
     }
 
+    /// traverse_stackに対して、selectorと一致するスタイルがないか絞り込み、一致するスタイルを取得している
     fn scan(&self) -> impl Iterator<Item = &Rule> + '_ {
         self.vss_items
             .iter()
             .filter(|vss_item| {
                 vss_item.selectors.iter().any(|selector| {
-                    for element in &self.traverse_stack {
-                        let element_tag;
-                        let element_id;
-                        let element_classes;
-                        match element.last().unwrap() {
-                            Element::Tag {
-                                name, attributes, ..
-                            } => {
-                                element_tag = Some(name.as_str());
-                                element_id = attributes.get("id").map(String::as_str);
-                                element_classes = attributes
-                                    .get("class")
-                                    .map_or_else(HashSet::new, |classes| {
-                                        classes.split_whitespace().collect()
-                                    });
-                            }
-                            Element::Text(_) => {
-                                element_tag = None;
-                                element_id = None;
-                                element_classes = HashSet::new();
-                            }
-                        }
-                        let selector_is_match = |selectors: &[VSSSelector]| {
-                            selectors
-                                .iter()
-                                .all(|single_selector| match single_selector {
-                                    VSSSelector::All => true,
-                                    VSSSelector::Tag(tag) => element_tag == Some(tag.as_str()),
-                                    VSSSelector::Class(class_name) => {
-                                        element_classes.contains(class_name.as_str())
-                                    }
-                                    VSSSelector::Id(id_name) => element_id == Some(id_name),
-                                    VSSSelector::PseudoClass(_) => {
-                                        todo!()
-                                    }
-                                    VSSSelector::Attribute(_, _) => {
-                                        todo!()
-                                    }
-                                })
-                        };
-                        // TODO: Selectors以外の処理を実装する
-                        let VSSSelectorTree::Selectors(selectors) = selector else {
-                            continue;
-                        };
-                        if selector_is_match(selectors) {
-                            return true;
-                        }
+                    if self.selector_tree_is_match(selector, self.traverse_stack.len() - 1) {
+                        return true;
                     }
                     false
                 })
             })
             .flat_map(|vss_item| &vss_item.rules)
+    }
+
+    fn selector_tree_is_match(
+        &self,
+        selector_tree: &VSSSelectorTree,
+        element_index: usize,
+    ) -> bool {
+        match selector_tree {
+            VSSSelectorTree::Selectors(selectors) => {
+                self.selector_is_match(selectors, self.traverse_stack[element_index])
+            }
+            VSSSelectorTree::Descendant(parent_selectors, child_tree) => {
+                // 現在の要素に対して子セレクタがマッチするか確認
+                if !self.selector_tree_is_match(child_tree, element_index) {
+                    return false;
+                }
+
+                // 親方向に遡って親セレクタとマッチするものを探す
+                for i in (0..element_index).rev() {
+                    if self.selector_is_match(parent_selectors, self.traverse_stack[i]) {
+                        return true;
+                    }
+                }
+                false
+            }
+            // TODO: 他のセレクタも実装
+            _ => false,
+        }
+    }
+
+    fn selector_is_match(&self, selectors: &[VSSSelector], element: &[Element]) -> bool {
+        let element_tag;
+        let element_id;
+        let element_classes;
+        match element.last().unwrap() {
+            Element::Tag {
+                name, attributes, ..
+            } => {
+                element_tag = Some(name.as_str());
+                element_id = attributes.get("id").map(String::as_str);
+                element_classes = attributes
+                    .get("class")
+                    .map_or_else(HashSet::new, |classes| classes.split_whitespace().collect());
+            }
+            Element::Text(_) => {
+                element_tag = None;
+                element_id = None;
+                element_classes = HashSet::new();
+            }
+        };
+        selectors
+            .iter()
+            .all(|single_selector| match single_selector {
+                VSSSelector::All => true,
+                VSSSelector::Tag(tag) => element_tag == Some(tag.as_str()),
+                VSSSelector::Class(class_name) => element_classes.contains(class_name.as_str()),
+                VSSSelector::Id(id_name) => element_id == Some(id_name),
+                VSSSelector::PseudoClass(_) => {
+                    todo!()
+                }
+                VSSSelector::Attribute(_, _) => {
+                    todo!()
+                }
+            })
     }
 
     fn traverse<R>(&mut self, element: &'a [Element], f: impl FnOnce(&mut Self) -> R) -> R {
@@ -206,8 +227,8 @@ fn convert_tag_element<'a, I, A>(
         match rule.property.as_str() {
             "order" => {
                 order = match rule.value.as_str() {
-                    "seq" => Order::Sequence,
-                    "prl" => Order::Parallel,
+                    "sequence" => Order::Sequence,
+                    "parallel" => Order::Parallel,
                     _ => todo!("エラーを実装"),
                 };
             }
