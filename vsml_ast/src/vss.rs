@@ -40,7 +40,7 @@ pub enum VSSSelectorTree {
     Child(Vec<VSSSelector>, Box<VSSSelectorTree>),
     /// `.selector + .selector` のような後続の弟エレメントを指すセレクタ
     Sibling(Vec<VSSSelector>, Box<VSSSelectorTree>),
-    // `.selector ~ .selector` のような直後の弟エレメントを指すセレクタ
+    /// `.selector ~ .selector` のような直後の弟エレメントを指すセレクタ
     AdjSibling(Vec<VSSSelector>, Box<VSSSelectorTree>),
 }
 
