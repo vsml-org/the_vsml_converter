@@ -102,6 +102,18 @@ impl<'a> VssScanner<'a> {
                 }
                 false
             }
+            VSSSelectorTree::Child(parent_selectors, child_tree) => {
+                // 現在の要素に対して子セレクタがマッチするか確認
+                if !self.selector_tree_is_match(child_tree, element_index) {
+                    return false;
+                }
+
+                // 直近の親要素に対して親セレクタとマッチするか確認
+                if element_index == 0 {
+                    return false;
+                }
+                self.selector_is_match(parent_selectors, self.traverse_stack[element_index - 1])
+            }
             // TODO: 他のセレクタも実装
             _ => false,
         }
