@@ -70,10 +70,7 @@ impl<'a> VssScanner<'a> {
             .iter()
             .filter(|vss_item| {
                 vss_item.selectors.iter().any(|selector| {
-                    if self.selector_tree_is_match(selector, self.traverse_stack.len() - 1) {
-                        return true;
-                    }
-                    false
+                    self.selector_tree_is_match(selector, self.traverse_stack.len() - 1)
                 })
             })
             .flat_map(|vss_item| &vss_item.rules)
