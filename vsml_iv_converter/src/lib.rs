@@ -58,7 +58,8 @@ struct VssScanner<'a> {
     /// ルート要素からscan対象の要素までの要素のリスト
     traverse_stack: Vec<&'a [Element]>,
     /// scan対象の要素がtraverse_stackのどの位置にあるかを示すインデックス
-    scan_index: usize,
+    /// 負の数まで減らせるように、型がisizeとなっている
+    scan_index: isize,
 }
 
 impl<'a> VssScanner<'a> {
@@ -71,7 +72,7 @@ impl<'a> VssScanner<'a> {
     }
 
     fn set_initial_scan_index(&mut self) {
-        self.scan_index = self.traverse_stack.len() - 1;
+        self.scan_index = self.traverse_stack.len() as isize - 1;
     }
 
     /// traverse_stackに対して、selectorと一致するスタイルがないか絞り込み、一致するスタイルを取得している
@@ -88,12 +89,14 @@ impl<'a> VssScanner<'a> {
     }
 
     fn selector_tree_is_match(&mut self, selector_tree: &VSSSelectorTree) -> bool {
+        if self.scan_index < 0 {
+            return false;
+        }
         match selector_tree {
             VSSSelectorTree::Selectors(selectors) => {
-                let is_match =
-                    self.selector_is_match(selectors, self.traverse_stack[self.scan_index]);
+                let is_match = self
+                    .selector_is_match(selectors, self.traverse_stack[self.scan_index as usize]);
                 if is_match {
-                    // マッチしたらtraverse_stackの一番下の要素をスキップするため、indexを1つ減らす
                     self.scan_index -= 1;
                 }
                 is_match
@@ -105,14 +108,11 @@ impl<'a> VssScanner<'a> {
                 }
 
                 // 親方向に遡って親セレクタとマッチするものを探す
-                for (index, element) in self.traverse_stack[..self.scan_index]
-                    .iter()
-                    .enumerate()
-                    .rev()
+                let ending_index: usize = self.scan_index as usize + 1;
+                for (index, element) in self.traverse_stack[..ending_index].iter().enumerate().rev()
                 {
                     if self.selector_is_match(parent_selectors, element) {
-                        // マッチしたら、traverse_stackの一番下からマッチした要素までをスキップするため、indexを減らす
-                        self.scan_index -= index + 1;
+                        self.scan_index -= index as isize + 1;
                         return true;
                     }
                 }

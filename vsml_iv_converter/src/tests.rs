@@ -52,6 +52,7 @@ mod scan_tests {
 
         let mut scanner = VssScanner::new(&vss_items);
         scanner.traverse_stack = vec![&elements, &child_elements];
+        scanner.set_initial_scan_index();
 
         assert_eq!(scanner.scan().count(), 1);
     }
@@ -71,6 +72,7 @@ mod scan_tests {
 
         let mut scanner = VssScanner::new(&vss_items);
         scanner.traverse_stack = vec![&elements, &child_elements];
+        scanner.set_initial_scan_index();
 
         assert_eq!(scanner.scan().count(), 0);
     }
@@ -92,6 +94,7 @@ mod scan_tests {
 
         let mut scanner = VssScanner::new(&vss_items);
         scanner.traverse_stack = vec![&elements, &child_elements];
+        scanner.set_initial_scan_index();
 
         assert_eq!(scanner.scan().count(), 2);
     }
@@ -128,6 +131,7 @@ mod scan_tests {
 
         let mut scanner = VssScanner::new(&vss_items);
         scanner.traverse_stack = vec![&root_elements, &middle_elements, &leaf_elements];
+        scanner.set_initial_scan_index();
 
         // .b .a .c はマッチしてはいけない（.aは.bの子孫ではないため）
         assert_eq!(scanner.scan().count(), 0);
