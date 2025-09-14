@@ -118,11 +118,7 @@ impl<'a> VssScanner<'a> {
                     .get("class")
                     .map_or_else(HashSet::new, |classes| classes.split_whitespace().collect());
             }
-            Element::Text(_) => {
-                element_tag = None;
-                element_id = None;
-                element_classes = HashSet::new();
-            }
+            Element::Text(_) => return false,
         };
         selectors
             .iter()
