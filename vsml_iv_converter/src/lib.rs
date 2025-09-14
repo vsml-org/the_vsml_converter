@@ -57,6 +57,8 @@ struct VssScanner<'a> {
     vss_items: &'a [VSSItem],
     /// ルート要素からscan対象の要素までの要素のリスト
     traverse_stack: Vec<&'a [Element]>,
+    /// scan対象の要素がtraverse_stackのどの位置にあるかを示すインデックス
+    scan_index: usize,
 }
 
 impl<'a> VssScanner<'a> {
@@ -64,11 +66,16 @@ impl<'a> VssScanner<'a> {
         VssScanner {
             vss_items,
             traverse_stack: Vec::new(),
+            scan_index: 0,
         }
     }
 
+    fn set_initial_scan_index(&mut self) {
+        self.scan_index = self.traverse_stack.len() - 1;
+    }
+
     /// traverse_stackに対して、selectorと一致するスタイルがないか絞り込み、一致するスタイルを取得している
-    fn scan(&self) -> impl Iterator<Item = &Rule> + '_ {
+    fn scan(&mut self) -> impl Iterator<Item = &Rule> + '_ {
         self.vss_items
             .iter()
             .filter(|vss_item| {
@@ -80,10 +87,16 @@ impl<'a> VssScanner<'a> {
             .flat_map(|vss_item| &vss_item.rules)
     }
 
-    fn selector_tree_is_match(&self, selector_tree: &VSSSelectorTree) -> bool {
+    fn selector_tree_is_match(&mut self, selector_tree: &VSSSelectorTree) -> bool {
         match selector_tree {
             VSSSelectorTree::Selectors(selectors) => {
-                self.selector_is_match(selectors, self.traverse_stack.last().unwrap())
+                let is_match =
+                    self.selector_is_match(selectors, self.traverse_stack[self.scan_index]);
+                if is_match {
+                    // マッチしたらtraverse_stackの一番下の要素をスキップするため、indexを1つ減らす
+                    self.scan_index -= 1;
+                }
+                is_match
             }
             VSSSelectorTree::Descendant(parent_selectors, child_tree) => {
                 // 現在の要素に対して子セレクタがマッチするか確認
@@ -92,9 +105,14 @@ impl<'a> VssScanner<'a> {
                 }
 
                 // 親方向に遡って親セレクタとマッチするものを探す
-                for element in self.traverse_stack.iter().rev() {
+                for (index, element) in self.traverse_stack[..self.scan_index]
+                    .iter()
+                    .enumerate()
+                    .rev()
+                {
                     if self.selector_is_match(parent_selectors, element) {
-                        // 見つかった場合はtrueを返す
+                        // マッチしたら、traverse_stackの一番下からマッチした要素までをスキップするため、indexを減らす
+                        self.scan_index -= index + 1;
                         return true;
                     }
                 }
@@ -217,6 +235,7 @@ fn convert_tag_element<'a, I, A>(
         "layer" => LayerMode::Single,
         _ => LayerMode::Multi,
     };
+    vss_scanner.set_initial_scan_index();
     for rule in vss_scanner.scan() {
         match rule.property.as_str() {
             "order" => {
