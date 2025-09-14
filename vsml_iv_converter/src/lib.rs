@@ -80,6 +80,7 @@ impl<'a> VssScanner<'a> {
         self.vss_items
             .iter()
             .filter(|vss_item| {
+                self.set_initial_scan_index();
                 vss_item
                     .selectors
                     .iter()
@@ -235,7 +236,6 @@ fn convert_tag_element<'a, I, A>(
         "layer" => LayerMode::Single,
         _ => LayerMode::Multi,
     };
-    vss_scanner.set_initial_scan_index();
     for rule in vss_scanner.scan() {
         match rule.property.as_str() {
             "order" => {
