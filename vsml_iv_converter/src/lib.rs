@@ -1,3 +1,6 @@
+#[cfg(test)]
+mod tests;
+
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use vsml_ast::vsml::{Content, Element, Meta, VSML};
@@ -69,31 +72,29 @@ impl<'a> VssScanner<'a> {
         self.vss_items
             .iter()
             .filter(|vss_item| {
-                vss_item.selectors.iter().any(|selector| {
-                    self.selector_tree_is_match(selector, self.traverse_stack.len() - 1)
-                })
+                vss_item
+                    .selectors
+                    .iter()
+                    .any(|selector| self.selector_tree_is_match(selector))
             })
             .flat_map(|vss_item| &vss_item.rules)
     }
 
-    fn selector_tree_is_match(
-        &self,
-        selector_tree: &VSSSelectorTree,
-        element_index: usize,
-    ) -> bool {
+    fn selector_tree_is_match(&self, selector_tree: &VSSSelectorTree) -> bool {
         match selector_tree {
             VSSSelectorTree::Selectors(selectors) => {
-                self.selector_is_match(selectors, self.traverse_stack[element_index])
+                self.selector_is_match(selectors, self.traverse_stack.last().unwrap())
             }
             VSSSelectorTree::Descendant(parent_selectors, child_tree) => {
                 // 現在の要素に対して子セレクタがマッチするか確認
-                if !self.selector_tree_is_match(child_tree, element_index) {
+                if !self.selector_tree_is_match(child_tree) {
                     return false;
                 }
 
                 // 親方向に遡って親セレクタとマッチするものを探す
-                for i in (0..element_index).rev() {
-                    if self.selector_is_match(parent_selectors, self.traverse_stack[i]) {
+                for element in self.traverse_stack.iter().rev() {
+                    if self.selector_is_match(parent_selectors, element) {
+                        // 見つかった場合はtrueを返す
                         return true;
                     }
                 }
