@@ -77,83 +77,85 @@ impl<'a> VssScanner<'a> {
 
     /// traverse_stackに対して、selectorと一致するスタイルがないか絞り込み、一致するスタイルを取得している
     fn scan(&mut self) -> impl Iterator<Item = &Rule> + '_ {
-        self.vss_items
+        return self
+            .vss_items
             .iter()
             .filter(|vss_item| {
                 self.set_initial_scan_index();
-                vss_item
-                    .selectors
-                    .iter()
-                    .any(|selector| self.selector_tree_is_match(selector))
-            })
-            .flat_map(|vss_item| &vss_item.rules)
-    }
-
-    fn selector_tree_is_match(&mut self, selector_tree: &VSSSelectorTree) -> bool {
-        if self.scan_index < 0 {
-            return false;
-        }
-        match selector_tree {
-            VSSSelectorTree::Selectors(selectors) => {
-                let is_match = self
-                    .selector_is_match(selectors, self.traverse_stack[self.scan_index as usize]);
-                if is_match {
-                    self.scan_index -= 1;
-                }
-                is_match
-            }
-            VSSSelectorTree::Descendant(parent_selectors, child_tree) => {
-                // 現在の要素に対して子セレクタがマッチするか確認
-                if !self.selector_tree_is_match(child_tree) {
-                    return false;
-                }
-
-                // 親方向に遡って親セレクタとマッチするものを探す
-                let ending_index: usize = self.scan_index as usize + 1;
-                for (index, element) in self.traverse_stack[..ending_index].iter().enumerate().rev()
-                {
-                    if self.selector_is_match(parent_selectors, element) {
-                        self.scan_index -= index as isize + 1;
-                        return true;
+                vss_item.selectors.iter().any(|selector| {
+                    SelectorTreeMatchChecker {
+                        target_stack: &self.traverse_stack,
                     }
-                }
-                false
-            }
-            // TODO: 他のセレクタも実装
-            _ => false,
-        }
-    }
-
-    fn selector_is_match(&self, selectors: &[VSSSelector], element: &[Element]) -> bool {
-        let element_tag;
-        let element_id;
-        let element_classes;
-        match element.last().unwrap() {
-            Element::Tag {
-                name, attributes, ..
-            } => {
-                element_tag = Some(name.as_str());
-                element_id = attributes.get("id").map(String::as_str);
-                element_classes = attributes
-                    .get("class")
-                    .map_or_else(HashSet::new, |classes| classes.split_whitespace().collect());
-            }
-            Element::Text(_) => return false,
-        };
-        selectors
-            .iter()
-            .all(|single_selector| match single_selector {
-                VSSSelector::All => true,
-                VSSSelector::Tag(tag) => element_tag == Some(tag.as_str()),
-                VSSSelector::Class(class_name) => element_classes.contains(class_name.as_str()),
-                VSSSelector::Id(id_name) => element_id == Some(id_name),
-                VSSSelector::PseudoClass(_) => {
-                    todo!()
-                }
-                VSSSelector::Attribute(_, _) => {
-                    todo!()
-                }
+                    .is_match(selector)
+                })
             })
+            .flat_map(|vss_item| &vss_item.rules);
+        struct SelectorTreeMatchChecker<'a> {
+            target_stack: &'a [&'a [Element]],
+        }
+        impl SelectorTreeMatchChecker<'_> {
+            fn is_match(&mut self, selector_tree: &VSSSelectorTree) -> bool {
+                match selector_tree {
+                    VSSSelectorTree::Selectors(selectors) => {
+                        let Some((tail, head)) = self.target_stack.split_last() else {
+                            return false;
+                        };
+                        self.target_stack = head;
+                        self.selector_is_match(selectors, tail)
+                    }
+                    VSSSelectorTree::Descendant(parent_selectors, child_tree) => {
+                        if !self.is_match(child_tree) {
+                            return false;
+                        }
+                        // この時点で、child_treeにマッチする部分はself.0から消されているはず
+                        while let Some((tail, head)) = self.target_stack.split_last() {
+                            self.target_stack = head;
+                            if self.selector_is_match(parent_selectors, tail) {
+                                return true;
+                            }
+                        }
+                        false
+                    }
+                    // TODO: 他のセレクタも実装
+                    _ => todo!(),
+                }
+            }
+            fn selector_is_match(&self, selectors: &[VSSSelector], element: &[Element]) -> bool {
+                let element_tag;
+                let element_id;
+                let element_classes;
+                match element.last().unwrap() {
+                    Element::Tag {
+                        name, attributes, ..
+                    } => {
+                        element_tag = Some(name.as_str());
+                        element_id = attributes.get("id").map(String::as_str);
+                        element_classes = attributes
+                            .get("class")
+                            .map_or_else(HashSet::new, |classes| {
+                                classes.split_whitespace().collect()
+                            });
+                    }
+                    Element::Text(_) => return false,
+                };
+                selectors
+                    .iter()
+                    .all(|single_selector| match single_selector {
+                        VSSSelector::All => true,
+                        VSSSelector::Tag(tag) => element_tag == Some(tag.as_str()),
+                        VSSSelector::Class(class_name) => {
+                            element_classes.contains(class_name.as_str())
+                        }
+                        VSSSelector::Id(id_name) => element_id == Some(id_name),
+                        VSSSelector::PseudoClass(_) => {
+                            todo!()
+                        }
+                        VSSSelector::Attribute(_, _) => {
+                            todo!()
+                        }
+                    })
+            }
+        }
     }
 
     fn traverse<R>(&mut self, element: &'a [Element], f: impl FnOnce(&mut Self) -> R) -> R {
