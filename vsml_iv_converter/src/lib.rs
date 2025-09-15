@@ -108,6 +108,16 @@ impl<'a> VssScanner<'a> {
                         }
                         false
                     }
+                    VSSSelectorTree::Child(parent_selectors, child_tree) => {
+                        if !self.is_match(child_tree) {
+                            return false;
+                        }
+                        let Some((tail, head)) = self.target_stack.split_last() else {
+                            return false;
+                        };
+                        self.target_stack = head;
+                        selector_is_match(parent_selectors, tail)
+                    }
                     // TODO: 他のセレクタも実装
                     _ => todo!(),
                 }
