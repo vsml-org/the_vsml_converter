@@ -57,9 +57,6 @@ struct VssScanner<'a> {
     vss_items: &'a [VSSItem],
     /// ルート要素からscan対象の要素までの要素のリスト
     traverse_stack: Vec<&'a [Element]>,
-    /// scan対象の要素がtraverse_stackのどの位置にあるかを示すインデックス
-    /// 負の数まで減らせるように、型がisizeとなっている
-    scan_index: isize,
 }
 
 impl<'a> VssScanner<'a> {
@@ -67,12 +64,7 @@ impl<'a> VssScanner<'a> {
         VssScanner {
             vss_items,
             traverse_stack: Vec::new(),
-            scan_index: 0,
         }
-    }
-
-    fn set_initial_scan_index(&mut self) {
-        self.scan_index = self.traverse_stack.len() as isize - 1;
     }
 
     /// traverse_stackに対して、selectorと一致するスタイルがないか絞り込み、一致するスタイルを取得している
@@ -81,12 +73,8 @@ impl<'a> VssScanner<'a> {
             .vss_items
             .iter()
             .filter(|vss_item| {
-                self.set_initial_scan_index();
                 vss_item.selectors.iter().any(|selector| {
-                    SelectorTreeMatchChecker {
-                        target_stack: &self.traverse_stack,
-                    }
-                    .is_match(selector)
+                    SelectorTreeMatchChecker::new(&self.traverse_stack).is_match(selector)
                 })
             })
             .flat_map(|vss_item| &vss_item.rules);
@@ -94,6 +82,10 @@ impl<'a> VssScanner<'a> {
             target_stack: &'a [&'a [Element]],
         }
         impl SelectorTreeMatchChecker<'_> {
+            fn new<'a>(target_stack: &'a [&'a [Element]]) -> SelectorTreeMatchChecker<'a> {
+                SelectorTreeMatchChecker { target_stack }
+            }
+
             fn is_match(&mut self, selector_tree: &VSSSelectorTree) -> bool {
                 match selector_tree {
                     VSSSelectorTree::Selectors(selectors) => {
@@ -101,7 +93,7 @@ impl<'a> VssScanner<'a> {
                             return false;
                         };
                         self.target_stack = head;
-                        self.selector_is_match(selectors, tail)
+                        selector_is_match(selectors, tail)
                     }
                     VSSSelectorTree::Descendant(parent_selectors, child_tree) => {
                         if !self.is_match(child_tree) {
@@ -110,7 +102,7 @@ impl<'a> VssScanner<'a> {
                         // この時点で、child_treeにマッチする部分はself.target_stackから消されているはず
                         while let Some((tail, head)) = self.target_stack.split_last() {
                             self.target_stack = head;
-                            if self.selector_is_match(parent_selectors, tail) {
+                            if selector_is_match(parent_selectors, tail) {
                                 return true;
                             }
                         }
@@ -119,41 +111,6 @@ impl<'a> VssScanner<'a> {
                     // TODO: 他のセレクタも実装
                     _ => todo!(),
                 }
-            }
-            fn selector_is_match(&self, selectors: &[VSSSelector], element: &[Element]) -> bool {
-                let element_tag;
-                let element_id;
-                let element_classes;
-                match element.last().unwrap() {
-                    Element::Tag {
-                        name, attributes, ..
-                    } => {
-                        element_tag = Some(name.as_str());
-                        element_id = attributes.get("id").map(String::as_str);
-                        element_classes = attributes
-                            .get("class")
-                            .map_or_else(HashSet::new, |classes| {
-                                classes.split_whitespace().collect()
-                            });
-                    }
-                    Element::Text(_) => return false,
-                };
-                selectors
-                    .iter()
-                    .all(|single_selector| match single_selector {
-                        VSSSelector::All => true,
-                        VSSSelector::Tag(tag) => element_tag == Some(tag.as_str()),
-                        VSSSelector::Class(class_name) => {
-                            element_classes.contains(class_name.as_str())
-                        }
-                        VSSSelector::Id(id_name) => element_id == Some(id_name),
-                        VSSSelector::PseudoClass(_) => {
-                            todo!()
-                        }
-                        VSSSelector::Attribute(_, _) => {
-                            todo!()
-                        }
-                    })
             }
         }
     }
@@ -164,6 +121,37 @@ impl<'a> VssScanner<'a> {
         self.traverse_stack.pop();
         result
     }
+}
+fn selector_is_match(selectors: &[VSSSelector], element: &[Element]) -> bool {
+    let element_tag;
+    let element_id;
+    let element_classes;
+    match element.last().unwrap() {
+        Element::Tag {
+            name, attributes, ..
+        } => {
+            element_tag = Some(name.as_str());
+            element_id = attributes.get("id").map(String::as_str);
+            element_classes = attributes
+                .get("class")
+                .map_or_else(HashSet::new, |classes| classes.split_whitespace().collect());
+        }
+        Element::Text(_) => return false,
+    };
+    selectors
+        .iter()
+        .all(|single_selector| match single_selector {
+            VSSSelector::All => true,
+            VSSSelector::Tag(tag) => element_tag == Some(tag.as_str()),
+            VSSSelector::Class(class_name) => element_classes.contains(class_name.as_str()),
+            VSSSelector::Id(id_name) => element_id == Some(id_name),
+            VSSSelector::PseudoClass(_) => {
+                todo!()
+            }
+            VSSSelector::Attribute(_, _) => {
+                todo!()
+            }
+        })
 }
 
 fn recursive<'a, I, A>(
