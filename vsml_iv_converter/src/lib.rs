@@ -107,7 +107,7 @@ impl<'a> VssScanner<'a> {
                         if !self.is_match(child_tree) {
                             return false;
                         }
-                        // この時点で、child_treeにマッチする部分はself.0から消されているはず
+                        // この時点で、child_treeにマッチする部分はself.target_stackから消されているはず
                         while let Some((tail, head)) = self.target_stack.split_last() {
                             self.target_stack = head;
                             if self.selector_is_match(parent_selectors, tail) {
