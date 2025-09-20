@@ -1,10 +1,10 @@
 #[cfg(test)]
 mod tests;
 
+use cosmic_text::{Attrs, Buffer, Color, FontSystem, Metrics, SwashCache};
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::{
-    ImageEffectStyle, Property, Rect, Renderer, RenderingContext, RenderingInfo, TextData,
-    TextRenderingInfo,
+    ImageEffectStyle, Property, Renderer, RenderingContext, RenderingInfo, schemas::TextData,
 };
 use wgpu::util::DeviceExt;
 
@@ -61,8 +61,85 @@ impl Renderer for RendererImpl {
         self.images.push((image, info));
     }
 
-    fn render_text(&mut self, _text_data: &[TextData], _info: TextRenderingInfo) -> Rect {
-        todo!()
+    fn render_text(&mut self, text_data: &[TextData], info: RenderingInfo) {
+        // フォントシステムの初期化
+        let mut font_system = FontSystem::new();
+        let mut cache = SwashCache::new();
+
+        // キャンバスの作成
+        let mut buffer = Buffer::new(&mut font_system, Metrics::new(20.0, 1.0));
+
+        for data in text_data {
+            // テキストの属性設定
+            let color = if let Some((r, g, b, a)) = data.style.color {
+                Color::rgba(r, g, b, a)
+            } else {
+                Color::rgb(255, 255, 255)
+            };
+
+            let attrs = Attrs::new()
+                .family(cosmic_text::Family::Name(
+                    data.style.font_family[0].as_str(),
+                ))
+                .color(color.clone());
+
+            // テキストの描画
+            buffer.set_text(
+                &mut font_system,
+                &data.text,
+                &attrs,
+                cosmic_text::Shaping::Basic,
+            );
+        }
+
+        // テキストをレンダリング
+        buffer.draw(
+            &mut font_system,
+            &mut cache,
+            Color::rgb(255, 255, 255),
+            |r, g, b, a, col| {},
+        );
+
+        // テクスチャの作成
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Text Texture"),
+            size: wgpu::Extent3d {
+                width: info.width as u32,
+                height: info.height as u32,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        let image_buffer = vec![0u8; (info.width * info.height * 4.0) as usize];
+        // キャンバスのピクセルデータをテクスチャにコピー
+        self.queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+                aspect: wgpu::TextureAspect::All,
+            },
+            &image_buffer,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * info.width as u32),
+                rows_per_image: None,
+            },
+            wgpu::Extent3d {
+                width: info.width as u32,
+                height: info.height as u32,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        // テクスチャとレンダリング情報を保存
+        self.images.push((texture, info));
     }
 
     fn render_box(&mut self, _property: Property, _info: RenderingInfo) {

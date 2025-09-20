@@ -32,6 +32,7 @@ vsml_parser = { path = "vsml_parser" }
 vsml_processor = { path = "vsml_processor" }
 bytemuck = { version = "1.22.0", features = ["derive"] }
 clap = { version = "4.5.32", features = ["derive"] }
+cosmic-text = "0.14.2"
 dasp = { version = "0.11.0", features = ["all"] }
 hound = "3.5.1"
 image = "0.25.5"
