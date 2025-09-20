@@ -9,6 +9,7 @@ vsml_core.workspace = true
 vsml_common_image.workspace = true
 bytemuck.workspace = true
 wgpu.workspace = true
+cosmic-text.workspace = true
 
 [dev-dependencies]
 image.workspace = true

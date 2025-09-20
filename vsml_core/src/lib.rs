@@ -1,25 +1,8 @@
-use crate::schemas::{ObjectData, ObjectType};
+use crate::schemas::{ObjectData, ObjectType, TextData};
 
 pub mod schemas;
 #[cfg(test)]
 mod tests;
-
-pub struct Rect {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
-}
-
-pub struct TextStyleData {
-    pub color: String,
-    pub font_name: String,
-}
-
-pub struct TextData {
-    pub text: String,
-    pub style: TextStyleData,
-}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum Alignment {
@@ -117,18 +100,12 @@ pub struct RenderingInfo {
     pub width: f32,
     pub height: f32,
 }
-pub struct TextRenderingInfo {
-    pub x: f32,
-    pub y: f32,
-    pub max_width: f32,
-    pub max_height: f32,
-}
 
 #[cfg_attr(test, mockall::automock(type Image=tests::MockImage;))]
 pub trait Renderer {
     type Image;
     fn render_image(&mut self, image: Self::Image, info: RenderingInfo);
-    fn render_text(&mut self, text_data: &[TextData], info: TextRenderingInfo) -> Rect;
+    fn render_text(&mut self, text_data: &[TextData], info: RenderingInfo);
     fn render_box(&mut self, property: Property, info: RenderingInfo);
     fn render(self, width: u32, height: u32) -> Self::Image;
 }
@@ -246,7 +223,17 @@ where
                     }
                 }
             }
-            ObjectData::Text(_) => {}
+            ObjectData::Text { data, .. } => {
+                renderer.render_text(
+                    data,
+                    RenderingInfo {
+                        x: 0.0,
+                        y: 0.0,
+                        width: outer_width,
+                        height: outer_height,
+                    },
+                );
+            }
         }
     }
 
@@ -363,7 +350,7 @@ where
                     mixer.mix_audio(result, start_time, ancestor_duration.min(duration));
                 }
             }
-            ObjectData::Text(_) => {}
+            ObjectData::Text { .. } => {}
         }
     }
 
