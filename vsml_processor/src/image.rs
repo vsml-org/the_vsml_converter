@@ -72,7 +72,7 @@ impl<A> ObjectProcessor<VsmlImage, A> for ImageProcessor {
         Some(texture)
     }
 
-    fn process_audio(&self, _attributes: &HashMap<String, String>, _audio: Option<A>) -> Option<A> {
+    fn process_audio(&self, _: &HashMap<String, String>, _: Option<A>) -> Option<A> {
         None
     }
 }
