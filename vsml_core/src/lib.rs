@@ -222,7 +222,7 @@ where
                     }
                 }
             }
-            ObjectData::Text(_) => {}
+            ObjectData::Text { .. } => {}
         }
     }
 
@@ -339,7 +339,7 @@ where
                     mixer.mix_audio(result, start_time, ancestor_duration.min(duration));
                 }
             }
-            ObjectData::Text(_) => {}
+            ObjectData::Text { .. } => {}
         }
     }
 

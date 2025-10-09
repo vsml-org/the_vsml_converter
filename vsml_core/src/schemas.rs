@@ -407,6 +407,18 @@ impl<I, A> Debug for dyn ObjectProcessor<I, A> {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct TextStyleData {
+    pub color: Option<(u8, u8, u8, u8)>,
+    pub font_family: Vec<String>,
+}
+
+#[derive(Debug)]
+pub struct TextData {
+    pub text: String,
+    pub style: TextStyleData,
+}
+
 /// Elementまたはテキスト1つに相当するデータ
 #[derive(Debug)]
 pub enum ObjectData<I, A> {
@@ -418,11 +430,15 @@ pub enum ObjectData<I, A> {
         duration: f64,
         attributes: HashMap<String, String>,
         /// エレメントの表示位置とサイズ
+        /// x, yは親エレメントからの相対位置
         element_rect: ElementRect,
         styles: StyleData,
         children: Vec<ObjectData<I, A>>,
     },
-    Text(String),
+    Text {
+        data: Vec<TextData>,
+        rect_size: RectSize,
+    },
 }
 
 #[derive(Debug)]
