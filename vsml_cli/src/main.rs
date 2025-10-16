@@ -12,6 +12,7 @@ use vsml_iv_converter::convert;
 use vsml_parser::{VSSLoader, parse};
 use vsml_processor::audio::AudioProcessor;
 use vsml_processor::image::ImageProcessor;
+use vsml_processor::text::TextProcessor;
 use vsml_processor::video::VideoProcessor;
 
 #[derive(Parser, Debug)]
@@ -82,6 +83,11 @@ fn main() {
         (
             "vid".to_string(),
             Arc::new(VideoProcessor::new(device.clone(), queue.clone()))
+                as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+        ),
+        (
+            "txt".to_string(),
+            Arc::new(TextProcessor::new(device.clone(), queue.clone()))
                 as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
         ),
     ]);
