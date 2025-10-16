@@ -2,10 +2,7 @@
 mod tests;
 
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::{
-    ImageEffectStyle, Property, Rect, Renderer, RenderingContext, RenderingInfo, TextData,
-    TextRenderingInfo,
-};
+use vsml_core::{ImageEffectStyle, Property, Renderer, RenderingContext, RenderingInfo};
 use wgpu::util::DeviceExt;
 
 pub struct RendererImpl {
@@ -59,10 +56,6 @@ impl Renderer for RendererImpl {
 
     fn render_image(&mut self, image: Self::Image, info: RenderingInfo) {
         self.images.push((image, info));
-    }
-
-    fn render_text(&mut self, _text_data: &[TextData], _info: TextRenderingInfo) -> Rect {
-        todo!()
     }
 
     fn render_box(&mut self, _property: Property, _info: RenderingInfo) {
