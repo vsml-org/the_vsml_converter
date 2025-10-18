@@ -92,6 +92,12 @@ pub struct Property {}
 pub struct ImageEffectStyle {}
 pub struct AudioEffectStyle {}
 
+/// テキストをレンダリングするトレイト
+pub trait TextRenderer {
+    type Image;
+    fn render_text(&mut self, text_data: &schemas::TextData) -> Self::Image;
+}
+
 /// rendererから見た左上の座標とサイズ
 #[derive(Debug)]
 pub struct RenderingInfo {
@@ -131,7 +137,7 @@ where
     }
 }
 
-pub fn render_frame_image<R, A>(
+pub fn render_frame_image<R, A, T>(
     &schemas::IVData {
         resolution_x,
         resolution_y,
@@ -141,19 +147,23 @@ pub fn render_frame_image<R, A>(
     }: &schemas::IVData<R::Image, A>,
     frame_number: u32,
     mut rendering_context: R,
+    text_renderer: &mut T,
 ) -> R::Image
 where
     R: RenderingContext,
+    T: TextRenderer<Image = R::Image>,
 {
-    fn render_inner<R, A>(
+    fn render_inner<R, A, T>(
         rendering_context: &mut R,
         renderer: &mut R::Renderer,
+        text_renderer: &mut T,
         object: &ObjectData<R::Image, A>,
         target_time: f64,
         outer_width: f32,
         outer_height: f32,
     ) where
         R: RenderingContext,
+        T: TextRenderer<Image = R::Image>,
     {
         match object {
             &ObjectData::Element {
@@ -180,6 +190,7 @@ where
                             render_inner(
                                 rendering_context,
                                 &mut inner_renderer,
+                                text_renderer,
                                 object,
                                 target_time,
                                 element_rect.width,
@@ -201,6 +212,7 @@ where
                                 render_inner(
                                     rendering_context,
                                     &mut inner_renderer,
+                                    text_renderer,
                                     object,
                                     target_time,
                                     element_rect.width,
@@ -222,7 +234,22 @@ where
                     }
                 }
             }
-            ObjectData::Text { .. } => {}
+            ObjectData::Text { data, rect_size } => {
+                // TODO: 複数のTextDataを適切にレイアウトして描画
+                // 現状は最初のTextDataのみをレンダリング
+                for text_data in data {
+                    let text_image = text_renderer.render_text(text_data);
+
+                    // TODO: テキストの位置計算（alignment対応など）
+                    let rendering_info = RenderingInfo {
+                        x: 0.0,
+                        y: 0.0,
+                        width: rect_size.width,
+                        height: rect_size.height,
+                    };
+                    renderer.render_image(text_image, rendering_info);
+                }
+            }
         }
     }
 
@@ -230,6 +257,7 @@ where
     render_inner(
         &mut rendering_context,
         &mut renderer,
+        text_renderer,
         object,
         frame_number as f64 / fps as f64,
         resolution_x as f32,

@@ -14,6 +14,7 @@ use vsml_processor::audio::AudioProcessor;
 use vsml_processor::image::ImageProcessor;
 use vsml_processor::text::TextProcessor;
 use vsml_processor::video::VideoProcessor;
+use vsml_text_renderer::TextRendererContext;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -91,15 +92,18 @@ fn main() {
                 as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
         ),
     ]);
-    let iv_data = convert(&vsml, &provider);
+    let text_renderer_context = TextRendererContext::new(device.clone(), queue.clone());
+    let iv_data = convert(&vsml, &provider, &text_renderer_context);
 
     let mut rendering_context = RenderingContextImpl::new(device.clone(), queue.clone());
     let mut mixing_context = MixingContextImpl::new();
+    let mut text_renderer = TextRendererContext::new(device.clone(), queue.clone());
 
     encode(
         iv_data,
         &mut rendering_context,
         &mut mixing_context,
+        &mut text_renderer,
         args.output_path.as_deref(),
         args.overwrite,
         device,
