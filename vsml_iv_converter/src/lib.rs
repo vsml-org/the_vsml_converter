@@ -11,9 +11,15 @@ use vsml_core::schemas::{
     RectSize, StyleData, TextData, TextStyleData,
 };
 
+/// テキストのメトリクス（サイズ）を計算するトレイト
+pub trait TextMetricsCalculator {
+    fn calculate_text_size(&self, text_data: &[TextData]) -> RectSize;
+}
+
 pub fn convert<I, A>(
     vsml: &VSML,
     object_processor_provider: &impl ObjectProcessorProvider<I, A>,
+    text_metrics_calculator: &impl TextMetricsCalculator,
 ) -> IVData<I, A> {
     let &VSML {
         meta: Meta { ref vss_items },
@@ -51,6 +57,7 @@ pub fn convert<I, A>(
             attributes,
             children,
             object_processor_provider,
+            text_metrics_calculator,
             None,
         )
     });
@@ -236,6 +243,7 @@ fn convert_tag_element<'a, I, A>(
     attributes: &HashMap<String, String>,
     children: &'a [Element],
     object_processor_provider: &impl ObjectProcessorProvider<I, A>,
+    text_metrics_calculator: &impl TextMetricsCalculator,
     parent_text_style: Option<TextStyleData>,
 ) -> ObjectData<I, A> {
     // スタイル情報
@@ -341,13 +349,14 @@ fn convert_tag_element<'a, I, A>(
                 attributes,
                 children,
                 object_processor_provider,
+                text_metrics_calculator,
                 Some(text_style.clone()),
             ),
             // TODO: VSSプロパティとしてwidth, heightが追加された場合、ここでwidth, heightも必要になる
             // 仮に横書きであれば水平方向に書いた描画範囲の幅がwidthを超える場合、改行して次の行に続ける必要がある
             // そのため、折り返しの判定をするために、width(縦書きの場合はheight)が必要になる
             // 現状は、textの描画サイズがそのままtxtタグの描画サイズになるため、width, heightは不要
-            Element::Text(text) => convert_element_text(text, &text_style),
+            Element::Text(text) => convert_element_text(text, &text_style, text_metrics_calculator),
         });
         // 子要素によって親要素のstyleが変わる場合の処理
         match &child_object_data {
@@ -408,17 +417,17 @@ fn convert_tag_element<'a, I, A>(
     }
 }
 
-fn convert_element_text<I, A>(text: &str, style: &TextStyleData) -> ObjectData<I, A> {
+fn convert_element_text<I, A>(
+    text: &str,
+    style: &TextStyleData,
+    text_metrics_calculator: &impl TextMetricsCalculator,
+) -> ObjectData<I, A> {
     let data = vec![TextData {
         text: text.to_owned(),
         style: style.clone(),
     }];
 
-    // TODO: TextRendererを使って実際の描画サイズを計算
-    let rect_size = RectSize {
-        width: 0.0,
-        height: 0.0,
-    };
+    let rect_size = text_metrics_calculator.calculate_text_size(&data);
 
     // TODO: text内で部分色指定とかを対応する場合、textを分割して複数のTextDataを作る
     ObjectData::Text { data, rect_size }

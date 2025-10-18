@@ -1,0 +1,13 @@
+[package]
+name = "vsml_text_renderer"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+vsml_core.workspace = true
+vsml_common_image.workspace = true
+vsml_iv_converter.workspace = true
+cosmic-text.workspace = true
+font-kit.workspace = true
+wgpu.workspace = true

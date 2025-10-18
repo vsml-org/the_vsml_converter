@@ -128,6 +128,16 @@ fn test_calc_rendering_info() {
 pub struct MockImage {}
 pub struct MockAudio {}
 
+struct MockTextRenderer;
+
+impl TextRenderer for MockTextRenderer {
+    type Image = MockImage;
+
+    fn render_text(&mut self, _text_data: &schemas::TextData) -> Self::Image {
+        MockImage {}
+    }
+}
+
 #[test]
 fn test_render_frame_image() {
     let iv_data = schemas::IVData::<MockImage, MockAudio> {
@@ -162,7 +172,8 @@ fn test_render_frame_image() {
             .returning(|_, _| MockImage {});
         mock_renderer
     });
-    render_frame_image(&iv_data, 0, mock_rc);
+    let mut mock_text_renderer = MockTextRenderer;
+    render_frame_image(&iv_data, 0, mock_rc, &mut mock_text_renderer);
 }
 
 #[test]
