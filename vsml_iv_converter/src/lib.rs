@@ -19,7 +19,7 @@ pub trait TextMetricsCalculator {
 pub fn convert<I, A>(
     vsml: &VSML,
     object_processor_provider: &impl ObjectProcessorProvider<I, A>,
-    text_metrics_calculator: &impl TextMetricsCalculator,
+    text_metrics_calculator: &dyn TextMetricsCalculator,
 ) -> IVData<I, A> {
     let &VSML {
         meta: Meta { ref vss_items },
@@ -243,7 +243,7 @@ fn convert_tag_element<'a, I, A>(
     attributes: &HashMap<String, String>,
     children: &'a [Element],
     object_processor_provider: &impl ObjectProcessorProvider<I, A>,
-    text_metrics_calculator: &impl TextMetricsCalculator,
+    text_metrics_calculator: &dyn TextMetricsCalculator,
     parent_text_style: Option<TextStyleData>,
 ) -> ObjectData<I, A> {
     // スタイル情報
@@ -420,7 +420,7 @@ fn convert_tag_element<'a, I, A>(
 fn convert_element_text<I, A>(
     text: &str,
     style: &TextStyleData,
-    text_metrics_calculator: &impl TextMetricsCalculator,
+    text_metrics_calculator: &dyn TextMetricsCalculator,
 ) -> ObjectData<I, A> {
     let data = vec![TextData {
         text: text.to_owned(),

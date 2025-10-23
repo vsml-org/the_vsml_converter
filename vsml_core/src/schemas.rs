@@ -396,7 +396,7 @@ pub trait ObjectProcessor<I, A> {
         &self,
         render_sec: f64,
         attributes: &HashMap<String, String>,
-        image: Option<I>,
+        input: ProcessorInput<I>,
     ) -> Option<I>;
     fn process_audio(&self, attributes: &HashMap<String, String>, audio: Option<A>) -> Option<A>;
 }
@@ -413,10 +413,22 @@ pub struct TextStyleData {
     pub font_family: Vec<String>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TextData {
     pub text: String,
     pub style: TextStyleData,
+}
+
+/// ObjectProcessorへの入力データ
+/// 画像データと文字データは排他的（同時には存在しない）
+#[derive(Debug)]
+pub enum ProcessorInput<I> {
+    /// 入力なし
+    None,
+    /// 画像入力
+    Image(I),
+    /// テキスト入力
+    Text(Vec<TextData>),
 }
 
 /// Elementまたはテキスト1つに相当するデータ

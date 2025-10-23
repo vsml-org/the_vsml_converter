@@ -1,4 +1,4 @@
-use crate::schemas::{ObjectData, ObjectType};
+use crate::schemas::{ObjectData, ObjectType, ProcessorInput};
 
 pub mod schemas;
 #[cfg(test)]
@@ -206,7 +206,19 @@ where
                         renderer.render_image(child_image, rendering_info);
                     }
                     ObjectType::Other(processor) => {
-                        let child_image = (!children.is_empty()).then(|| {
+                        // 子要素からTextDataを収集
+                        let mut text_data_list: Vec<schemas::TextData> = Vec::new();
+                        for child in children {
+                            if let ObjectData::Text { data, .. } = child {
+                                text_data_list.extend(data.iter().cloned());
+                            }
+                        }
+
+                        let input = if !text_data_list.is_empty() {
+                            // txtタグの場合: TextDataを渡す
+                            ProcessorInput::Text(text_data_list)
+                        } else if !children.is_empty() {
+                            // img, vidなどの場合: 子要素をレンダリング
                             let mut inner_renderer = rendering_context.create_renderer();
                             children.iter().for_each(|object| {
                                 render_inner(
@@ -219,13 +231,17 @@ where
                                     element_rect.height,
                                 )
                             });
-                            inner_renderer.render(
+                            let image = inner_renderer.render(
                                 element_rect.width.ceil() as u32,
                                 element_rect.height.ceil() as u32,
-                            )
-                        });
+                            );
+                            ProcessorInput::Image(image)
+                        } else {
+                            ProcessorInput::None
+                        };
+
                         println!("[debug] target_time: {}", target_time);
-                        let result = processor.process_image(target_time, attributes, child_image);
+                        let result = processor.process_image(target_time, attributes, input);
                         if let Some(result) = result {
                             let rendering_info =
                                 element_rect.calc_rendering_info(outer_width, outer_height);
@@ -234,21 +250,8 @@ where
                     }
                 }
             }
-            ObjectData::Text { data, rect_size } => {
-                // TODO: 複数のTextDataを適切にレイアウトして描画
-                // 現状は最初のTextDataのみをレンダリング
-                for text_data in data {
-                    let text_image = text_renderer.render_text(text_data);
-
-                    // TODO: テキストの位置計算（alignment対応など）
-                    let rendering_info = RenderingInfo {
-                        x: 0.0,
-                        y: 0.0,
-                        width: rect_size.width,
-                        height: rect_size.height,
-                    };
-                    renderer.render_image(text_image, rendering_info);
-                }
+            ObjectData::Text { .. } => {
+                // TextDataは親要素のProcessorで処理される
             }
         }
     }

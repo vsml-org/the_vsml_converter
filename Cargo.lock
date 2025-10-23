@@ -2295,6 +2295,7 @@ dependencies = [
  "vsml_common_audio",
  "vsml_common_image",
  "vsml_core",
+ "vsml_text_renderer",
  "wgpu",
 ]
 
