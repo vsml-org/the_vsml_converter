@@ -71,6 +71,7 @@ fn main() {
     let vsml_string = std::fs::read_to_string(args.input_path).unwrap();
     let vsml = parse(&vsml_string, &VSSFileLoader).unwrap();
     let (device, queue) = get_gpu_device();
+    let text_renderer_context = Arc::new(TextRendererContext::new(device.clone(), queue.clone()));
     let provider = HashMap::from([
         (
             "img".to_string(),
@@ -88,12 +89,14 @@ fn main() {
         ),
         (
             "txt".to_string(),
-            Arc::new(TextProcessor::new(device.clone(), queue.clone()))
-                as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+            Arc::new(TextProcessor::new(
+                device.clone(),
+                queue.clone(),
+                Arc::clone(&text_renderer_context),
+            )) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
         ),
     ]);
-    let text_renderer_context = TextRendererContext::new(device.clone(), queue.clone());
-    let iv_data = convert(&vsml, &provider, &text_renderer_context);
+    let iv_data = convert(&vsml, &provider, text_renderer_context.as_ref());
 
     let mut rendering_context = RenderingContextImpl::new(device.clone(), queue.clone());
     let mut mixing_context = MixingContextImpl::new();
