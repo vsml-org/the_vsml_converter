@@ -1,4 +1,4 @@
-use cosmic_text::{Buffer, FontSystem, Metrics, Shaping, SwashCache};
+use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, SwashCache};
 use std::cell::RefCell;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{RectSize, TextData};
@@ -32,41 +32,118 @@ impl TextRendererContext {
     /// TextDataからテキストをレンダリング
     pub fn render_text(&self, text_data: &TextData) -> VsmlImage {
         let mut font_system = self.font_system.borrow_mut();
-        let mut _swash_cache = self.swash_cache.borrow_mut();
+        let mut swash_cache = self.swash_cache.borrow_mut();
 
-        let TextData { text, style: _ } = text_data;
+        let TextData { text, style } = text_data;
 
         // TODO: font-sizeをTextStyleDataから取得
         // 現状はデフォルト値を使用
-        let font_size = 16.0;
-        let line_height = 20.0;
+        let font_size = 32.0;
+        let line_height = 80.0;
 
         let mut buffer = Buffer::new(&mut *font_system, Metrics::new(font_size, line_height));
 
-        // TODO: フォントファミリーの設定
-        // - TextStyleData.font_familyからフォントを選択
-        // - cosmic_text::Attrsを使用してフォント属性を設定
-        // - Family::Name()でフォント名を指定
+        // フォントファミリーの設定
+        let font_family = if !style.font_family.is_empty() {
+            Family::Name(&style.font_family[0])
+        } else {
+            Family::SansSerif
+        };
 
-        // TODO: TextStyleDataにfont-weight, font-style等を追加した場合、Attrsに反映
+        let attrs = Attrs::new().family(font_family);
 
-        buffer.set_text(
-            &mut *font_system,
-            text,
-            &cosmic_text::Attrs::new(),
-            Shaping::Advanced,
-        );
+        buffer.set_text(&mut *font_system, text, &attrs, Shaping::Advanced);
         buffer.shape_until_scroll(&mut *font_system, false);
 
-        // TODO: cosmic-textのSwashCacheを使ってラスタライズ
-        // 1. buffer.layout_runs()で各行の情報を取得
-        // 2. 各グリフをswash_cache.get_image()でラスタライズ
-        // 3. RGBAバッファに描画（colorを適用）
-        // 4. wgpu::Textureに変換
-        //    - device.create_texture()でテクスチャ作成
-        //    - queue.write_texture()でピクセルデータを書き込み
+        // テキストのサイズを計算
+        let (width, height) = self.calculate_buffer_size(&buffer);
+        let width = width.ceil() as u32;
+        let height = height.ceil() as u32;
 
-        todo!("cosmic-textのラスタライズ結果をwgpu::Textureに変換")
+        // RGBAバッファを作成（透明で初期化）
+        let mut rgba_buffer = vec![0u8; (width * height * 4) as usize];
+
+        // テキストの色を取得（デフォルトは白）
+        let text_color = style.color.unwrap_or((255, 255, 255, 255));
+
+        // cosmic-textでテキストをラスタライズ
+        for run in buffer.layout_runs() {
+            for glyph in run.glyphs.iter() {
+                let physical_glyph = glyph.physical((0.0, 0.0), 1.0);
+
+                if let Some(image) =
+                    swash_cache.get_image(&mut *font_system, physical_glyph.cache_key)
+                {
+                    let glyph_x = physical_glyph.x as i32;
+                    let glyph_y = (run.line_y as i32) + physical_glyph.y;
+
+                    // グリフの各ピクセルをRGBAバッファに描画
+                    for (pixel_y, row) in image
+                        .data
+                        .chunks(image.placement.width as usize)
+                        .enumerate()
+                    {
+                        for (pixel_x, &alpha) in row.iter().enumerate() {
+                            let x = glyph_x + pixel_x as i32;
+                            let y = glyph_y + pixel_y as i32;
+
+                            if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
+                                let pixel_index = ((y as u32 * width + x as u32) * 4) as usize;
+
+                                // アルファブレンディング
+                                let alpha_f = alpha as f32 / 255.0;
+                                rgba_buffer[pixel_index] = ((text_color.0 as f32 * alpha_f) as u8)
+                                    .max(rgba_buffer[pixel_index]);
+                                rgba_buffer[pixel_index + 1] = ((text_color.1 as f32 * alpha_f)
+                                    as u8)
+                                    .max(rgba_buffer[pixel_index + 1]);
+                                rgba_buffer[pixel_index + 2] = ((text_color.2 as f32 * alpha_f)
+                                    as u8)
+                                    .max(rgba_buffer[pixel_index + 2]);
+                                rgba_buffer[pixel_index + 3] = ((text_color.3 as f32 * alpha_f)
+                                    as u8)
+                                    .max(rgba_buffer[pixel_index + 3]);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // wgpu::Textureに変換
+        let size = wgpu::Extent3d {
+            width,
+            height,
+            depth_or_array_layers: 1,
+        };
+        let texture = self._device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Text Texture"),
+            size,
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        self._queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                aspect: wgpu::TextureAspect::All,
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            &rgba_buffer,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * width),
+                rows_per_image: Some(height),
+            },
+            size,
+        );
+
+        texture
     }
 
     /// TextDataからサイズを計算
@@ -77,8 +154,8 @@ impl TextRendererContext {
         let TextData { text, style: _ } = &text_data[0];
 
         // TODO: font-sizeをTextStyleDataから取得
-        let font_size = 16.0;
-        let line_height = 20.0;
+        let font_size = 32.0;
+        let line_height = 80.0;
 
         let mut buffer = Buffer::new(&mut *font_system, Metrics::new(font_size, line_height));
 
