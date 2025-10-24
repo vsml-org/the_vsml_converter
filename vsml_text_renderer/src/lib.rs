@@ -39,7 +39,7 @@ impl TextRendererContext {
         // TODO: font-sizeをTextStyleDataから取得
         // 現状はデフォルト値を使用
         let font_size = 32.0;
-        let line_height = 80.0;
+        let line_height = 40.0;
 
         let mut buffer = Buffer::new(&mut *font_system, Metrics::new(font_size, line_height));
 
@@ -55,10 +55,68 @@ impl TextRendererContext {
         buffer.set_text(&mut *font_system, text, &attrs, Shaping::Advanced);
         buffer.shape_until_scroll(&mut *font_system, false);
 
-        // テキストのサイズを計算
-        let (width, height) = self.calculate_buffer_size(&buffer);
-        let width = width.ceil() as u32;
-        let height = height.ceil() as u32;
+        // 行の範囲とグリフの横幅を計算
+        let mut min_x = i32::MAX;
+        let mut max_x = i32::MIN;
+        let mut min_y = 0.0f32;
+        let mut max_y = 0.0f32;
+
+        // デバッグ用: グリフの位置情報を収集
+        println!("[DEBUG] Calculating glyph bounds for text: '{}'", text);
+
+        for run in buffer.layout_runs() {
+            println!(
+                "[DEBUG] Run info: line_y={}, line_top={}, line_height={}",
+                run.line_y, run.line_top, run.line_height
+            );
+
+            // 行の範囲を更新
+            min_y = min_y.min(run.line_top);
+            max_y = max_y.max(run.line_top + run.line_height);
+
+            for glyph in run.glyphs.iter() {
+                println!(
+                    "[DEBUG]   Raw glyph info: x={}, y={}, level={:?}",
+                    glyph.x, glyph.y, glyph.level
+                );
+
+                let physical_glyph = glyph.physical((0.0, run.line_y), 1.0);
+                println!(
+                    "[DEBUG]   Physical glyph (0,line_y): x={}, y={}",
+                    physical_glyph.x, physical_glyph.y
+                );
+
+                if let Some(image) =
+                    swash_cache.get_image(&mut *font_system, physical_glyph.cache_key)
+                {
+                    let glyph_x = physical_glyph.x + image.placement.left;
+                    let glyph_y = physical_glyph.y - image.placement.top;
+
+                    // デバッグ出力
+                    println!(
+                        "[DEBUG]   Final position: x={}, y={}, placement.top={}, placement.left={}",
+                        glyph_x, glyph_y, image.placement.top, image.placement.left
+                    );
+
+                    min_x = min_x.min(glyph_x);
+                    max_x = max_x.max(glyph_x + image.placement.width as i32);
+                }
+            }
+        }
+
+        // バッファサイズを決定（行の高さ全体を使用）
+        let width = if max_x > min_x {
+            (max_x - min_x) as u32
+        } else {
+            1
+        };
+        let height = (max_y - min_y).ceil() as u32;
+        let offset_y = min_y as i32;
+
+        println!(
+            "[DEBUG] Buffer size: {}x{}, offset: ({}, {})",
+            width, height, min_x, offset_y
+        );
 
         // RGBAバッファを作成（透明で初期化）
         let mut rgba_buffer = vec![0u8; (width * height * 4) as usize];
@@ -66,16 +124,16 @@ impl TextRendererContext {
         // テキストの色を取得（デフォルトは白）
         let text_color = style.color.unwrap_or((255, 255, 255, 255));
 
-        // cosmic-textでテキストをラスタライズ
+        // cosmic-textでテキストをラスタライズ（2回目のイテレーション）
         for run in buffer.layout_runs() {
             for glyph in run.glyphs.iter() {
-                let physical_glyph = glyph.physical((0.0, 0.0), 1.0);
+                let physical_glyph = glyph.physical((0.0, run.line_y), 1.0);
 
                 if let Some(image) =
                     swash_cache.get_image(&mut *font_system, physical_glyph.cache_key)
                 {
-                    let glyph_x = physical_glyph.x as i32;
-                    let glyph_y = (run.line_y as i32) + physical_glyph.y;
+                    let glyph_x = physical_glyph.x + image.placement.left - min_x;
+                    let glyph_y = physical_glyph.y - image.placement.top - offset_y;
 
                     // グリフの各ピクセルをRGBAバッファに描画
                     for (pixel_y, row) in image
@@ -155,7 +213,7 @@ impl TextRendererContext {
 
         // TODO: font-sizeをTextStyleDataから取得
         let font_size = 32.0;
-        let line_height = 80.0;
+        let line_height = 40.0;
 
         let mut buffer = Buffer::new(&mut *font_system, Metrics::new(font_size, line_height));
 
