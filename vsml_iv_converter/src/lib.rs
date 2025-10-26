@@ -379,6 +379,7 @@ fn convert_tag_element<'a, I, A>(
                     }
                 }
                 if layer_mode == LayerMode::Single {
+                    // TODO: 並べる方向を決めるpropertyが来たらそれに従う
                     children_offset_position.0 += element_rect.width;
                     target_size.width += element_rect.width;
                     target_size.height = target_size.height.max(element_rect.height);
@@ -388,8 +389,9 @@ fn convert_tag_element<'a, I, A>(
                 }
             }
             ObjectData::Text { rect_size, .. } => {
-                target_size.width = target_size.width.max(rect_size.width);
-                target_size.height += rect_size.height;
+                // TODO: 並べる方向を決めるpropertyが来たらそれに従う
+                target_size.width += rect_size.width;
+                target_size.height = target_size.height.max(rect_size.height);
             }
         }
         object_data_children.push(child_object_data);
