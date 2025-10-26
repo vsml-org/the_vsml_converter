@@ -29,6 +29,10 @@ impl<A> ObjectProcessor<VsmlImage, A> for ImageProcessor {
         RectSize::new(image.width() as f32, image.height() as f32)
     }
 
+    fn calculate_text_size(&self, _text_data: &[vsml_core::schemas::TextData]) -> RectSize {
+        RectSize::ZERO
+    }
+
     fn process_image(
         &self,
         _: f64,

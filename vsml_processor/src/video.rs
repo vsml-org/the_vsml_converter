@@ -109,6 +109,10 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
         RectSize::new(rect[0].parse().unwrap(), rect[1].parse().unwrap())
     }
 
+    fn calculate_text_size(&self, _text_data: &[vsml_core::schemas::TextData]) -> RectSize {
+        RectSize::ZERO
+    }
+
     fn process_image(
         &self,
         target_time: f64,

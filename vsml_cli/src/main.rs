@@ -88,15 +88,13 @@ fn main() {
         ),
         (
             "txt".to_string(),
-            Arc::new(TextProcessor::new(
+            Arc::new(TextProcessor::new(TextRendererContext::new(
                 device.clone(),
                 queue.clone(),
-                TextRendererContext::new(device.clone(), queue.clone()),
-            )) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+            ))) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
         ),
     ]);
-    let trc = TextRendererContext::new(device.clone(), queue.clone());
-    let iv_data = convert(&vsml, &provider, &trc);
+    let iv_data = convert(&vsml, &provider);
 
     let mut rendering_context = RenderingContextImpl::new(device.clone(), queue.clone());
     let mut mixing_context = MixingContextImpl::new();

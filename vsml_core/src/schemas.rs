@@ -392,6 +392,7 @@ pub trait ObjectProcessor<I, A> {
     fn name(&self) -> &str;
     fn default_duration(&self, attributes: &HashMap<String, String>) -> f64;
     fn default_image_size(&self, attributes: &HashMap<String, String>) -> RectSize;
+    fn calculate_text_size(&self, text_data: &[TextData]) -> RectSize;
     fn process_image(
         &self,
         render_sec: f64,
@@ -449,7 +450,6 @@ pub enum ObjectData<I, A> {
     },
     Text {
         data: Vec<TextData>,
-        rect_size: RectSize,
     },
 }
 

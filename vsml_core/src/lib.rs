@@ -95,7 +95,7 @@ pub struct AudioEffectStyle {}
 /// テキストをレンダリングするトレイト
 pub trait TextRenderer {
     type Image;
-    fn render_text(&mut self, text_data: &schemas::TextData) -> Self::Image;
+    fn render_text(&mut self, text_data: &[schemas::TextData]) -> Self::Image;
 }
 
 /// rendererから見た左上の座標とサイズ
@@ -204,7 +204,7 @@ where
                         // 子要素からTextDataを収集
                         let mut text_data_list: Vec<schemas::TextData> = Vec::new();
                         for child in children {
-                            if let ObjectData::Text { data, .. } = child {
+                            if let ObjectData::Text { data } = child {
                                 text_data_list.extend(data.iter().cloned());
                             }
                         }

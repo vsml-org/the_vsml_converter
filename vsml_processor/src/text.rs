@@ -5,22 +5,12 @@ use vsml_core::schemas::{ObjectProcessor, ProcessorInput, RectSize};
 use vsml_text_renderer::TextRendererContext;
 
 pub struct TextProcessor {
-    _device: wgpu::Device,
-    _queue: wgpu::Queue,
     text_renderer: TextRendererContext,
 }
 
 impl TextProcessor {
-    pub fn new(
-        device: wgpu::Device,
-        queue: wgpu::Queue,
-        text_renderer: TextRendererContext,
-    ) -> Self {
-        Self {
-            _device: device,
-            _queue: queue,
-            text_renderer,
-        }
+    pub fn new(text_renderer: TextRendererContext) -> Self {
+        Self { text_renderer }
     }
 }
 
@@ -39,24 +29,26 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for TextProcessor {
         RectSize::ZERO
     }
 
+    fn calculate_text_size(&self, text_data: &[vsml_core::schemas::TextData]) -> RectSize {
+        self.text_renderer.calculate_text_size(text_data)
+    }
+
     fn process_image(
         &self,
         _time: f64,
         _attributes: &HashMap<String, String>,
         input: ProcessorInput<VsmlImage>,
     ) -> Option<VsmlImage> {
-        match input {
-            ProcessorInput::Text(text_data_vec) => {
-                // TODO: 複数のTextDataを適切にレイアウトして1つの画像に合成
-                // 現状は最初のTextDataのみをレンダリング
-                if text_data_vec.is_empty() {
-                    return None;
-                }
-                let image = self.text_renderer.render_text(&text_data_vec[0]);
-                Some(image)
-            }
-            _ => None,
+        let ProcessorInput::Text(text_data_vec) = input else {
+            return None;
+        };
+        if text_data_vec.is_empty() {
+            return None;
         }
+        // TODO: 複数のTextDataを適切にレイアウトして1つの画像に合成
+        // 現状は最初のTextDataのみをレンダリング
+        let image = self.text_renderer.render_text(&text_data_vec);
+        Some(image)
     }
 
     fn process_audio(
