@@ -235,6 +235,8 @@ fn parse_font_family(input: &str) -> Vec<String> {
     result
 }
 
+// TODO: 引数多すぎ警告を修正する
+#[allow(clippy::too_many_arguments)]
 fn convert_tag_element<'a, I, A>(
     vss_scanner: &mut VssScanner<'a>,
     offset_start_time: f64,

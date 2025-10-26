@@ -100,13 +100,11 @@ fn main() {
 
     let mut rendering_context = RenderingContextImpl::new(device.clone(), queue.clone());
     let mut mixing_context = MixingContextImpl::new();
-    let mut text_renderer = TextRendererContext::new(device.clone(), queue.clone());
 
     encode(
         iv_data,
         &mut rendering_context,
         &mut mixing_context,
-        &mut text_renderer,
         args.output_path.as_deref(),
         args.overwrite,
         device,

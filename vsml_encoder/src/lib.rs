@@ -4,14 +4,13 @@ use temp_dir::TempDir;
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{IVData, ObjectData};
-use vsml_core::{MixingContext, RenderingContext, TextRenderer, mix_audio, render_frame_image};
+use vsml_core::{MixingContext, RenderingContext, mix_audio, render_frame_image};
 use wgpu::util::DeviceExt;
 
-pub fn encode<R, M, T>(
+pub fn encode<R, M>(
     iv_data: IVData<R::Image, M::Audio>,
     mut rendering_context: R,
     mut mixing_context: M,
-    text_renderer: &mut T,
     output_path: Option<&Path>,
     overwrite: bool,
     device: wgpu::Device,
@@ -19,7 +18,6 @@ pub fn encode<R, M, T>(
 ) where
     R: RenderingContext<Image = VsmlImage>,
     M: MixingContext<Audio = VsmlAudio>,
-    T: TextRenderer<Image = R::Image>,
 {
     let ObjectData::Element { duration, .. } = iv_data.object else {
         panic!()
@@ -32,7 +30,7 @@ pub fn encode<R, M, T>(
     let d = d.path();
 
     for f in 0..whole_frames.round() as u32 {
-        let frame_image = render_frame_image(&iv_data, f, &mut rendering_context, text_renderer);
+        let frame_image = render_frame_image(&iv_data, f, &mut rendering_context);
         let save_path = d.join(format!("frame_{}.png", f));
 
         let mut encoder =

@@ -41,7 +41,7 @@ impl TextRendererContext {
         let font_size = 32.0;
         let line_height = 40.0;
 
-        let mut buffer = Buffer::new(&mut *font_system, Metrics::new(font_size, line_height));
+        let mut buffer = Buffer::new(&mut font_system, Metrics::new(font_size, line_height));
 
         // フォントファミリーの設定
         let font_family = if !style.font_family.is_empty() {
@@ -52,8 +52,8 @@ impl TextRendererContext {
 
         let attrs = Attrs::new().family(font_family);
 
-        buffer.set_text(&mut *font_system, text, &attrs, Shaping::Advanced);
-        buffer.shape_until_scroll(&mut *font_system, false);
+        buffer.set_text(&mut font_system, text, &attrs, Shaping::Advanced);
+        buffer.shape_until_scroll(&mut font_system, false);
 
         // 行の範囲とグリフの横幅を計算
         let mut min_x = i32::MAX;
@@ -87,7 +87,7 @@ impl TextRendererContext {
                 );
 
                 if let Some(image) =
-                    swash_cache.get_image(&mut *font_system, physical_glyph.cache_key)
+                    swash_cache.get_image(&mut font_system, physical_glyph.cache_key)
                 {
                     let glyph_x = physical_glyph.x + image.placement.left;
                     let glyph_y = physical_glyph.y - image.placement.top;
@@ -130,7 +130,7 @@ impl TextRendererContext {
                 let physical_glyph = glyph.physical((0.0, run.line_y), 1.0);
 
                 if let Some(image) =
-                    swash_cache.get_image(&mut *font_system, physical_glyph.cache_key)
+                    swash_cache.get_image(&mut font_system, physical_glyph.cache_key)
                 {
                     let glyph_x = physical_glyph.x + image.placement.left - min_x;
                     let glyph_y = physical_glyph.y - image.placement.top - offset_y;
@@ -215,17 +215,17 @@ impl TextRendererContext {
         let font_size = 32.0;
         let line_height = 40.0;
 
-        let mut buffer = Buffer::new(&mut *font_system, Metrics::new(font_size, line_height));
+        let mut buffer = Buffer::new(&mut font_system, Metrics::new(font_size, line_height));
 
         // TODO: フォントファミリーの設定
 
         buffer.set_text(
-            &mut *font_system,
+            &mut font_system,
             text,
             &cosmic_text::Attrs::new(),
             Shaping::Advanced,
         );
-        buffer.shape_until_scroll(&mut *font_system, false);
+        buffer.shape_until_scroll(&mut font_system, false);
 
         let (width, height) = self.calculate_buffer_size(&buffer);
 

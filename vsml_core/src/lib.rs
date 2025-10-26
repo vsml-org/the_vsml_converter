@@ -137,7 +137,7 @@ where
     }
 }
 
-pub fn render_frame_image<R, A, T>(
+pub fn render_frame_image<R, A>(
     &schemas::IVData {
         resolution_x,
         resolution_y,
@@ -147,23 +147,19 @@ pub fn render_frame_image<R, A, T>(
     }: &schemas::IVData<R::Image, A>,
     frame_number: u32,
     mut rendering_context: R,
-    text_renderer: &mut T,
 ) -> R::Image
 where
     R: RenderingContext,
-    T: TextRenderer<Image = R::Image>,
 {
-    fn render_inner<R, A, T>(
+    fn render_inner<R, A>(
         rendering_context: &mut R,
         renderer: &mut R::Renderer,
-        text_renderer: &mut T,
         object: &ObjectData<R::Image, A>,
         target_time: f64,
         outer_width: f32,
         outer_height: f32,
     ) where
         R: RenderingContext,
-        T: TextRenderer<Image = R::Image>,
     {
         match object {
             &ObjectData::Element {
@@ -190,7 +186,6 @@ where
                             render_inner(
                                 rendering_context,
                                 &mut inner_renderer,
-                                text_renderer,
                                 object,
                                 target_time,
                                 element_rect.width,
@@ -224,7 +219,6 @@ where
                                 render_inner(
                                     rendering_context,
                                     &mut inner_renderer,
-                                    text_renderer,
                                     object,
                                     target_time,
                                     element_rect.width,
@@ -260,7 +254,6 @@ where
     render_inner(
         &mut rendering_context,
         &mut renderer,
-        text_renderer,
         object,
         frame_number as f64 / fps as f64,
         resolution_x as f32,
