@@ -1,13 +1,13 @@
 use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, SwashCache};
-use std::cell::RefCell;
+use std::sync::RwLock;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{RectSize, TextData};
 
 pub struct TextRendererContext {
-    _device: wgpu::Device,
-    _queue: wgpu::Queue,
-    font_system: RefCell<FontSystem>,
-    swash_cache: RefCell<SwashCache>,
+    device: wgpu::Device,
+    queue: wgpu::Queue,
+    font_system: RwLock<FontSystem>,
+    swash_cache: RwLock<SwashCache>,
 }
 
 impl TextRendererContext {
@@ -22,17 +22,17 @@ impl TextRendererContext {
         // - font_familyで指定されたフォント名からフォントを検索
 
         Self {
-            _device: device,
-            _queue: queue,
-            font_system: RefCell::new(font_system),
-            swash_cache: RefCell::new(swash_cache),
+            device,
+            queue,
+            font_system: RwLock::new(font_system),
+            swash_cache: RwLock::new(swash_cache),
         }
     }
 
     /// TextDataからテキストをレンダリング
     pub fn render_text(&self, text_data: &TextData) -> VsmlImage {
-        let mut font_system = self.font_system.borrow_mut();
-        let mut swash_cache = self.swash_cache.borrow_mut();
+        let mut font_system = self.font_system.write().unwrap();
+        let mut swash_cache = self.swash_cache.write().unwrap();
 
         let TextData { text, style } = text_data;
 
@@ -61,42 +61,18 @@ impl TextRendererContext {
         let mut min_y = 0.0f32;
         let mut max_y = 0.0f32;
 
-        // デバッグ用: グリフの位置情報を収集
-        println!("[DEBUG] Calculating glyph bounds for text: '{}'", text);
-
         for run in buffer.layout_runs() {
-            println!(
-                "[DEBUG] Run info: line_y={}, line_top={}, line_height={}",
-                run.line_y, run.line_top, run.line_height
-            );
-
             // 行の範囲を更新
             min_y = min_y.min(run.line_top);
             max_y = max_y.max(run.line_top + run.line_height);
 
             for glyph in run.glyphs.iter() {
-                println!(
-                    "[DEBUG]   Raw glyph info: x={}, y={}, level={:?}",
-                    glyph.x, glyph.y, glyph.level
-                );
-
                 let physical_glyph = glyph.physical((0.0, run.line_y), 1.0);
-                println!(
-                    "[DEBUG]   Physical glyph (0,line_y): x={}, y={}",
-                    physical_glyph.x, physical_glyph.y
-                );
 
                 if let Some(image) =
                     swash_cache.get_image(&mut font_system, physical_glyph.cache_key)
                 {
                     let glyph_x = physical_glyph.x + image.placement.left;
-                    let glyph_y = physical_glyph.y - image.placement.top;
-
-                    // デバッグ出力
-                    println!(
-                        "[DEBUG]   Final position: x={}, y={}, placement.top={}, placement.left={}",
-                        glyph_x, glyph_y, image.placement.top, image.placement.left
-                    );
 
                     min_x = min_x.min(glyph_x);
                     max_x = max_x.max(glyph_x + image.placement.width as i32);
@@ -112,11 +88,6 @@ impl TextRendererContext {
         };
         let height = (max_y - min_y).ceil() as u32;
         let offset_y = min_y as i32;
-
-        println!(
-            "[DEBUG] Buffer size: {}x{}, offset: ({}, {})",
-            width, height, min_x, offset_y
-        );
 
         // RGBAバッファを作成（透明で初期化）
         let mut rgba_buffer = vec![0u8; (width * height * 4) as usize];
@@ -174,8 +145,8 @@ impl TextRendererContext {
             height,
             depth_or_array_layers: 1,
         };
-        let texture = self._device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Text Texture"),
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: None,
             size,
             mip_level_count: 1,
             sample_count: 1,
@@ -185,7 +156,7 @@ impl TextRendererContext {
             view_formats: &[],
         });
 
-        self._queue.write_texture(
+        self.queue.write_texture(
             wgpu::TexelCopyTextureInfo {
                 aspect: wgpu::TextureAspect::All,
                 texture: &texture,
@@ -206,7 +177,7 @@ impl TextRendererContext {
 
     /// TextDataからサイズを計算
     pub fn calculate_text_size(&self, text_data: &[TextData]) -> RectSize {
-        let mut font_system = self.font_system.borrow_mut();
+        let mut font_system = self.font_system.write().unwrap();
 
         // TODO: 複数のTextDataに対応（現状は最初の要素のみ）
         let TextData { text, style: _ } = &text_data[0];

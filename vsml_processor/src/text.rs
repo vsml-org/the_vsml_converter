@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::sync::Arc;
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{ObjectProcessor, ProcessorInput, RectSize};
@@ -8,14 +7,14 @@ use vsml_text_renderer::TextRendererContext;
 pub struct TextProcessor {
     _device: wgpu::Device,
     _queue: wgpu::Queue,
-    text_renderer: Arc<TextRendererContext>,
+    text_renderer: TextRendererContext,
 }
 
 impl TextProcessor {
     pub fn new(
         device: wgpu::Device,
         queue: wgpu::Queue,
-        text_renderer: Arc<TextRendererContext>,
+        text_renderer: TextRendererContext,
     ) -> Self {
         Self {
             _device: device,
