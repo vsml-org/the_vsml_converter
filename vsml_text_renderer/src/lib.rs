@@ -1,10 +1,7 @@
 use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, SwashCache};
 use std::sync::RwLock;
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::{
-    TextRenderer,
-    schemas::{RectSize, TextData},
-};
+use vsml_core::schemas::{RectSize, TextData};
 
 pub struct TextRendererContext {
     device: wgpu::Device,
@@ -217,14 +214,5 @@ impl TextRendererContext {
         let height = total_lines as f32 * buffer.metrics().line_height;
 
         (width, height)
-    }
-}
-
-// vsml_core用トレイト実装
-impl TextRenderer for TextRendererContext {
-    type Image = VsmlImage;
-
-    fn render_text(&mut self, text_data: &[TextData]) -> Self::Image {
-        TextRendererContext::render_text(self, text_data)
     }
 }

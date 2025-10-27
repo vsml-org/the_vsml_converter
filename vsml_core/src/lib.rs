@@ -92,12 +92,6 @@ pub struct Property {}
 pub struct ImageEffectStyle {}
 pub struct AudioEffectStyle {}
 
-/// テキストをレンダリングするトレイト
-pub trait TextRenderer {
-    type Image;
-    fn render_text(&mut self, text_data: &[schemas::TextData]) -> Self::Image;
-}
-
 /// rendererから見た左上の座標とサイズ
 #[derive(Debug)]
 pub struct RenderingInfo {
