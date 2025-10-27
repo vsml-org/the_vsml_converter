@@ -204,7 +204,7 @@ where
                         }
 
                         let input = if !text_data_list.is_empty() {
-                            // txtタグの場合: TextDataを渡す
+                            // txtタグなどの場合: TextDataを渡す
                             ProcessorInput::Text(text_data_list)
                         } else if !children.is_empty() {
                             // img, vidなどの場合: 子要素をレンダリング
@@ -239,7 +239,10 @@ where
                 }
             }
             // TextDataは親要素のProcessorで処理される
-            ObjectData::Text(_) => {}
+            ObjectData::Text(_) => {
+                // render_innerは子要素にElementのみ来ることを想定している
+                panic!("only elements or texts can be specified as child elements of an element")
+            }
         }
     }
 

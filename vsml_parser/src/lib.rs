@@ -170,7 +170,13 @@ fn parse_content<L>(node: Node) -> Result<Content, VSMLParseError<L>> {
                 .map_err(|_| VSMLParseError::InvalidSampleRateValue(sampling_rate.to_owned()))
         })
         .transpose()?;
-    let elements = node.children().filter_map(parse_element).collect();
+    let elements: Vec<Element> = node.children().filter_map(parse_element).collect();
+    // TagとTextの混合をチェック
+    let has_tag = elements.iter().any(|e| matches!(e, Element::Tag { .. }));
+    let has_text = elements.iter().any(|e| matches!(e, Element::Text(_)));
+    if has_tag && has_text {
+        panic!("elements contain both Tag and Text, which is not allowed");
+    }
     Ok(Content {
         width,
         height,
@@ -183,14 +189,23 @@ fn parse_content<L>(node: Node) -> Result<Content, VSMLParseError<L>> {
 fn parse_element(node: Node) -> Option<Element> {
     match node.node_type() {
         NodeType::Root => unreachable!(),
-        NodeType::Element => Some(Element::Tag {
-            name: node.tag_name().name().to_owned(),
-            attributes: node
-                .attributes()
-                .map(|attr| (attr.name().to_owned(), attr.value().to_owned()))
-                .collect(),
-            children: node.children().filter_map(parse_element).collect(),
-        }),
+        NodeType::Element => {
+            let children: Vec<Element> = node.children().filter_map(parse_element).collect();
+            // TagとTextの混合をチェック
+            let has_tag = children.iter().any(|e| matches!(e, Element::Tag { .. }));
+            let has_text = children.iter().any(|e| matches!(e, Element::Text(_)));
+            if has_tag && has_text {
+                panic!("elements contain both Tag and Text, which is not allowed");
+            }
+            Some(Element::Tag {
+                name: node.tag_name().name().to_owned(),
+                attributes: node
+                    .attributes()
+                    .map(|attr| (attr.name().to_owned(), attr.value().to_owned()))
+                    .collect(),
+                children,
+            })
+        }
         NodeType::PI | NodeType::Comment => None,
         NodeType::Text => {
             let text = node.text().unwrap().trim();
@@ -347,5 +362,34 @@ mod tests {
                 },
             })
         );
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_vsml_mixed_tag_and_text_children() {
+        let vsml = r#"<vsml>
+<cont resolution="1920x1080" fps="30">
+    <prl>
+        <img src="yellow.jpg" />
+        Text content
+        <img src="yellow.jpg" />
+    </prl>
+</cont>
+</vsml>"#;
+        let mock_vss_loader = MockVSSLoader::new();
+        let _ = parse(vsml, &mock_vss_loader);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_vsml_mixed_tag_and_text_cont_children() {
+        let vsml = r#"<vsml>
+<cont resolution="1920x1080" fps="30">
+    Text content
+    <img src="yellow.jpg" />
+</cont>
+</vsml>"#;
+        let mock_vss_loader = MockVSSLoader::new();
+        let _ = parse(vsml, &mock_vss_loader);
     }
 }
