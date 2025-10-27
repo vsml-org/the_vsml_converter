@@ -198,7 +198,7 @@ where
                         // 子要素からTextDataを収集
                         let mut text_data_list: Vec<schemas::TextData> = Vec::new();
                         for child in children {
-                            if let ObjectData::Text { data } = child {
+                            if let ObjectData::Text(data) = child {
                                 text_data_list.extend(data.iter().cloned());
                             }
                         }
@@ -238,9 +238,8 @@ where
                     }
                 }
             }
-            ObjectData::Text { .. } => {
-                // TextDataは親要素のProcessorで処理される
-            }
+            // TextDataは親要素のProcessorで処理される
+            ObjectData::Text(_) => {}
         }
     }
 
@@ -357,7 +356,7 @@ where
                     mixer.mix_audio(result, start_time, ancestor_duration.min(duration));
                 }
             }
-            ObjectData::Text { .. } => {}
+            ObjectData::Text(_) => {}
         }
     }
 

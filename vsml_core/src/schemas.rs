@@ -448,9 +448,7 @@ pub enum ObjectData<I, A> {
         styles: StyleData,
         children: Vec<ObjectData<I, A>>,
     },
-    Text {
-        data: Vec<TextData>,
-    },
+    Text(Vec<TextData>),
 }
 
 #[derive(Debug)]

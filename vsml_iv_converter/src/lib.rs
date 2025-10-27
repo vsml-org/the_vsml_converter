@@ -381,7 +381,7 @@ fn convert_tag_element<'a, I, A>(
                     target_size.height = target_size.height.max(element_rect.height);
                 }
             }
-            ObjectData::Text { data } => {
+            ObjectData::Text(data) => {
                 // 親要素のprocessorを使ってテキストサイズを計算
                 if let ObjectType::Other(processor) = &object_type {
                     let rect_size = processor.calculate_text_size(data);
@@ -423,5 +423,5 @@ fn convert_element_text<I, A>(text: &str, style: &TextStyleData) -> ObjectData<I
     }];
 
     // TODO: text内で部分色指定とかを対応する場合、textを分割して複数のTextDataを作る
-    ObjectData::Text { data }
+    ObjectData::Text(data)
 }
