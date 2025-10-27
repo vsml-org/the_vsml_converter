@@ -109,6 +109,8 @@ pub fn encode<R, M>(
         .arg(d.join("audio.wav"))
         .arg("-vcodec")
         .arg("libx264")
+        .arg("-pix_fmt")
+        .arg("yuv420p")
         .arg("-acodec")
         .arg("aac")
         .arg(output_path)
