@@ -309,8 +309,9 @@ fn convert_tag_element<'a, I, A>(
                 }
             }
             "font-color" => {
-                let color = rule.value.as_str();
-                text_style.color = Some(color.parse::<FontColor>().unwrap().to_rgba().unwrap());
+                let value = rule.value.as_str();
+                let font_color: FontColor = value.parse().unwrap();
+                text_style.color = Some(font_color.value());
             }
             "font-family" => {
                 let font_family = parse_font_family(rule.value.as_str());
