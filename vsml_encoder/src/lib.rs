@@ -29,8 +29,7 @@ pub fn encode<R, M>(
     let d = TempDir::new().unwrap();
     let d = d.path();
 
-    let bytes_per_row = (iv_data.resolution_x * 4 + wgpu::COPY_BYTES_PER_ROW_ALIGNMENT - 1)
-        / wgpu::COPY_BYTES_PER_ROW_ALIGNMENT
+    let bytes_per_row = (iv_data.resolution_x * 4).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
         * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
     let mut image_buffer = Vec::new();
     for f in 0..whole_frames.round() as u32 {
