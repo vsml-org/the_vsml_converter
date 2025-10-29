@@ -29,7 +29,9 @@ pub fn encode<R, M>(
     let d = TempDir::new().unwrap();
     let d = d.path();
 
-    let bytes_per_row = (iv_data.resolution_x * 4 + wgpu::COPY_BYTES_PER_ROW_ALIGNMENT - 1) / wgpu::COPY_BYTES_PER_ROW_ALIGNMENT * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    let bytes_per_row = (iv_data.resolution_x * 4 + wgpu::COPY_BYTES_PER_ROW_ALIGNMENT - 1)
+        / wgpu::COPY_BYTES_PER_ROW_ALIGNMENT
+        * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
     let mut image_buffer = Vec::new();
     for f in 0..whole_frames.round() as u32 {
         let frame_image = render_frame_image(&iv_data, f, &mut rendering_context);
@@ -76,7 +78,11 @@ pub fn encode<R, M>(
             .expect("poll failed");
 
         image_buffer.clear();
-        slice.get_mapped_range().chunks(bytes_per_row as usize).map(|row| &row[..iv_data.resolution_x as usize * 4]).for_each(|row| image_buffer.extend_from_slice(row));
+        slice
+            .get_mapped_range()
+            .chunks(bytes_per_row as usize)
+            .map(|row| &row[..iv_data.resolution_x as usize * 4])
+            .for_each(|row| image_buffer.extend_from_slice(row));
 
         image::save_buffer(
             save_path,
