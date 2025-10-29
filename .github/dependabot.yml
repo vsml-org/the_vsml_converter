@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+    groups:
+      semver-compatible:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
