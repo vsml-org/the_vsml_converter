@@ -137,39 +137,39 @@ impl FromStr for FontColor {
     fn from_str(value: &str) -> Result<FontColor, Self::Err> {
         match value {
             v if v.starts_with('#') => {
-                let hex = v.strip_prefix('#');
-                let Some(hex) = hex else {
+                let Some(hex) = v.strip_prefix('#') else {
+                    return Err(FontColorParseError::UnknownMode);
+                };
+                let Ok(num_value) = u32::from_str_radix(hex, 16) else {
                     return Err(FontColorParseError::UnknownMode);
                 };
                 match hex.len() {
-                    3 | 4 => {
-                        let r = u8::from_str_radix(&hex[0..1].repeat(2), 16)
-                            .map_err(|_| FontColorParseError::UnknownMode)?;
-                        let g = u8::from_str_radix(&hex[1..2].repeat(2), 16)
-                            .map_err(|_| FontColorParseError::UnknownMode)?;
-                        let b = u8::from_str_radix(&hex[2..3].repeat(2), 16)
-                            .map_err(|_| FontColorParseError::UnknownMode)?;
-                        let a = if hex.len() == 4 {
-                            u8::from_str_radix(&hex[3..4].repeat(2), 16)
-                                .map_err(|_| FontColorParseError::UnknownMode)?
-                        } else {
-                            255
-                        };
+                    3 => {
+                        let r = (((num_value >> 8) & 0xF) * 0x11) as u8;
+                        let g = (((num_value >> 4) & 0xF) * 0x11) as u8;
+                        let b = ((num_value & 0xF) * 0x11) as u8;
+                        let a = 255;
                         Ok(FontColor(r, g, b, a))
                     }
-                    6 | 8 => {
-                        let r = u8::from_str_radix(&hex[0..2], 16)
-                            .map_err(|_| FontColorParseError::UnknownMode)?;
-                        let g = u8::from_str_radix(&hex[2..4], 16)
-                            .map_err(|_| FontColorParseError::UnknownMode)?;
-                        let b = u8::from_str_radix(&hex[4..6], 16)
-                            .map_err(|_| FontColorParseError::UnknownMode)?;
-                        let a = if hex.len() == 8 {
-                            u8::from_str_radix(&hex[6..8], 16)
-                                .map_err(|_| FontColorParseError::UnknownMode)?
-                        } else {
-                            255
-                        };
+                    4 => {
+                        let r = (((num_value >> 12) & 0xF) * 0x11) as u8;
+                        let g = (((num_value >> 8) & 0xF) * 0x11) as u8;
+                        let b = (((num_value >> 4) & 0xF) * 0x11) as u8;
+                        let a = ((num_value & 0xF) * 0x11) as u8;
+                        Ok(FontColor(r, g, b, a))
+                    }
+                    6 => {
+                        let r = ((num_value >> 16) & 0xFF) as u8;
+                        let g = ((num_value >> 8) & 0xFF) as u8;
+                        let b = (num_value & 0xFF) as u8;
+                        let a = 255;
+                        Ok(FontColor(r, g, b, a))
+                    }
+                    8 => {
+                        let r = ((num_value >> 24) & 0xFF) as u8;
+                        let g = ((num_value >> 16) & 0xFF) as u8;
+                        let b = ((num_value >> 8) & 0xFF) as u8;
+                        let a = (num_value & 0xFF) as u8;
                         Ok(FontColor(r, g, b, a))
                     }
                     _ => Err(FontColorParseError::UnknownMode),
