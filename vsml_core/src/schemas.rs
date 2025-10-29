@@ -122,7 +122,7 @@ pub struct FontColor(u8, u8, u8, u8); // 左からrgbaの値(0-255)
 
 impl FontColor {
     pub fn value(&self) -> (u8, u8, u8, u8) {
-        return (self.0, self.1, self.2, self.3);
+        (self.0, self.1, self.2, self.3)
     }
 }
 
