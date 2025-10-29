@@ -314,12 +314,10 @@ fn convert_tag_element<'a, I, A>(
                 text_style.color = Some(font_color.value());
             }
             "font-family" => {
-                let font_family = parse_font_family(rule.value.as_str());
-                // 新しいfont-familyを先頭に持ってくる
-                text_style.font_family = font_family
-                    .into_iter()
-                    .chain(text_style.font_family.into_iter())
-                    .collect();
+                let mut font_family = parse_font_family(rule.value.as_str());
+                // 新しいfont-familyを先頭が来るようにする
+                font_family.append(&mut text_style.font_family);
+                text_style.font_family = font_family;
             }
             _ => {}
         }
