@@ -10,3 +10,10 @@ updates:
         update-types:
           - minor
           - patch
+  - package-ecosystem: github-actions
+    schedule:
+      interval: weekly
+    groups:
+      default:
+        patterns:
+          - "*"
