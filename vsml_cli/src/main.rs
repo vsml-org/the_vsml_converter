@@ -12,7 +12,9 @@ use vsml_iv_converter::convert;
 use vsml_parser::{VSSLoader, parse};
 use vsml_processor::audio::AudioProcessor;
 use vsml_processor::image::ImageProcessor;
+use vsml_processor::text::TextProcessor;
 use vsml_processor::video::VideoProcessor;
+use vsml_text_renderer::TextRendererContext;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -83,6 +85,13 @@ fn main() {
             "vid".to_string(),
             Arc::new(VideoProcessor::new(device.clone(), queue.clone()))
                 as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+        ),
+        (
+            "txt".to_string(),
+            Arc::new(TextProcessor::new(TextRendererContext::new(
+                device.clone(),
+                queue.clone(),
+            ))) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
         ),
     ]);
     let iv_data = convert(&vsml, &provider);
