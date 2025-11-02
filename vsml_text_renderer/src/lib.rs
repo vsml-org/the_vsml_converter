@@ -122,7 +122,7 @@ impl TextRendererContext {
                             {
                                 let pixel_index = (y * width as usize + x) * 4;
 
-                                // アルファブレンディング
+                                // TODO: アルファブレンド後で見直す
                                 let alpha_f = alpha as f32 / 255.0;
                                 rgba_buffer[pixel_index] = ((text_color.0 as f32 * alpha_f) as u8)
                                     .max(rgba_buffer[pixel_index]);
