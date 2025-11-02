@@ -119,6 +119,48 @@ impl FromStr for Order {
     }
 }
 
+/// font-familyのパース用のutil関数
+pub fn parse_font_family(value: &str) -> Vec<String> {
+    let mut result = Vec::new();
+    let mut current = String::new();
+    let mut in_quotes = false;
+    let mut escaped = false;
+
+    for c in value.chars() {
+        match c {
+            '"' | '\'' if !escaped => {
+                // クォートの開始/終了
+                in_quotes = !in_quotes;
+                // クォートは保存しない
+            }
+            '\\' if !escaped => {
+                // エスケープ文字
+                escaped = true;
+            }
+            ',' if !in_quotes => {
+                // カンマによる区切り（クォート外の場合のみ）
+                if !current.trim().is_empty() {
+                    result.push(current.trim().to_string());
+                }
+                current.clear();
+            }
+            _ => {
+                // エスケープされたクォートの場合は、バックスラッシュを除去してクォートのみ追加
+                if !escaped || c == '"' || c == '\'' {
+                    current.push(c);
+                }
+                escaped = false;
+            }
+        }
+    }
+
+    // 最後の要素を追加
+    if !current.trim().is_empty() {
+        result.push(current.trim().to_string());
+    }
+    result
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub struct FontColor(u8, u8, u8, u8); // 左からrgbaの値(0-255)
 

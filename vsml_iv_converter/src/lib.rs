@@ -8,7 +8,7 @@ use vsml_ast::vss::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
 use vsml_core::ElementRect;
 use vsml_core::schemas::{
     Duration, FontColor, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType, Order,
-    RectSize, StyleData, TextData, TextStyleData,
+    RectSize, StyleData, TextData, TextStyleData, parse_font_family,
 };
 
 pub fn convert<I, A>(
@@ -183,49 +183,6 @@ impl<I, A> ObjectProcessorProvider<I, A> for HashMap<String, Arc<dyn ObjectProce
     fn get_processor(&self, name: &str) -> Option<Arc<dyn ObjectProcessor<I, A>>> {
         self.get(name).cloned()
     }
-}
-
-/// font-familyのパース用のutil関数
-fn parse_font_family(input: &str) -> Vec<String> {
-    let mut result = Vec::new();
-    let mut current = String::new();
-    let mut in_quotes = false;
-    let mut escaped = false;
-
-    for c in input.chars() {
-        match c {
-            '"' | '\'' if !escaped => {
-                // クォートの開始/終了
-                in_quotes = !in_quotes;
-                // クォートは保存しない
-            }
-            '\\' if !escaped => {
-                // エスケープ文字
-                escaped = true;
-            }
-            ',' if !in_quotes => {
-                // カンマによる区切り（クォート外の場合のみ）
-                if !current.trim().is_empty() {
-                    result.push(current.trim().to_string());
-                }
-                current.clear();
-            }
-            _ => {
-                // エスケープされたクォートの場合は、バックスラッシュを除去してクォートのみ追加
-                if !escaped || c == '"' || c == '\'' {
-                    current.push(c);
-                }
-                escaped = false;
-            }
-        }
-    }
-
-    // 最後の要素を追加
-    if !current.trim().is_empty() {
-        result.push(current.trim().to_string());
-    }
-
-    result
 }
 
 // TODO: 引数多すぎ警告を修正する
