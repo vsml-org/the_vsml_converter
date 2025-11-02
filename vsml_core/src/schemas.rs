@@ -137,19 +137,21 @@ pub fn parse_font_family(value: &str) -> Vec<String> {
                 // エスケープ文字
                 escaped = true;
             }
-            ',' if !in_quotes => {
-                // カンマによる区切り（クォート外の場合のみ）
+            ',' if !in_quotes && !escaped => {
+                // カンマによる区切り（クォート外かつエスケープされていない場合のみ）
                 if !current.trim().is_empty() {
                     result.push(current.trim().to_string());
                 }
                 current.clear();
             }
             _ => {
-                // エスケープされたクォートの場合は、バックスラッシュを除去してクォートのみ追加
-                if !escaped || c == '"' || c == '\'' {
+                // エスケープされた文字の場合は、バックスラッシュを除去して文字のみ追加
+                if escaped {
+                    current.push(c);
+                    escaped = false;
+                } else {
                     current.push(c);
                 }
-                escaped = false;
             }
         }
     }
