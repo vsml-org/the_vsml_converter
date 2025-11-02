@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
 use std::str::FromStr;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use thiserror::Error;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -365,9 +365,10 @@ impl FromStr for FontColor {
                 }
             }
             v if v.starts_with("rgb(") => {
-                let rgb_regex = Regex::new(r"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$")
-                    .map_err(|_| FontColorParseError::UnknownMode)?;
-                if let Some(caps) = rgb_regex.captures(v) {
+                static RGB_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+                    Regex::new(r"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$").unwrap()
+                });
+                if let Some(caps) = RGB_REGEX.captures(v) {
                     let r = caps[1]
                         .parse()
                         .map_err(|_| FontColorParseError::UnknownMode)?;
@@ -382,10 +383,11 @@ impl FromStr for FontColor {
                 Err(FontColorParseError::UnknownMode)
             }
             v if v.starts_with("rgba(") => {
-                let rgba_regex =
+                static RGBA_REGEX: LazyLock<Regex> = LazyLock::new(|| {
                     Regex::new(r"^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$")
-                        .map_err(|_| FontColorParseError::UnknownMode)?;
-                if let Some(caps) = rgba_regex.captures(v) {
+                        .unwrap()
+                });
+                if let Some(caps) = RGBA_REGEX.captures(v) {
                     let r = caps[1]
                         .parse()
                         .map_err(|_| FontColorParseError::UnknownMode)?;

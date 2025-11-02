@@ -115,8 +115,12 @@ impl TextRendererContext {
                         .enumerate()
                     {
                         for (pixel_x, &alpha) in row.iter().enumerate() {
-                            let x = pixel_x.checked_add_signed(glyph_x as isize).unwrap();
-                            let y = pixel_y.checked_add_signed(glyph_y as isize).unwrap();
+                            let Some(x) = pixel_x.checked_add_signed(glyph_x as isize) else {
+                                continue;
+                            };
+                            let Some(y) = pixel_y.checked_add_signed(glyph_y as isize) else {
+                                continue;
+                            };
 
                             if (0..width as usize).contains(&x) && (0..height as usize).contains(&y)
                             {
