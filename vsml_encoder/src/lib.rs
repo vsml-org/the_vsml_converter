@@ -29,6 +29,9 @@ pub fn encode<R, M>(
     let d = TempDir::new().unwrap();
     let d = d.path();
 
+    let bytes_per_row = (iv_data.resolution_x * 4).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
+        * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    let mut image_buffer = Vec::new();
     for f in 0..whole_frames.round() as u32 {
         let frame_image = render_frame_image(&iv_data, f, &mut rendering_context);
         let save_path = d.join(format!("frame_{}.png", f));
@@ -37,7 +40,7 @@ pub fn encode<R, M>(
             device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
         let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
             label: None,
-            contents: &vec![0u8; iv_data.resolution_x as usize * iv_data.resolution_y as usize * 4],
+            contents: &vec![0u8; bytes_per_row as usize * iv_data.resolution_y as usize],
             usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
         });
         encoder.copy_texture_to_buffer(
@@ -51,7 +54,7 @@ pub fn encode<R, M>(
                 buffer: &buffer,
                 layout: wgpu::TexelCopyBufferLayout {
                     offset: 0,
-                    bytes_per_row: Some(4 * iv_data.resolution_x),
+                    bytes_per_row: Some(bytes_per_row),
                     rows_per_image: Some(iv_data.resolution_y),
                 },
             },
@@ -73,9 +76,16 @@ pub fn encode<R, M>(
             })
             .expect("poll failed");
 
+        image_buffer.clear();
+        slice
+            .get_mapped_range()
+            .chunks(bytes_per_row as usize)
+            .map(|row| &row[..iv_data.resolution_x as usize * 4])
+            .for_each(|row| image_buffer.extend_from_slice(row));
+
         image::save_buffer(
             save_path,
-            &slice.get_mapped_range(),
+            &image_buffer,
             iv_data.resolution_x,
             iv_data.resolution_y,
             image::ColorType::Rgba8,
