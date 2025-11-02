@@ -17,6 +17,7 @@ members = [
     "vsml_iv_converter",
     "vsml_parser",
     "vsml_processor",
+    "vsml_text_renderer",
 ]
 
 [workspace.dependencies]
@@ -30,13 +31,17 @@ vsml_image_renderer = { path = "vsml_image_renderer" }
 vsml_iv_converter = { path = "vsml_iv_converter" }
 vsml_parser = { path = "vsml_parser" }
 vsml_processor = { path = "vsml_processor" }
+vsml_text_renderer = { path = "vsml_text_renderer" }
 bytemuck = { version = "1.22.0", features = ["derive"] }
-clap = { version = "4.5.32", features = ["derive"] }
+clap = { version = "4.5.50", features = ["derive"] }
+cosmic-text = "0.14"
 dasp = { version = "0.11.0", features = ["all"] }
+font-kit = "0.14"
 hound = "3.5.1"
 image = "0.25.5"
 mockall = "0.13.1"
 nom = "8.0.0"
+phf = { version = "0.13.1", features = ["macros"] }
 pollster = "0.4.0"
 regex = "1.11.1"
 roxmltree = "0.20.0"

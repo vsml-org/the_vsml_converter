@@ -197,3 +197,40 @@ fn test_mix_audio() {
     });
     mix_audio(&iv_data, mock_mc);
 }
+
+#[test]
+fn test_font_family_unquoted() {
+    // クォートなしのフォント名
+    let result = schemas::parse_font_family("Arial");
+    assert_eq!(result, vec!["Arial".to_string()]);
+}
+#[test]
+fn test_font_family_multiple_with_whitespace() {
+    // 複数フォント + 前後の空白処理
+    let result = schemas::parse_font_family(" Arial ,  sans-serif ");
+    assert_eq!(result, vec!["Arial".to_string(), "sans-serif".to_string()]);
+}
+#[test]
+fn test_font_family_escaped_comma() {
+    // エスケープされたカンマを含むフォント名
+    let result = schemas::parse_font_family(r"a\, b");
+    assert_eq!(result, vec!["a, b".to_string()]);
+}
+#[test]
+fn test_font_family_single_quoted() {
+    // シングルクォートで囲まれたフォント名(スペース含む)
+    let result = schemas::parse_font_family("'Times New Roman'");
+    assert_eq!(result, vec!["Times New Roman".to_string()]);
+}
+#[test]
+fn test_font_family_double_quoted() {
+    // ダブルクォートで囲まれたフォント名
+    let result = schemas::parse_font_family("\"Meiryo\"");
+    assert_eq!(result, vec!["Meiryo".to_string()]);
+}
+#[test]
+fn test_font_family_escaped_quotes() {
+    // エスケープされたクォートを含むフォント名
+    let result = schemas::parse_font_family("\"\\\"hoge\\\"\"");
+    assert_eq!(result, vec!["\"hoge\"".to_string()]);
+}

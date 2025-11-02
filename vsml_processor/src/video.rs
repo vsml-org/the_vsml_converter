@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::process::Command;
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::schemas::{ObjectProcessor, RectSize};
+use vsml_core::schemas::{ObjectProcessor, ProcessorInput, RectSize};
 
 pub struct VideoProcessor {
     device: wgpu::Device,
@@ -109,11 +109,15 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for VideoProcessor {
         RectSize::new(rect[0].parse().unwrap(), rect[1].parse().unwrap())
     }
 
+    fn calculate_text_size(&self, _text_data: &[vsml_core::schemas::TextData]) -> RectSize {
+        RectSize::ZERO
+    }
+
     fn process_image(
         &self,
         target_time: f64,
         attributes: &HashMap<String, String>,
-        _: Option<VsmlImage>,
+        _input: ProcessorInput<VsmlImage>,
     ) -> Option<VsmlImage> {
         let src_path = attributes.get("src").unwrap();
 

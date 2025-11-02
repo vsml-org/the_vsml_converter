@@ -1,25 +1,8 @@
-use crate::schemas::{ObjectData, ObjectType};
+use crate::schemas::{ObjectData, ObjectType, ProcessorInput};
 
 pub mod schemas;
 #[cfg(test)]
 mod tests;
-
-pub struct Rect {
-    pub x: f32,
-    pub y: f32,
-    pub width: f32,
-    pub height: f32,
-}
-
-pub struct TextStyleData {
-    pub color: String,
-    pub font_name: String,
-}
-
-pub struct TextData {
-    pub text: String,
-    pub style: TextStyleData,
-}
 
 #[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash)]
 pub enum Alignment {
@@ -117,18 +100,11 @@ pub struct RenderingInfo {
     pub width: f32,
     pub height: f32,
 }
-pub struct TextRenderingInfo {
-    pub x: f32,
-    pub y: f32,
-    pub max_width: f32,
-    pub max_height: f32,
-}
 
 #[cfg_attr(test, mockall::automock(type Image=tests::MockImage;))]
 pub trait Renderer {
     type Image;
     fn render_image(&mut self, image: Self::Image, info: RenderingInfo);
-    fn render_text(&mut self, text_data: &[TextData], info: TextRenderingInfo) -> Rect;
     fn render_box(&mut self, property: Property, info: RenderingInfo);
     fn render(self, width: u32, height: u32) -> Self::Image;
 }
@@ -219,7 +195,19 @@ where
                         renderer.render_image(child_image, rendering_info);
                     }
                     ObjectType::Other(processor) => {
-                        let child_image = (!children.is_empty()).then(|| {
+                        // 子要素からTextDataを収集
+                        let mut text_data_list: Vec<schemas::TextData> = Vec::new();
+                        for child in children {
+                            if let ObjectData::Text(data) = child {
+                                text_data_list.extend(data.iter().cloned());
+                            }
+                        }
+
+                        let input = if !text_data_list.is_empty() {
+                            // txtタグなどの場合: TextDataを渡す
+                            ProcessorInput::Text(text_data_list)
+                        } else if !children.is_empty() {
+                            // img, vidなどの場合: 子要素をレンダリング
                             let mut inner_renderer = rendering_context.create_renderer();
                             children.iter().for_each(|object| {
                                 render_inner(
@@ -231,13 +219,17 @@ where
                                     element_rect.height,
                                 )
                             });
-                            inner_renderer.render(
+                            let image = inner_renderer.render(
                                 element_rect.width.ceil() as u32,
                                 element_rect.height.ceil() as u32,
-                            )
-                        });
+                            );
+                            ProcessorInput::Image(image)
+                        } else {
+                            ProcessorInput::None
+                        };
+
                         println!("[debug] target_time: {}", target_time);
-                        let result = processor.process_image(target_time, attributes, child_image);
+                        let result = processor.process_image(target_time, attributes, input);
                         if let Some(result) = result {
                             let rendering_info =
                                 element_rect.calc_rendering_info(outer_width, outer_height);
@@ -246,7 +238,11 @@ where
                     }
                 }
             }
-            ObjectData::Text(_) => {}
+            // TextDataは親要素のProcessorで処理される
+            ObjectData::Text(_) => {
+                // render_innerは子要素にElementのみ来ることを想定している
+                panic!("only elements or texts can be specified as child elements of an element")
+            }
         }
     }
 
