@@ -6,6 +6,7 @@ authors.workspace = true
 
 [dependencies]
 phf.workspace = true
+regex.workspace = true
 thiserror.workspace = true
 
 [dev-dependencies]

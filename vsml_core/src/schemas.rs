@@ -1,5 +1,6 @@
 use crate::ElementRect;
 use phf::phf_map;
+use regex::Regex;
 use std::collections::HashMap;
 use std::fmt;
 use std::fmt::{Debug, Formatter};
@@ -319,44 +320,43 @@ impl FromStr for FontColor {
                     _ => Err(FontColorParseError::UnknownMode),
                 }
             }
-            v if v.starts_with("rgb(") && v.ends_with(')') => {
-                let content = &v[4..v.len() - 1];
-                let parts: Vec<&str> = content.split(',').map(|s| s.trim()).collect();
-                if parts.len() == 3 {
-                    let r = parts[0]
+            v if v.starts_with("rgb(") => {
+                let rgb_regex = Regex::new(r"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$")
+                    .map_err(|_| FontColorParseError::UnknownMode)?;
+                if let Some(caps) = rgb_regex.captures(v) {
+                    let r = caps[1]
                         .parse()
                         .map_err(|_| FontColorParseError::UnknownMode)?;
-                    let g = parts[1]
+                    let g = caps[2]
                         .parse()
                         .map_err(|_| FontColorParseError::UnknownMode)?;
-                    let b = parts[2]
+                    let b = caps[3]
                         .parse()
                         .map_err(|_| FontColorParseError::UnknownMode)?;
-                    Ok(FontColor(r, g, b, 255))
-                } else {
-                    Err(FontColorParseError::UnknownMode)
-                }
+                    return Ok(FontColor(r, g, b, 255));
+                };
+                Err(FontColorParseError::UnknownMode)
             }
-            v if v.starts_with("rgba(") && v.ends_with(')') => {
-                let content = &v[5..v.len() - 1];
-                let parts: Vec<&str> = content.split(',').map(|s| s.trim()).collect();
-                if parts.len() == 4 {
-                    let r = parts[0]
+            v if v.starts_with("rgba(") => {
+                let rgba_regex =
+                    Regex::new(r"^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$")
+                        .map_err(|_| FontColorParseError::UnknownMode)?;
+                if let Some(caps) = rgba_regex.captures(v) {
+                    let r = caps[1]
                         .parse()
                         .map_err(|_| FontColorParseError::UnknownMode)?;
-                    let g = parts[1]
+                    let g = caps[2]
                         .parse()
                         .map_err(|_| FontColorParseError::UnknownMode)?;
-                    let b = parts[2]
+                    let b = caps[3]
                         .parse()
                         .map_err(|_| FontColorParseError::UnknownMode)?;
-                    let a = parts[3]
+                    let a = caps[4]
                         .parse()
                         .map_err(|_| FontColorParseError::UnknownMode)?;
-                    Ok(FontColor(r, g, b, a))
-                } else {
-                    Err(FontColorParseError::UnknownMode)
+                    return Ok(FontColor(r, g, b, a));
                 }
+                Err(FontColorParseError::UnknownMode)
             }
             v => COLOR_MAP
                 .get(v)
