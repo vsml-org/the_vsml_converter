@@ -45,6 +45,7 @@ impl TextRendererContext {
         let mut buffer = Buffer::new(&mut font_system, Metrics::new(font_size, line_height));
 
         // フォントファミリーの設定
+        // TODO: フォールバックフォントは未対応
         let font_family = if !style.font_family.is_empty() {
             Family::Name(&style.font_family[0])
         } else {
@@ -114,11 +115,12 @@ impl TextRendererContext {
                         .enumerate()
                     {
                         for (pixel_x, &alpha) in row.iter().enumerate() {
-                            let x = glyph_x + pixel_x as i32;
-                            let y = glyph_y + pixel_y as i32;
+                            let x = pixel_x.checked_add_signed(glyph_x as isize).unwrap();
+                            let y = pixel_y.checked_add_signed(glyph_y as isize).unwrap();
 
-                            if x >= 0 && x < width as i32 && y >= 0 && y < height as i32 {
-                                let pixel_index = ((y as u32 * width + x as u32) * 4) as usize;
+                            if (0..width as usize).contains(&x) && (0..height as usize).contains(&y)
+                            {
+                                let pixel_index = (y * width as usize + x) * 4;
 
                                 // アルファブレンディング
                                 let alpha_f = alpha as f32 / 255.0;
