@@ -124,17 +124,15 @@ impl TextRendererContext {
 
                                 // TODO: アルファブレンド後で見直す
                                 let alpha_f = alpha as f32 / 255.0;
-                                rgba_buffer[pixel_index] = ((text_color.0 as f32 * alpha_f) as u8)
-                                    .max(rgba_buffer[pixel_index]);
-                                rgba_buffer[pixel_index + 1] = ((text_color.1 as f32 * alpha_f)
-                                    as u8)
-                                    .max(rgba_buffer[pixel_index + 1]);
-                                rgba_buffer[pixel_index + 2] = ((text_color.2 as f32 * alpha_f)
-                                    as u8)
-                                    .max(rgba_buffer[pixel_index + 2]);
-                                rgba_buffer[pixel_index + 3] = ((text_color.3 as f32 * alpha_f)
-                                    as u8)
-                                    .max(rgba_buffer[pixel_index + 3]);
+                                let target_rgba_buffer = &mut rgba_buffer[pixel_index..][..4];
+                                target_rgba_buffer[0] = ((text_color.0 as f32 * alpha_f) as u8)
+                                    .max(target_rgba_buffer[0]);
+                                target_rgba_buffer[1] = ((text_color.1 as f32 * alpha_f) as u8)
+                                    .max(target_rgba_buffer[1]);
+                                target_rgba_buffer[2] = ((text_color.2 as f32 * alpha_f) as u8)
+                                    .max(target_rgba_buffer[2]);
+                                target_rgba_buffer[3] = ((text_color.3 as f32 * alpha_f) as u8)
+                                    .max(target_rgba_buffer[3]);
                             }
                         }
                     }
