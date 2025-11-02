@@ -52,15 +52,14 @@ fn get_gpu_device() -> (wgpu::Device, wgpu::Queue) {
         force_fallback_adapter: false,
     }))
     .unwrap();
-    let (device, queue) = pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::default(),
-            label: None,
-            memory_hints: Default::default(),
-        },
-        None,
-    ))
+    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        required_features: wgpu::Features::empty(),
+        required_limits: wgpu::Limits::default(),
+        label: None,
+        memory_hints: Default::default(),
+        experimental_features: Default::default(),
+        trace: Default::default(),
+    }))
     .unwrap();
     (device, queue)
 }
