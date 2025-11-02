@@ -66,7 +66,12 @@ pub fn encode<R, M>(
         let slice = &buffer.slice(..);
         slice.map_async(wgpu::MapMode::Read, |_| {});
 
-        device.poll(wgpu::MaintainBase::Wait);
+        device
+            .poll(wgpu::PollType::Wait {
+                submission_index: None,
+                timeout: None,
+            })
+            .expect("poll failed");
 
         image::save_buffer(
             save_path,

@@ -63,15 +63,14 @@ fn test_render() {
         force_fallback_adapter: false,
     }))
     .unwrap();
-    let (device, queue) = pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::default(),
-            label: None,
-            memory_hints: Default::default(),
-        },
-        None,
-    ))
+    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        required_features: wgpu::Features::empty(),
+        required_limits: wgpu::Limits::default(),
+        label: None,
+        memory_hints: Default::default(),
+        experimental_features: Default::default(),
+        trace: Default::default(),
+    }))
     .unwrap();
 
     // rendering_contextとrendererを作成
@@ -146,7 +145,12 @@ fn test_render() {
     let slice = &buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |_| {});
 
-    device.poll(wgpu::MaintainBase::Wait);
+    device
+        .poll(wgpu::PollType::Wait {
+            submission_index: None,
+            timeout: None,
+        })
+        .unwrap();
 
     image::save_buffer(
         "output.png",
