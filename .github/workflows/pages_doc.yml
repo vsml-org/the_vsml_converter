@@ -13,10 +13,10 @@ jobs:
       - run: |
           sudo apt-get update
           sudo apt-get install -y libgtk-3-dev
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@nightly
       - run: RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --locked --workspace --document-private-items --no-deps -Zrustdoc-map
-      - uses: actions/upload-pages-artifact@v3
+      - uses: actions/upload-pages-artifact@v4
         with:
           path: target/doc
 
