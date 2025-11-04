@@ -16,19 +16,19 @@
     </style>
   </meta>
   <cont resolution="1920x1080">
-    <img src="examples/pigeons_house.png" />
+    <img src="pigeons_house.png" />
     <seq>
     <prl>
       <txt>テスト音声</txt>
-      <aud src="examples/tsumugi.wav" />
+      <aud src="tsumugi.wav" />
     </prl>
     <prl>
       <txt class="message">テスト音声</txt>
-      <aud src="examples/metan.wav" />
+      <aud src="metan.wav" />
     </prl>
     <prl>
       <txt id="msg">テスト音声</txt>
-      <aud src="examples/zundamon.wav" />
+      <aud src="zundamon.wav" />
     </prl>
     </seq>
   </cont>
