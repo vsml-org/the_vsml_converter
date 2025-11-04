@@ -1,0 +1,58 @@
+name: Visual Regression Test
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  vrtest:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y mesa-vulkan-drivers libvulkan-dev libgtk-3-dev ffmpeg
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Build vsml_cli
+        run: cargo build -p vsml_cli --release --locked
+
+      - name: Run vsml-cli for each example and post-process outputs
+        shell: bash
+        env:
+          WGPU_BACKEND: vulkan
+        run: |
+          set -euo pipefail
+          EXAMPLES_DIR="$(pwd)/examples"
+          OUT_ROOT="$(pwd)/visual-regression/images"
+          mkdir -p "${OUT_ROOT}"
+
+          find "${EXAMPLES_DIR}" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
+            name="$(basename "$dir")"
+            echo "Processing example: $name"
+            pushd "$dir"
+            mkdir -p "${OUT_ROOT}/${name}"
+
+            # Pick the first .vsml file in the subdirectory
+            vsml_file="$(find "$dir" -maxdepth 1 -type f -name '*.vsml' | head -n 1 || true)"
+
+            out_mp4="${OUT_ROOT}/${name}/out.mp4"
+
+            echo "  -> Running vsml_cli on: $vsml_file"
+            ./target/release/vsml_cli "$vsml_file" --output "$out_mp4" --overwrite
+
+            ffmpeg -hide_banner -loglevel error -y -i "$out_mp4" -vf fps=1 "${OUT_ROOT}/${name}/%04d.png"
+            ffmpeg -i input.wav -lavfi "showspectrumpic=s=1920x1080:legend=1" -y "${OUT_ROOT}/${name}/spectrogram.png"
+            popd
+          done
+
+      - uses: reg-viz/reg-actions@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          image-directory-path: visual-regression/images
