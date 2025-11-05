@@ -1,0 +1,35 @@
+<vsml>
+  <meta>
+    <style>
+      txt {
+        color: red;
+      }
+      .message {
+        color: #FFFF00;
+      }
+      #msg {
+        color: rgb(100, 200, 255);
+      }
+      cont {
+        order: parallel;
+      }
+    </style>
+  </meta>
+  <cont resolution="1920x1080">
+    <img src="pigeons_house.png" />
+    <seq>
+    <prl>
+      <txt>テスト音声</txt>
+      <aud src="tsumugi.wav" />
+    </prl>
+    <prl>
+      <txt class="message">テスト音声</txt>
+      <aud src="metan.wav" />
+    </prl>
+    <prl>
+      <txt id="msg">テスト音声</txt>
+      <aud src="zundamon.wav" />
+    </prl>
+    </seq>
+  </cont>
+</vsml>

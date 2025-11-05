@@ -2,6 +2,6 @@
 /.idea
 /target
 .DS_Store
-/examples
 *.mp4
 *.png
+!/examples/**
