@@ -19,15 +19,15 @@
     <img src="pigeons_house.png" />
     <seq>
     <prl>
-      <txt>テスト音声</txt>
+      <txt>テスト音声1</txt>
       <aud src="tsumugi.wav" />
     </prl>
     <prl>
-      <txt class="message">テスト音声</txt>
+      <txt class="message">テスト音声2</txt>
       <aud src="metan.wav" />
     </prl>
     <prl>
-      <txt id="msg">テスト音声</txt>
+      <txt id="msg">テスト音声3</txt>
       <aud src="zundamon.wav" />
     </prl>
     </seq>
