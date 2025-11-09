@@ -2,13 +2,13 @@
   <meta>
     <style>
       txt {
-        color: red;
+        font-color: red;
       }
       .message {
-        color: #FFFF00;
+        font-color: #FFFF00;
       }
       #msg {
-        color: rgb(100, 200, 255);
+        font-color: rgb(100, 200, 255);
       }
       cont {
         order: parallel;
