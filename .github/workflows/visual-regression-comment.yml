@@ -1,0 +1,47 @@
+name: Visual Regression Test Comment
+
+on:
+  workflow_run:
+    workflows: ["Visual Regression Test"]
+    types:
+      - completed
+
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: >
+      github.event.workflow_run.event == 'pull_request' &&
+      github.event.workflow_run.conclusion == 'success'
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+
+    steps:
+      - name: Download PR number artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: pr-number
+          path: pr/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download reg-viz report artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: reg-report
+          path: .reg/
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read PR number
+        id: pr
+        run: |
+          echo "number=$(cat pr/NR)" >> $GITHUB_OUTPUT
+
+      - name: Post reg-viz comment
+        uses: reg-viz/reg-actions@v3
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          image-directory-path: visual-regression/images
+          comment-to-pr-number: ${{ steps.pr.outputs.number }}
