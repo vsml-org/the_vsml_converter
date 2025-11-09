@@ -1,9 +1,7 @@
 name: Visual Regression Test
 
 on:
-  push:
   pull_request:
-  pull_request_target:
   workflow_dispatch:
 
 jobs:
@@ -11,9 +9,8 @@ jobs:
     runs-on: ubuntu-latest
 
     permissions:
-      contents: write
-      issues: write
-      pull-requests: write
+      contents: read
+
     steps:
       - uses: actions/checkout@v5
         with:
@@ -46,7 +43,7 @@ jobs:
           find "${EXAMPLES_DIR}" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
             name="$(basename "$dir")"
             echo "Processing example: $name"
-            # 相対参照( https://github.com/vsml-org/the_vsml_converter/issues/41 )の仕様が入っていないので、カレントディレクトリの移動が必要 
+            # 相対参照( https://github.com/vsml-org/the_vsml_converter/issues/41 )の仕様が入っていないので、カレントディレクトリの移動が必要
             pushd "$dir"
             mkdir -p "${OUT_ROOT}/${name}"
 
@@ -63,7 +60,26 @@ jobs:
             popd
           done
 
-      - uses: reg-viz/reg-actions@v3
+      - name: Run reg-viz/reg-actions without comment
+        uses: reg-viz/reg-actions@v3
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           image-directory-path: visual-regression/images
+          comment: false
+
+      - name: Save PR number
+        run: |
+          mkdir -p ./pr
+          echo ${{ github.event.pull_request.number }} > ./pr/NR
+
+      - name: Upload PR number
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-number
+          path: pr/
+
+      - name: Upload reg-viz report
+        uses: actions/upload-artifact@v4
+        with:
+          name: reg-report
+          path: .reg
