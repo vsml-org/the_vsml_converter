@@ -2,19 +2,20 @@ name: Visual Regression Test
 
 on:
   push:
-  pull_request:
-  workflow_dispatch:
+    branches:
+      - main
+  pull_request_target:
 
 jobs:
-  vrtest:
+  capture_images:
+    name: Build and capture images
     runs-on: ubuntu-latest
-
     permissions:
-      contents: write
-      issues: write
-      pull-requests: write
+      contents: read
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event_name == 'pull_request_target' && github.event.pull_request.head.sha || github.sha }}
 
       - name: Install system deps
         run: |
@@ -58,7 +59,138 @@ jobs:
             popd
           done
 
-      - uses: reg-viz/reg-actions@v3
+      - name: Upload visual regression images
+        uses: actions/upload-artifact@v4
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          image-directory-path: visual-regression/images
+          name: vr-images
+          path: visual-regression/images
+
+  publish_baseline:
+    name: Publish visual regression images (main only)
+    if: ${{ github.event_name == 'push' && github.ref_name == github.event.repository.default_branch }}
+    needs: capture_images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Download images artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: vr-images
+          path: ./visual-regression/images
+
+      - name: Compress images
+        shell: bash
+        run: |
+          OUT_ROOT="$(pwd)/visual-regression/images"
+          tar -I 'zstd -19' -cf images.tar.zst -C "${OUT_ROOT}" .
+
+      - name: Upload images to Cloudflare R2
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: |
+            r2 object put ${{ vars.VRT_CF_R2_BUCKET }}/visual-regression/images.tar.zst --file ./images.tar.zst
+
+  pr_checks:
+    name: Visual regression checks for pull request
+    if: ${{ github.event_name == 'pull_request_target' }}
+    needs: capture_images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Download images artifact
+        uses: actions/download-artifact@v6
+        with:
+          name: vr-images
+          path: ./visual-regression/images
+
+      - name: Download images from Cloudflare R2
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: |
+            r2 object get ${{ vars.VRT_CF_R2_BUCKET }}/visual-regression/images.tar.zst --file main-images.tar.zst
+
+      - name: Run visual regression test
+        shell: bash
+        run: |
+          if [ -f main-images.tar.zst ]; then
+            mkdir -p visual-regression/expected
+            tar -xaf main-images.tar.zst -C visual-regression/expected
+          fi
+
+          npx reg-cli ./visual-regression/images ./visual-regression/expected ./visual-regression/diff --report ./visual-regression/index.html --json ./reg.json --ignoreChange
+
+      - name: Deploy visual regression diff to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CF_API_TOKEN }}
+          accountId: ${{ secrets.CF_ACCOUNT_ID }}
+          command: |
+            pages deploy --project-name ${{ vars.VRT_CF_PAGES_PROJECT_NAME }} --branch pr-${{ github.event.pull_request.number }} ./visual-regression
+
+      - name: Post visual regression test summary as PR comment
+        uses: actions/github-script@v8
+        with:
+          script: |
+            const fs = require('fs');
+            const path = './reg.json';
+            const reg = JSON.parse(fs.readFileSync(path, 'utf8'));
+
+            const marker = '<!-- visual-regression-diff-marker -->';
+
+            const body = `${marker}
+            ## Visual Regression Test Summary
+
+            | Category | Count |
+            |----------|--------|
+            | Passed   | ${reg.passedItems.length} |
+            | Failed   | ${reg.failedItems.length} |
+            | Added    | ${reg.newItems.length} |
+            | Deleted  | ${reg.deletedItems.length} |
+            | Diff     | ${reg.diffItems.length} |
+
+            [Diff Report](https://pr-${{ github.event.pull_request.number }}.${{ vars.VRT_CF_PAGES_PROJECT_NAME }}.pages.dev/)
+            `;
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.payload.pull_request.number;
+
+            const { data: comments } = await github.rest.issues.listComments({
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+            const oldComments = comments.filter(comment => comment.body.includes(marker));
+            for (const { node_id: nodeId } of oldComments) {
+              const mutation = `
+                mutation($subjectId: ID!) {
+                  minimizeComment(input: {
+                    subjectId: $subjectId,
+                    classifier: OUTDATED
+                  }) {
+                    minimizedComment {
+                      isMinimized
+                      minimizedReason
+                    }
+                  }
+                }
+              `;
+
+              await github.graphql(mutation, { subjectId: nodeId });
+            }
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number,
+              body,
+            });
