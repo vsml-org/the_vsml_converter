@@ -134,7 +134,7 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           command: |
-            pages deploy --project-name ${{ vars.VRT_CF_PAGES_PROJECT_NAME }} --branch pr-${{ github.event.pull_request.number }} ./visual-regression
+            pages deploy --project-name ${{ secrets.VRT_CF_PAGES_PROJECT_NAME }} --branch pr-${{ github.event.pull_request.number }} ./visual-regression
 
       - name: Post visual regression test summary as PR comment
         uses: actions/github-script@v8
@@ -157,7 +157,7 @@ jobs:
             | Deleted  | ${reg.deletedItems.length} |
             | Diff     | ${reg.diffItems.length} |
 
-            [Diff Report](https://pr-${{ github.event.pull_request.number }}.${{ vars.VRT_CF_PAGES_PROJECT_NAME }}.pages.dev/)
+            [Diff Report](https://pr-${{ github.event.pull_request.number }}.${{ secrets.VRT_CF_PAGES_PROJECT_NAME }}.pages.dev/)
             `;
 
             const { owner, repo } = context.repo;
