@@ -54,7 +54,7 @@ impl TextRendererContext {
 
         let attrs = Attrs::new().family(font_family);
 
-        buffer.set_text(&mut font_system, text, &attrs, Shaping::Advanced);
+        buffer.set_text(&mut font_system, text, &attrs, Shaping::Advanced, None);
         buffer.shape_until_scroll(&mut font_system, false);
 
         // 行の範囲とグリフの横幅を計算
@@ -200,6 +200,7 @@ impl TextRendererContext {
             text,
             &cosmic_text::Attrs::new(),
             Shaping::Advanced,
+            None,
         );
         buffer.shape_until_scroll(&mut font_system, false);
 

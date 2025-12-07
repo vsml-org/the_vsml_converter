@@ -34,7 +34,7 @@ vsml_processor = { path = "vsml_processor" }
 vsml_text_renderer = { path = "vsml_text_renderer" }
 bytemuck = { version = "1.24.0", features = ["derive"] }
 clap = { version = "4.5.53", features = ["derive"] }
-cosmic-text = "0.14"
+cosmic-text = "0.15"
 dasp = { version = "0.11.0", features = ["all"] }
 font-kit = "0.14"
 hound = "3.5.1"
