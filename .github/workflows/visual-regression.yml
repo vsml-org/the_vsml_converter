@@ -91,7 +91,7 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           command: |
-            r2 object put ${{ vars.VRT_CF_R2_BUCKET }}/visual-regression/images.tar.zst --file ./images.tar.zst
+            r2 object put ${{ secrets.VRT_CF_R2_BUCKET }}/visual-regression/images.tar.zst --file ./images.tar.zst
 
   pr_checks:
     name: Visual regression checks for pull request
@@ -116,7 +116,7 @@ jobs:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
           command: |
-            r2 object get ${{ vars.VRT_CF_R2_BUCKET }}/visual-regression/images.tar.zst --file main-images.tar.zst
+            r2 object get ${{ secrets.VRT_CF_R2_BUCKET }}/visual-regression/images.tar.zst --file main-images.tar.zst
 
       - name: Run visual regression test
         shell: bash
