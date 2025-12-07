@@ -200,7 +200,7 @@ impl TextRendererContext {
             text,
             &cosmic_text::Attrs::new(),
             Shaping::Advanced,
-            None
+            None,
         );
         buffer.shape_until_scroll(&mut font_system, false);
 
