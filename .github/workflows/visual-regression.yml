@@ -44,7 +44,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: target
-          key: ${{ github.event_name == 'pull_request_target' && format('rust-{0}-pr-{1}-target-vrt-{2}-{3}', runner.os, github.event.pull_request.number, steps.rust-toolchain.outputs.cachekey, hashFiles('Cargo.lock')) || format('rust-{0}-target-vrt-{1}-{2}', runner.os, steps.rust-toolchain.outputs.name, hashFiles('Cargo.lock')) }}
+          key: ${{ github.event_name == 'pull_request_target' && format('rust-{0}-pr-{1}-target-vrt-{2}-{3}', runner.os, github.event.pull_request.number, steps.rust-toolchain.outputs.cachekey, hashFiles('Cargo.lock')) || format('rust-{0}-target-vrt-{1}-{2}', runner.os, steps.rust-toolchain.outputs.cachekey, hashFiles('Cargo.lock')) }}
           restore-keys: |
             ${{ github.event_name == 'pull_request_target' && format('rust-{0}-target-vrt-{1}-{2}', runner.os, steps.rust-toolchain.outputs.cachekey, hashFiles('Cargo.lock')) }}
             ${{ github.event_name == 'pull_request_target' && format('rust-{0}-pr-{1}-target-vrt-', runner.os, github.event.pull_request.number) }}
