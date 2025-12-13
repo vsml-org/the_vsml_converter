@@ -1,14 +1,17 @@
+mod style;
+
 #[cfg(test)]
 mod tests;
 
+use crate::style::{ConsolidatedStyle, StyleProcessorRegistry};
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use vsml_ast::vsml::{Content, Element, Meta, VSML};
 use vsml_ast::vss::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
 use vsml_core::ElementRect;
 use vsml_core::schemas::{
-    Duration, FontColor, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType, Order,
-    RectSize, StyleData, TextData, TextStyleData, parse_font_family,
+    IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType, Order, RectSize, StyleData,
+    TextData, TextStyleData,
 };
 
 pub fn convert<I, A>(
@@ -27,6 +30,7 @@ pub fn convert<I, A>(
             },
     } = vsml;
 
+    let style_registry = StyleProcessorRegistry::new();
     let mut vss_scanner = VssScanner::new(vss_items);
     let cont_element = Element::Tag {
         name: "cont".to_string(),
@@ -45,6 +49,7 @@ pub fn convert<I, A>(
         };
         convert_tag_element(
             scanner,
+            &style_registry,
             0.0,
             (0.0, 0.0),
             name,
@@ -189,6 +194,7 @@ impl<I, A> ObjectProcessorProvider<I, A> for HashMap<String, Arc<dyn ObjectProce
 #[allow(clippy::too_many_arguments)]
 fn convert_tag_element<'a, I, A>(
     vss_scanner: &mut VssScanner<'a>,
+    style_registry: &StyleProcessorRegistry,
     offset_start_time: f64,
     offset_position: (f32, f32),
     name: &str,
@@ -206,84 +212,41 @@ fn convert_tag_element<'a, I, A>(
                 .expect("Processor not found"),
         ),
     };
-    let mut target_duration = match &object_type {
+
+    let default_duration = match &object_type {
         ObjectType::Wrap => 0.0,
         ObjectType::Other(processor) => processor.default_duration(attributes),
     };
-    let mut rule_target_duration = None;
-    let mut target_size: RectSize = match &object_type {
+    let default_size = match &object_type {
         ObjectType::Wrap => RectSize::ZERO,
         ObjectType::Other(processor) => processor.default_image_size(attributes),
     };
-    let mut order: Order = match name {
+    let default_order = match name {
         "seq" | "cont" => Order::Sequence,
         "prl" | "layer" => Order::Parallel,
         _ => Order::Sequence,
     };
-    let mut layer_mode: LayerMode = match name {
+    let default_layer_mode = match name {
         "seq" | "prl" | "cont" => LayerMode::Multi,
         "layer" => LayerMode::Single,
         _ => LayerMode::Multi,
     };
-    let mut text_style = parent_text_style.unwrap_or(TextStyleData {
-        color: None,
-        // TODO: OSのデフォルトのfont-familyを別箇所で設定する
-        font_family: vec!["Meiryo".to_string()],
-    });
 
-    for rule in vss_scanner.scan() {
-        match rule.property.as_str() {
-            "order" => {
-                order = match rule.value.as_str() {
-                    "sequence" => Order::Sequence,
-                    "parallel" => Order::Parallel,
-                    _ => todo!("エラーを実装"),
-                };
-            }
-            "layer-mode" => {
-                layer_mode = match rule.value.as_str() {
-                    "single" => LayerMode::Single,
-                    "multi" => LayerMode::Multi,
-                    _ => todo!(),
-                };
-            }
-            "duration" => {
-                let value = rule.value.as_str();
-                let duration: Duration = value.parse().unwrap();
-                match duration {
-                    Duration::Percent(_) => {
-                        todo!()
-                    }
-                    Duration::Frame(_) => {
-                        todo!()
-                    }
-                    Duration::Second(duration) => {
-                        rule_target_duration = Some(duration);
-                    }
-                    Duration::Fit => {
-                        rule_target_duration = Some(f64::INFINITY);
-                    }
-                }
-            }
-            "font-color" => {
-                let value = rule.value.as_str();
-                let font_color: FontColor = value.parse().unwrap();
-                text_style.color = Some(font_color.value());
-            }
-            "font-family" => {
-                let mut font_family = parse_font_family(rule.value.as_str());
-                // 新しいfont-familyを先頭が来るようにする
-                font_family.append(&mut text_style.font_family);
-                text_style.font_family = font_family;
-            }
-            _ => {}
-        }
-    }
+    // ConsolidatedStyleを初期化
+    let mut consolidated_style = ConsolidatedStyle::new(
+        default_duration,
+        default_size,
+        default_order,
+        default_layer_mode,
+        parent_text_style,
+    );
+
+    // VSSルールを適用
+    let _ = vss_scanner
+        .scan()
+        .map(|rule| style_registry.process_rule(rule, &mut consolidated_style));
+
     let mut object_data_children = vec![];
-    let mut start_offset = 0.0;
-    let mut children_offset_position = (0.0, 0.0);
-    let mut has_infinite_child = false;
-
     for (i, element) in children.iter().enumerate() {
         let child_object_data = vss_scanner.traverse(&children[..=i], |scanner| match element {
             Element::Tag {
@@ -293,19 +256,20 @@ fn convert_tag_element<'a, I, A>(
                 ..
             } => convert_tag_element(
                 scanner,
-                start_offset,
-                children_offset_position,
+                style_registry,
+                consolidated_style.start_offset,
+                consolidated_style.children_offset_position,
                 name,
                 attributes,
                 children,
                 object_processor_provider,
-                Some(text_style.clone()),
+                Some(consolidated_style.text_style.clone()),
             ),
             // TODO: VSSプロパティとしてwidth, heightが追加された場合、ここでwidth, heightも必要になる
             // 仮に横書きであれば水平方向に書いた描画範囲の幅がwidthを超える場合、改行して次の行に続ける必要がある
             // そのため、折り返しの判定をするために、width(縦書きの場合はheight)が必要になる
             // 現状は、textの描画サイズがそのままtxtタグの描画サイズになるため、width, heightは不要
-            Element::Text(text) => convert_element_text(text, &text_style),
+            Element::Text(text) => convert_element_text(text, &consolidated_style.text_style),
         });
         // 子要素によって親要素のstyleが変わる場合の処理
         match &child_object_data {
@@ -314,27 +278,31 @@ fn convert_tag_element<'a, I, A>(
                 ref element_rect,
                 ..
             } => {
-                match order {
+                match consolidated_style.order {
                     Order::Sequence => {
-                        start_offset += duration;
-                        target_duration += duration;
+                        consolidated_style.start_offset += duration;
+                        consolidated_style.calculated_duration += duration;
                     }
                     Order::Parallel => {
                         if duration.is_finite() {
-                            target_duration = target_duration.max(duration);
+                            consolidated_style.calculated_duration =
+                                consolidated_style.calculated_duration.max(duration);
                         } else {
-                            has_infinite_child = true;
+                            consolidated_style.has_infinite_child = true;
                         }
                     }
                 }
-                if layer_mode == LayerMode::Single {
+                if consolidated_style.layer_mode == LayerMode::Single {
                     // TODO: 並べる方向を決めるpropertyが来たらそれに従う
-                    children_offset_position.0 += element_rect.width;
-                    target_size.width += element_rect.width;
-                    target_size.height = target_size.height.max(element_rect.height);
+                    consolidated_style.children_offset_position.0 += element_rect.width;
+                    consolidated_style.size.width += element_rect.width;
+                    consolidated_style.size.height =
+                        consolidated_style.size.height.max(element_rect.height);
                 } else {
-                    target_size.width = target_size.width.max(element_rect.width);
-                    target_size.height = target_size.height.max(element_rect.height);
+                    consolidated_style.size.width =
+                        consolidated_style.size.width.max(element_rect.width);
+                    consolidated_style.size.height =
+                        consolidated_style.size.height.max(element_rect.height);
                 }
             }
             ObjectData::Text(data) => {
@@ -342,30 +310,31 @@ fn convert_tag_element<'a, I, A>(
                 if let ObjectType::Other(processor) = &object_type {
                     let rect_size = processor.calculate_text_size(data);
                     // TODO: 並べる方向を決めるpropertyが来たらそれに従う
-                    target_size.width += rect_size.width;
-                    target_size.height = target_size.height.max(rect_size.height);
+                    consolidated_style.size.width += rect_size.width;
+                    consolidated_style.size.height =
+                        consolidated_style.size.height.max(rect_size.height);
                 }
             }
         }
         object_data_children.push(child_object_data);
     }
-    if has_infinite_child && target_duration == 0.0 {
-        target_duration = f64::INFINITY
+    if consolidated_style.has_infinite_child && consolidated_style.calculated_duration == 0.0 {
+        consolidated_style.calculated_duration = f64::INFINITY
     }
 
     ObjectData::Element {
         object_type,
         // time-margin, time-paddingとかが来たらここまでに計算する
         start_time: offset_start_time,
-        duration: rule_target_duration.unwrap_or(target_duration),
+        duration: consolidated_style.final_duration(),
         attributes: attributes.clone(),
         element_rect: ElementRect {
             alignment: Default::default(),
             parent_alignment: Default::default(),
             x: offset_position.0,
             y: offset_position.1,
-            width: target_size.width,
-            height: target_size.height,
+            width: consolidated_style.size.width,
+            height: consolidated_style.size.height,
         },
         styles: StyleData::default(),
         children: object_data_children,
