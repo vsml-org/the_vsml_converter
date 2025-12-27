@@ -164,6 +164,7 @@ where
                 ref attributes,
                 styles: _,
                 ref children,
+                ..
             } => {
                 let range = start_time..start_time + duration;
                 if !range.contains(&target_time) {

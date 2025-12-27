@@ -479,6 +479,8 @@ pub enum ProcessorInput<I> {
 #[derive(Debug)]
 pub enum ObjectData<I, A> {
     Element {
+        /// オブジェクトの一意なID
+        id: usize,
         object_type: ObjectType<I, A>,
         /// 親エレメントからの相対開始時間(s)
         start_time: f64,

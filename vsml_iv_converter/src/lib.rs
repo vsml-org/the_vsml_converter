@@ -27,14 +27,18 @@ pub fn convert<I, A>(
             },
     } = vsml;
 
+    let fps = fps.unwrap_or(60);
     let mut vss_scanner = VssScanner::new(vss_items);
+    let mut next_id = 0usize;
+    let mut percent_map = HashMap::new();
+
     let cont_element = Element::Tag {
         name: "cont".to_string(),
         attributes: HashMap::new(),
         children: elements.clone(),
     };
     let cont_element_list = vec![cont_element];
-    let object = vss_scanner.traverse(&cont_element_list, |scanner| {
+    let mut object = vss_scanner.traverse(&cont_element_list, |scanner| {
         let Element::Tag {
             name,
             attributes,
@@ -52,13 +56,20 @@ pub fn convert<I, A>(
             children,
             object_processor_provider,
             None,
+            fps,
+            &mut next_id,
+            &mut percent_map,
         )
     });
+
+    // Pass 2: Percent指定のdurationを解決
+    resolve_percent_durations(&mut object, None, &percent_map)
+        .expect("Failed to resolve percent durations");
 
     IVData {
         resolution_x: width,
         resolution_y: height,
-        fps: fps.unwrap_or(60),
+        fps,
         sampling_rate: sampling_rate.unwrap_or(48_000),
         object,
     }
@@ -196,7 +207,17 @@ fn convert_tag_element<'a, I, A>(
     children: &'a [Element],
     object_processor_provider: &impl ObjectProcessorProvider<I, A>,
     parent_text_style: Option<TextStyleData>,
+    fps: u32,
+    next_id: &mut usize,
+    percent_map: &mut HashMap<usize, f64>,
 ) -> ObjectData<I, A> {
+    // ID生成
+    let current_id = *next_id;
+    *next_id += 1;
+
+    // Percent指定を一時保存する変数
+    let mut pending_percent: Option<f64> = None;
+
     // スタイル情報
     let object_type = match name {
         "cont" | "seq" | "prl" | "layer" => ObjectType::Wrap,
@@ -251,11 +272,17 @@ fn convert_tag_element<'a, I, A>(
                 let value = rule.value.as_str();
                 let duration: Duration = value.parse().unwrap();
                 match duration {
-                    Duration::Percent(_) => {
-                        todo!()
+                    Duration::Percent(percent) => {
+                        // Pass 1: 一時的にINFINITYとしてマーク
+                        // 後でHashMapから取得して解決する
+                        rule_target_duration = Some(f64::INFINITY);
+                        // Percent値を保存（後でcurrent_idを使って保存）
+                        pending_percent = Some(percent);
                     }
-                    Duration::Frame(_) => {
-                        todo!()
+                    Duration::Frame(frames) => {
+                        // フレーム数をFPSで割って秒数に変換
+                        let duration_seconds = frames as f64 / fps as f64;
+                        rule_target_duration = Some(duration_seconds);
                     }
                     Duration::Second(duration) => {
                         rule_target_duration = Some(duration);
@@ -300,6 +327,9 @@ fn convert_tag_element<'a, I, A>(
                 children,
                 object_processor_provider,
                 Some(text_style.clone()),
+                fps,
+                next_id,
+                percent_map,
             ),
             // TODO: VSSプロパティとしてwidth, heightが追加された場合、ここでwidth, heightも必要になる
             // 仮に横書きであれば水平方向に書いた描画範囲の幅がwidthを超える場合、改行して次の行に続ける必要がある
@@ -353,7 +383,13 @@ fn convert_tag_element<'a, I, A>(
         target_duration = f64::INFINITY
     }
 
+    // Percent値があればHashMapに保存
+    if let Some(percent) = pending_percent {
+        percent_map.insert(current_id, percent);
+    }
+
     ObjectData::Element {
+        id: current_id,
         object_type,
         // time-margin, time-paddingとかが来たらここまでに計算する
         start_time: offset_start_time,
@@ -380,4 +416,58 @@ fn convert_element_text<I, A>(text: &str, style: &TextStyleData) -> ObjectData<I
 
     // TODO: text内で部分色指定とかを対応する場合、textを分割して複数のTextDataを作る
     ObjectData::Text(data)
+}
+
+/// ObjectDataツリーを走査し、Percent指定のdurationを解決する
+///
+/// # Arguments
+/// * `object` - 処理対象のObjectData
+/// * `parent_duration` - 親要素のduration（秒）
+/// * `percent_map` - ObjectのIDからPercent値へのマッピング
+///
+/// # Errors
+/// - ルート要素でPercent指定された場合
+/// - 親durationが無限（fit）の場合
+fn resolve_percent_durations<I, A>(
+    object: &mut ObjectData<I, A>,
+    parent_duration: Option<f64>,
+    percent_map: &HashMap<usize, f64>,
+) -> Result<(), String> {
+    match object {
+        ObjectData::Element {
+            id,
+            duration,
+            children,
+            ..
+        } => {
+            // このObjectがPercent指定かチェック
+            if let Some(&percent) = percent_map.get(id) {
+                let Some(parent_dur) = parent_duration else {
+                    return Err(format!(
+                        "Percent duration ({}%) cannot be resolved: no parent duration available",
+                        percent
+                    ));
+                };
+
+                if parent_dur.is_infinite() {
+                    return Err(format!(
+                        "Percent duration ({}%) cannot be resolved: parent duration is infinite (fit)",
+                        percent
+                    ));
+                }
+
+                // Percent解決: percent値を100で割って係数にする
+                *duration = parent_dur * (percent / 100.0);
+            }
+
+            // 子要素を再帰的に処理
+            let current_duration = *duration;
+            for child in children.iter_mut() {
+                resolve_percent_durations(child, Some(current_duration), percent_map)?;
+            }
+
+            Ok(())
+        }
+        ObjectData::Text(_) => Ok(()),
+    }
 }

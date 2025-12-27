@@ -136,6 +136,7 @@ fn test_render_frame_image() {
         fps: 60,
         sampling_rate: 44100,
         object: ObjectData::Element {
+            id: 0,
             object_type: ObjectType::Wrap,
             start_time: 0.0,
             duration: 1.0,
@@ -173,6 +174,7 @@ fn test_mix_audio() {
         fps: 60,
         sampling_rate: 44100,
         object: ObjectData::Element {
+            id: 0,
             object_type: ObjectType::Wrap,
             start_time: 0.0,
             duration: 1.0,
