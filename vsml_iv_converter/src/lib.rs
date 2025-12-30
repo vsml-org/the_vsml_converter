@@ -26,6 +26,7 @@ pub fn convert<I, A>(
                 ref elements,
             },
     } = vsml;
+    let fps = fps.unwrap_or(60);
 
     let mut vss_scanner = VssScanner::new(vss_items);
     let cont_element = Element::Tag {
@@ -52,13 +53,15 @@ pub fn convert<I, A>(
             children,
             object_processor_provider,
             None,
+            fps,
+            None,
         )
     });
 
     IVData {
         resolution_x: width,
         resolution_y: height,
-        fps: fps.unwrap_or(60),
+        fps,
         sampling_rate: sampling_rate.unwrap_or(48_000),
         object,
     }
@@ -196,6 +199,8 @@ fn convert_tag_element<'a, I, A>(
     children: &'a [Element],
     object_processor_provider: &impl ObjectProcessorProvider<I, A>,
     parent_text_style: Option<TextStyleData>,
+    fps: u32,
+    parent_duration: Option<f64>,
 ) -> ObjectData<I, A> {
     // スタイル情報
     let object_type = match name {
@@ -251,11 +256,26 @@ fn convert_tag_element<'a, I, A>(
                 let value = rule.value.as_str();
                 let duration: Duration = value.parse().unwrap();
                 match duration {
-                    Duration::Percent(_) => {
-                        todo!()
+                    Duration::Percent(percent) => {
+                        // 親のdurationが確定していればその場で計算
+                        if let Some(parent_dur) = parent_duration {
+                            if parent_dur.is_infinite() {
+                                panic!(
+                                    "Percent duration ({}%) cannot be resolved: parent duration is infinite (fit)",
+                                    percent
+                                );
+                            }
+                            rule_target_duration = Some(parent_dur * (percent / 100.0));
+                        } else {
+                            panic!(
+                                "Percent duration ({}%) cannot be resolved: no parent duration available",
+                                percent
+                            );
+                        }
                     }
-                    Duration::Frame(_) => {
-                        todo!()
+                    Duration::Frame(frames) => {
+                        let duration_seconds = frames as f64 / fps as f64;
+                        rule_target_duration = Some(duration_seconds);
                     }
                     Duration::Second(duration) => {
                         rule_target_duration = Some(duration);
@@ -279,6 +299,10 @@ fn convert_tag_element<'a, I, A>(
             _ => {}
         }
     }
+
+    // 子要素に渡すdurationを決定（明示的に指定されている場合のみ）
+    let duration_for_children = rule_target_duration.filter(|d| d.is_finite());
+
     let mut object_data_children = vec![];
     let mut start_offset = 0.0;
     let mut children_offset_position = (0.0, 0.0);
@@ -300,6 +324,8 @@ fn convert_tag_element<'a, I, A>(
                 children,
                 object_processor_provider,
                 Some(text_style.clone()),
+                fps,
+                duration_for_children,
             ),
             // TODO: VSSプロパティとしてwidth, heightが追加された場合、ここでwidth, heightも必要になる
             // 仮に横書きであれば水平方向に書いた描画範囲の幅がwidthを超える場合、改行して次の行に続ける必要がある
