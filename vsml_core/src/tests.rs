@@ -139,6 +139,7 @@ fn test_render_frame_image() {
             object_type: ObjectType::Wrap,
             start_time: 0.0,
             duration: 1.0,
+            audio_volume: 1.0,
             element_rect: ElementRect {
                 alignment: Alignment::Center,
                 parent_alignment: Alignment::Center,
@@ -176,6 +177,7 @@ fn test_mix_audio() {
             object_type: ObjectType::Wrap,
             start_time: 0.0,
             duration: 1.0,
+            audio_volume: 1.0,
             element_rect: ElementRect {
                 alignment: Alignment::Center,
                 parent_alignment: Alignment::Center,

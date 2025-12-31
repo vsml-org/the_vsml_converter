@@ -97,6 +97,34 @@ impl FromStr for Duration {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum AudioVolume {
+    Percent(f64),
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Error)]
+pub enum AudioVolumeParseError {
+    #[error("number parse error")]
+    NumberParseError,
+    #[error("unknown unit")]
+    UnknownUnit,
+}
+
+impl FromStr for AudioVolume {
+    type Err = AudioVolumeParseError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        if let Some(value) = value.strip_suffix('%') {
+            let val = value
+                .parse()
+                .map_err(|_| AudioVolumeParseError::NumberParseError)?;
+            Ok(AudioVolume::Percent(val))
+        } else {
+            Err(AudioVolumeParseError::UnknownUnit)
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Order {
     Sequence,
@@ -484,6 +512,8 @@ pub enum ObjectData<I, A> {
         start_time: f64,
         /// エレメントが表示される時間(s)
         duration: f64,
+        /// 音量（1.0 = 100%）
+        audio_volume: f64,
         attributes: HashMap<String, String>,
         /// エレメントの表示位置とサイズ
         /// x, yは親エレメントからの相対位置

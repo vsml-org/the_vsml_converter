@@ -7,8 +7,8 @@ use vsml_ast::vsml::{Content, Element, Meta, VSML};
 use vsml_ast::vss::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
 use vsml_core::ElementRect;
 use vsml_core::schemas::{
-    Duration, FontColor, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType, Order,
-    RectSize, StyleData, TextData, TextStyleData, parse_font_family,
+    AudioVolume, Duration, FontColor, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType,
+    Order, RectSize, StyleData, TextData, TextStyleData, parse_font_family,
 };
 
 pub fn convert<I, A>(
@@ -235,6 +235,7 @@ fn convert_tag_element<'a, I, A>(
         // TODO: OSのデフォルトのfont-familyを別箇所で設定する
         font_family: vec!["Meiryo".to_string()],
     });
+    let mut audio_volume = 1.0; // デフォルト100%
 
     for rule in vss_scanner.scan() {
         match rule.property.as_str() {
@@ -286,6 +287,15 @@ fn convert_tag_element<'a, I, A>(
                 // 新しいfont-familyを先頭が来るようにする
                 font_family.append(&mut text_style.font_family);
                 text_style.font_family = font_family;
+            }
+            "audio-volume" => {
+                let value = rule.value.as_str();
+                let volume: AudioVolume = value.parse().unwrap();
+                match volume {
+                    AudioVolume::Percent(percent) => {
+                        audio_volume = percent / 100.0;
+                    }
+                }
             }
             _ => {}
         }
@@ -375,6 +385,7 @@ fn convert_tag_element<'a, I, A>(
         // time-margin, time-paddingとかが来たらここまでに計算する
         start_time: offset_start_time,
         duration: rule_target_duration.unwrap_or(target_duration),
+        audio_volume,
         attributes: attributes.clone(),
         element_rect: ElementRect {
             alignment: Default::default(),

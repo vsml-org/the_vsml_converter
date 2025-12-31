@@ -162,8 +162,8 @@ where
                 duration,
                 ref element_rect,
                 ref attributes,
-                styles: _,
                 ref children,
+                ..
             } => {
                 let range = start_time..start_time + duration;
                 if !range.contains(&target_time) {
@@ -262,7 +262,8 @@ where
 pub trait Mixer {
     type Audio;
     /// offset_time is the time in seconds from the start of the audio
-    fn mix_audio(&mut self, _audio: Self::Audio, offset_time: f64, duration: f64);
+    /// volume is the volume multiplier (1.0 = 100%)
+    fn mix_audio(&mut self, _audio: Self::Audio, offset_time: f64, duration: f64, volume: f64);
     fn mix(self, duration: f64) -> Self::Audio;
 }
 
@@ -314,6 +315,7 @@ where
                 object_type: ObjectType::Wrap,
                 duration,
                 start_time,
+                audio_volume,
                 ref children,
                 ..
             } => {
@@ -331,12 +333,13 @@ where
                     )
                 });
                 let child_audio = inner_mixer.mix(ancestor_duration.min(duration));
-                mixer.mix_audio(child_audio, start_time, ancestor_duration.min(duration));
+                mixer.mix_audio(child_audio, start_time, ancestor_duration.min(duration), audio_volume);
             }
             &ObjectData::Element {
                 object_type: ObjectType::Other(ref processor),
                 duration,
                 start_time,
+                audio_volume,
                 ref attributes,
                 ref children,
                 ..
@@ -356,7 +359,7 @@ where
                 });
                 let result = processor.process_audio(attributes, child_audio);
                 if let Some(result) = result {
-                    mixer.mix_audio(result, start_time, ancestor_duration.min(duration));
+                    mixer.mix_audio(result, start_time, ancestor_duration.min(duration), audio_volume);
                 }
             }
             ObjectData::Text(_) => {}
