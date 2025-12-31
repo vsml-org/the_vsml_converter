@@ -7,8 +7,8 @@ use vsml_ast::vsml::{Content, Element, Meta, VSML};
 use vsml_ast::vss::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
 use vsml_core::ElementRect;
 use vsml_core::schemas::{
-    AudioVolume, Duration, FontColor, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType,
-    Order, RectSize, TextData, TextStyleData, parse_font_family,
+    AudioVolume, Duration, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType, Order,
+    RectSize, TextData, TextStyleData, parse_font_family,
 };
 
 pub fn convert<I, A>(
@@ -236,6 +236,7 @@ fn convert_tag_element<'a, I, A>(
         font_family: vec!["Meiryo".to_string()],
     });
     let mut audio_volume = 1.0;
+    let mut background_color = None;
 
     for rule in vss_scanner.scan() {
         match rule.property.as_str() {
@@ -255,7 +256,7 @@ fn convert_tag_element<'a, I, A>(
             }
             "duration" => {
                 let value = rule.value.as_str();
-                let duration: Duration = value.parse().unwrap();
+                let duration = value.parse().unwrap();
                 match duration {
                     Duration::Percent(percent) => {
                         let parent_duration =
@@ -279,8 +280,13 @@ fn convert_tag_element<'a, I, A>(
             }
             "font-color" => {
                 let value = rule.value.as_str();
-                let font_color: FontColor = value.parse().unwrap();
-                text_style.color = Some(font_color.value());
+                let font_color = value.parse().unwrap();
+                text_style.color = Some(font_color);
+            }
+            "background-color" => {
+                let value = rule.value.as_str();
+                let parsed_value = value.parse().unwrap();
+                background_color = Some(parsed_value);
             }
             "font-family" => {
                 let mut font_family = parse_font_family(rule.value.as_str());
@@ -290,7 +296,7 @@ fn convert_tag_element<'a, I, A>(
             }
             "audio-volume" => {
                 let value = rule.value.as_str();
-                let volume: AudioVolume = value.parse().unwrap();
+                let volume = value.parse().unwrap();
                 match volume {
                     AudioVolume::Percent(percent) => {
                         audio_volume = percent / 100.0;
@@ -386,6 +392,7 @@ fn convert_tag_element<'a, I, A>(
         start_time: offset_start_time,
         duration: rule_target_duration.unwrap_or(target_duration),
         audio_volume,
+        background_color,
         attributes: attributes.clone(),
         element_rect: ElementRect {
             alignment: Default::default(),

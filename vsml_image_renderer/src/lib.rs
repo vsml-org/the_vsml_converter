@@ -2,7 +2,7 @@
 mod tests;
 
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::{ImageEffectStyle, Property, Renderer, RenderingContext, RenderingInfo};
+use vsml_core::{ImageEffectStyle, RenderBoxProperty, Renderer, RenderingContext, RenderingInfo};
 use wgpu::util::DeviceExt;
 
 pub struct RendererImpl {
@@ -58,8 +58,64 @@ impl Renderer for RendererImpl {
         self.images.push((image, info));
     }
 
-    fn render_box(&mut self, _property: Property, _info: RenderingInfo) {
-        todo!()
+    fn render_box(&mut self, property: RenderBoxProperty, info: RenderingInfo) {
+        // 背景色がない場合は何もしない
+        let Some(color) = property.background_color else {
+            return;
+        };
+
+        // 背景色の矩形を描画するための情報を保存
+        // 実際の描画はrenderメソッドで行う
+        // 現時点では、背景色付きの画像を作成してrender_imageで描画する
+        let width = info.width.ceil() as u32;
+        let height = info.height.ceil() as u32;
+
+        if width == 0 || height == 0 {
+            return;
+        }
+
+        // 背景色で塗りつぶされたテクスチャを作成
+        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
+            label: Some("Background Color Texture"),
+            size: wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8UnormSrgb,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        });
+
+        // 背景色のデータを作成
+        let pixel_data: Vec<u8> = (0..(width * height))
+            .flat_map(|_| vec![color.r, color.g, color.b, color.a])
+            .collect();
+
+        self.queue.write_texture(
+            wgpu::TexelCopyTextureInfo {
+                aspect: wgpu::TextureAspect::All,
+                texture: &texture,
+                mip_level: 0,
+                origin: wgpu::Origin3d::ZERO,
+            },
+            &pixel_data,
+            wgpu::TexelCopyBufferLayout {
+                offset: 0,
+                bytes_per_row: Some(4 * width),
+                rows_per_image: Some(height),
+            },
+            wgpu::Extent3d {
+                width,
+                height,
+                depth_or_array_layers: 1,
+            },
+        );
+
+        self.render_image(texture, info);
     }
 
     fn render(self, width: u32, height: u32) -> Self::Image {

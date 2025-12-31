@@ -2,7 +2,7 @@ use super::common::*;
 use std::collections::HashMap;
 use vsml_ast::vsml::{Content, Element, Meta, VSML};
 use vsml_ast::vss::{VSSItem, VSSSelector, VSSSelectorTree};
-use vsml_core::schemas::ObjectData;
+use vsml_core::schemas::{Color, ObjectData};
 
 #[test]
 fn font_color_property_hex() {
@@ -50,7 +50,15 @@ fn font_color_property_hex() {
     let ObjectData::Text(text_data) = &inner_children[0] else {
         panic!("Expected Text");
     };
-    assert_eq!(text_data[0].style.color, Some((255, 0, 0, 255)));
+    assert_eq!(
+        text_data[0].style.color,
+        Some(Color {
+            r: 255,
+            g: 0,
+            b: 0,
+            a: 255
+        })
+    );
 }
 
 #[test]
@@ -99,7 +107,15 @@ fn font_color_property_rgb() {
     let ObjectData::Text(text_data) = &inner_children[0] else {
         panic!("Expected Text");
     };
-    assert_eq!(text_data[0].style.color, Some((0, 255, 0, 255)));
+    assert_eq!(
+        text_data[0].style.color,
+        Some(Color {
+            r: 0,
+            g: 255,
+            b: 0,
+            a: 255
+        })
+    );
 }
 
 #[test]
@@ -148,5 +164,13 @@ fn font_color_property_rgba() {
     let ObjectData::Text(text_data) = &inner_children[0] else {
         panic!("Expected Text");
     };
-    assert_eq!(text_data[0].style.color, Some((100, 150, 200, 128)));
+    assert_eq!(
+        text_data[0].style.color,
+        Some(Color {
+            r: 100,
+            g: 150,
+            b: 200,
+            a: 128
+        })
+    );
 }

@@ -140,6 +140,7 @@ fn test_render_frame_image() {
             start_time: 0.0,
             duration: 1.0,
             audio_volume: 1.0,
+            background_color: None,
             element_rect: ElementRect {
                 alignment: Alignment::Center,
                 parent_alignment: Alignment::Center,
@@ -177,6 +178,7 @@ fn test_mix_audio() {
             start_time: 0.0,
             duration: 1.0,
             audio_volume: 1.0,
+            background_color: None,
             element_rect: ElementRect {
                 alignment: Alignment::Center,
                 parent_alignment: Alignment::Center,

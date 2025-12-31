@@ -8,12 +8,246 @@ use std::str::FromStr;
 use std::sync::{Arc, LazyLock};
 use thiserror::Error;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub enum ColorParseError {
+    UnknownMode,
+}
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
 pub struct Color {
-    r: u8,
-    g: u8,
-    b: u8,
-    a: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
+    pub a: u8,
+}
+impl Color {
+    pub fn white() -> Self {
+        Color {
+            r: 255,
+            g: 255,
+            b: 255,
+            a: 255,
+        }
+    }
+}
+static COLOR_MAP: phf::Map<&'static str, Color> = phf_map! {
+    "aliceblue" => Color { r:240, g:248, b:255, a:255 },
+    "antiquewhite" => Color { r:250, g:235, b:215, a:255 },
+    "aqua" => Color { r:0, g:255, b:255, a:255 },
+    "aquamarine" => Color { r:127, g:255, b:212, a:255 },
+    "azure" => Color { r:240, g:255, b:255, a:255 },
+    "beige" => Color { r:245, g:245, b:220, a:255 },
+    "bisque" => Color { r:255, g:228, b:196, a:255 },
+    "black" => Color { r:0, g:0, b:0, a:255 },
+    "blanchedalmond" => Color { r:255, g:235, b:205, a:255 },
+    "blue" => Color { r:0, g:0, b:255, a:255 },
+    "blueviolet" => Color { r:138, g:43, b:226, a:255 },
+    "brown" => Color { r:165, g:42, b:42, a:255 },
+    "burlywood" => Color { r:222, g:184, b:135, a:255 },
+    "cadetblue" => Color { r:95, g:158, b:160, a:255 },
+    "chartreuse" => Color { r:127, g:255, b:0, a:255 },
+    "chocolate" => Color { r:210, g:105, b:30, a:255 },
+    "coral" => Color { r:255, g:127, b:80, a:255 },
+    "cornflowerblue" => Color { r:100, g:149, b:237, a:255 },
+    "cornsilk" => Color { r:255, g:248, b:220, a:255 },
+    "crimson" => Color { r:220, g:20, b:60, a:255 },
+    "cyan" => Color { r:0, g:255, b:255, a:255 },
+    "darkblue" => Color { r:0, g:0, b:139, a:255 },
+    "darkcyan" => Color { r:0, g:139, b:139, a:255 },
+    "darkgoldenrod" => Color { r:184, g:134, b:11, a:255 },
+    "darkgray" | "darkgrey" => Color { r:169, g:169, b:169, a:255 },
+    "darkgreen" => Color { r:0, g:100, b:0, a:255 },
+    "darkkhaki" => Color { r:189, g:183, b:107, a:255 },
+    "darkmagenta" => Color { r:139, g:0, b:139, a:255 },
+    "darkolivegreen" => Color { r:85, g:107, b:47, a:255 },
+    "darkorange" => Color { r:255, g:140, b:0, a:255 },
+    "darkorchid" => Color { r:153, g:50, b:204, a:255 },
+    "darkred" => Color { r:139, g:0, b:0, a:255 },
+    "darksalmon" => Color { r:233, g:150, b:122, a:255 },
+    "darkseagreen" => Color { r:143, g:188, b:143, a:255 },
+    "darkslateblue" => Color { r:72, g:61, b:139, a:255 },
+    "darkslategray" | "darkslategrey" => Color { r:47, g:79, b:79, a:255 },
+    "darkturquoise" => Color { r:0, g:206, b:209, a:255 },
+    "darkviolet" => Color { r:148, g:0, b:211, a:255 },
+    "deeppink" => Color { r:255, g:20, b:147, a:255 },
+    "deepskyblue" => Color { r:0, g:191, b:255, a:255 },
+    "dimgray" | "dimgrey" => Color { r:105, g:105, b:105, a:255 },
+    "dodgerblue" => Color { r:30, g:144, b:255, a:255 },
+    "firebrick" => Color { r:178, g:34, b:34, a:255 },
+    "floralwhite" => Color { r:255, g:250, b:240, a:255 },
+    "forestgreen" => Color { r:34, g:139, b:34, a:255 },
+    "fuchsia" => Color { r:255, g:0, b:255, a:255 },
+    "gainsboro" => Color { r:220, g:220, b:220, a:255 },
+    "ghostwhite" => Color { r:248, g:248, b:255, a:255 },
+    "gold" => Color { r:255, g:215, b:0, a:255 },
+    "goldenrod" => Color { r:218, g:165, b:32, a:255 },
+    "gray" | "grey" => Color { r:128, g:128, b:128, a:255 },
+    "green" => Color { r:0, g:128, b:0, a:255 },
+    "greenyellow" => Color { r:173, g:255, b:47, a:255 },
+    "honeydew" => Color { r:240, g:255, b:240, a:255 },
+    "hotpink" => Color { r:255, g:105, b:180, a:255 },
+    "indianred" => Color { r:205, g:92, b:92, a:255 },
+    "indigo" => Color { r:75, g:0, b:130, a:255 },
+    "ivory" => Color { r:255, g:255, b:240, a:255 },
+    "khaki" => Color { r:240, g:230, b:140, a:255 },
+    "lavender" => Color { r:230, g:230, b:250, a:255 },
+    "lavenderblush" => Color { r:255, g:240, b:245, a:255 },
+    "lawngreen" => Color { r:124, g:252, b:0, a:255 },
+    "lemonchiffon" => Color { r:255, g:250, b:205, a:255 },
+    "lightblue" => Color { r:173, g:216, b:230, a:255 },
+    "lightcoral" => Color { r:240, g:128, b:128, a:255 },
+    "lightcyan" => Color { r:224, g:255, b:255, a:255 },
+    "lightgoldenrodyellow" => Color { r:250, g:250, b:210, a:255 },
+    "lightgreen" => Color { r:144, g:238, b:144, a:255 },
+    "lightgrey" => Color { r:211, g:211, b:211, a:255 },
+    "lightpink" => Color { r:255, g:182, b:193, a:255 },
+    "lightsalmon" => Color { r:255, g:160, b:122, a:255 },
+    "lightseagreen" => Color { r:32, g:178, b:170, a:255 },
+    "lightskyblue" => Color { r:135, g:206, b:250, a:255 },
+    "lightslategray" | "lightslategrey" => Color { r:119, g:136, b:153, a:255 },
+    "lightsteelblue" => Color { r:176, g:196, b:222, a:255 },
+    "lightyellow" => Color { r:255, g:255, b:224, a:255 },
+    "lime" => Color { r:0, g:255, b:0, a:255 },
+    "limegreen" => Color { r:50, g:205, b:50, a:255 },
+    "linen" => Color { r:250, g:240, b:230, a:255 },
+    "magenta" => Color { r:255, g:0, b:255, a:255 },
+    "maroon" => Color { r:128, g:0, b:0, a:255 },
+    "mediumaquamarine" => Color { r:102, g:205, b:170, a:255 },
+    "mediumblue" => Color { r:0, g:0, b:205, a:255 },
+    "mediumorchid" => Color { r:186, g:85, b:211, a:255 },
+    "mediumpurple" => Color { r:147, g:112, b:216, a:255 },
+    "mediumseagreen" => Color { r:60, g:179, b:113, a:255 },
+    "mediumslateblue" => Color { r:123, g:104, b:238, a:255 },
+    "mediumspringgreen" => Color { r:0, g:250, b:154, a:255 },
+    "mediumturquoise" => Color { r:72, g:209, b:204, a:255 },
+    "mediumvioletred" => Color { r:199, g:21, b:133, a:255 },
+    "midnightblue" => Color { r:25, g:25, b:112, a:255 },
+    "mintcream" => Color { r:245, g:255, b:250, a:255 },
+    "mistyrose" => Color { r:255, g:228, b:225, a:255 },
+    "moccasin" => Color { r:255, g:228, b:181, a:255 },
+    "navajowhite" => Color { r:255, g:222, b:173, a:255 },
+    "navy" => Color { r:0, g:0, b:128, a:255 },
+    "oldlace" => Color { r:253, g:245, b:230, a:255 },
+    "olive" => Color { r:128, g:128, b:0, a:255 },
+    "olivedrab" => Color { r:107, g:142, b:35, a:255 },
+    "orange" => Color { r:255, g:165, b:0, a:255 },
+    "orangered" => Color { r:255, g:69, b:0, a:255 },
+    "orchid" => Color { r:218, g:112, b:214, a:255 },
+    "palegoldenrod" => Color { r:238, g:232, b:170, a:255 },
+    "palegreen" => Color { r:152, g:251, b:152, a:255 },
+    "paleturquoise" => Color { r:175, g:238, b:238, a:255 },
+    "palevioletred" => Color { r:216, g:112, b:147, a:255 },
+    "papayawhip" => Color { r:255, g:239, b:213, a:255 },
+    "peachpuff" => Color { r:255, g:218, b:185, a:255 },
+    "peru" => Color { r:205, g:133, b:63, a:255 },
+    "pink" => Color { r:255, g:192, b:203, a:255 },
+    "plum" => Color { r:221, g:160, b:221, a:255 },
+    "powderblue" => Color { r:176, g:224, b:230, a:255 },
+    "purple" => Color { r:128, g:0, b:128, a:255 },
+    "red" => Color { r:255, g:0, b:0, a:255 },
+    "rosybrown" => Color { r:188, g:143, b:143, a:255 },
+    "royalblue" => Color { r:65, g:105, b:225, a:255 },
+    "saddlebrown" => Color { r:139, g:69, b:19, a:255 },
+    "salmon" => Color { r:250, g:128, b:114, a:255 },
+    "sandybrown" => Color { r:244, g:164, b:96, a:255 },
+    "seagreen" => Color { r:46, g:139, b:87, a:255 },
+    "seashell" => Color { r:255, g:245, b:238, a:255 },
+    "sienna" => Color { r:160, g:82, b:45, a:255 },
+    "silver" => Color { r:192, g:192, b:192, a:255 },
+    "skyblue" => Color { r:135, g:206, b:235, a:255 },
+    "slateblue" => Color { r:106, g:90, b:205, a:255 },
+    "slategray" | "slategrey" => Color { r:112, g:128, b:144, a:255 },
+    "snow" => Color { r:255, g:250, b:250, a:255 },
+    "springgreen" => Color { r:0, g:255, b:127, a:255 },
+    "steelblue" => Color { r:70, g:130, b:180, a:255 },
+    "tan" => Color { r:210, g:180, b:140, a:255 },
+    "teal" => Color { r:0, g:128, b:128, a:255 },
+    "thistle" => Color { r:216, g:191, b:216, a:255 },
+    "tomato" => Color { r:255, g:99, b:71, a:255 },
+    "turquoise" => Color { r:64, g:224, b:208, a:255 },
+    "violet" => Color { r:238, g:130, b:238, a:255 },
+    "wheat" => Color { r:245, g:222, b:179, a:255 },
+    "white" => Color { r:255, g:255, b:255, a:255 },
+    "whitesmoke" => Color { r:245, g:245, b:245, a:255 },
+    "yellow" => Color { r:255, g:255, b:0, a:255 },
+    "yellowgreen" => Color { r:154, g:205, b:50, a:255 },
+};
+
+impl FromStr for Color {
+    type Err = ColorParseError;
+
+    fn from_str(value: &str) -> Result<Color, Self::Err> {
+        match value {
+            v if v.starts_with('#') => {
+                let Some(hex) = v.strip_prefix('#') else {
+                    return Err(ColorParseError::UnknownMode);
+                };
+                let Ok(num_value) = u32::from_str_radix(hex, 16) else {
+                    return Err(ColorParseError::UnknownMode);
+                };
+                match hex.len() {
+                    3 => {
+                        let r = (((num_value >> 8) & 0xF) * 0x11) as u8;
+                        let g = (((num_value >> 4) & 0xF) * 0x11) as u8;
+                        let b = ((num_value & 0xF) * 0x11) as u8;
+                        Ok(Color { r, g, b, a: 255 })
+                    }
+                    4 => {
+                        let r = (((num_value >> 12) & 0xF) * 0x11) as u8;
+                        let g = (((num_value >> 8) & 0xF) * 0x11) as u8;
+                        let b = (((num_value >> 4) & 0xF) * 0x11) as u8;
+                        let a = ((num_value & 0xF) * 0x11) as u8;
+                        Ok(Color { r, g, b, a })
+                    }
+                    6 => {
+                        let r = ((num_value >> 16) & 0xFF) as u8;
+                        let g = ((num_value >> 8) & 0xFF) as u8;
+                        let b = (num_value & 0xFF) as u8;
+                        Ok(Color { r, g, b, a: 255 })
+                    }
+                    8 => {
+                        let r = ((num_value >> 24) & 0xFF) as u8;
+                        let g = ((num_value >> 16) & 0xFF) as u8;
+                        let b = ((num_value >> 8) & 0xFF) as u8;
+                        let a = (num_value & 0xFF) as u8;
+                        Ok(Color { r, g, b, a })
+                    }
+                    _ => Err(ColorParseError::UnknownMode),
+                }
+            }
+            v if v.starts_with("rgb(") => {
+                static RGB_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+                    Regex::new(r"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$").unwrap()
+                });
+                if let Some(caps) = RGB_REGEX.captures(v) {
+                    let r = caps[1].parse().map_err(|_| ColorParseError::UnknownMode)?;
+                    let g = caps[2].parse().map_err(|_| ColorParseError::UnknownMode)?;
+                    let b = caps[3].parse().map_err(|_| ColorParseError::UnknownMode)?;
+                    Ok(Color { r, g, b, a: 255 })
+                } else {
+                    Err(ColorParseError::UnknownMode)
+                }
+            }
+            v if v.starts_with("rgba(") => {
+                static RGBA_REGEX: LazyLock<Regex> = LazyLock::new(|| {
+                    Regex::new(r"^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$")
+                        .unwrap()
+                });
+                if let Some(caps) = RGBA_REGEX.captures(v) {
+                    let r = caps[1].parse().map_err(|_| ColorParseError::UnknownMode)?;
+                    let g = caps[2].parse().map_err(|_| ColorParseError::UnknownMode)?;
+                    let b = caps[3].parse().map_err(|_| ColorParseError::UnknownMode)?;
+                    let a = caps[4].parse().map_err(|_| ColorParseError::UnknownMode)?;
+                    Ok(Color { r, g, b, a })
+                } else {
+                    Err(ColorParseError::UnknownMode)
+                }
+            }
+            v => COLOR_MAP
+                .get(v)
+                .cloned()
+                .ok_or(ColorParseError::UnknownMode),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
@@ -185,255 +419,6 @@ pub fn parse_font_family(value: &str) -> Vec<String> {
     result
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub struct FontColor(u8, u8, u8, u8); // 左からrgbaの値(0-255)
-
-impl FontColor {
-    pub fn value(&self) -> (u8, u8, u8, u8) {
-        (self.0, self.1, self.2, self.3)
-    }
-}
-
-#[derive(Clone, Debug, PartialEq, Eq, Hash)]
-pub enum FontColorParseError {
-    UnknownMode,
-}
-
-static COLOR_MAP: phf::Map<&'static str, FontColor> = phf_map! {
-    "aliceblue" => FontColor(240, 248, 255, 255),
-    "antiquewhite" => FontColor(250, 235, 215, 255),
-    "aqua" => FontColor(0, 255, 255, 255),
-    "aquamarine" => FontColor(127, 255, 212, 255),
-    "azure" => FontColor(240, 255, 255, 255),
-    "beige" => FontColor(245, 245, 220, 255),
-    "bisque" => FontColor(255, 228, 196, 255),
-    "black" => FontColor(0, 0, 0, 255),
-    "blanchedalmond" => FontColor(255, 235, 205, 255),
-    "blue" => FontColor(0, 0, 255, 255),
-    "blueviolet" => FontColor(138, 43, 226, 255),
-    "brown" => FontColor(165, 42, 42, 255),
-    "burlywood" => FontColor(222, 184, 135, 255),
-    "cadetblue" => FontColor(95, 158, 160, 255),
-    "chartreuse" => FontColor(127, 255, 0, 255),
-    "chocolate" => FontColor(210, 105, 30, 255),
-    "coral" => FontColor(255, 127, 80, 255),
-    "cornflowerblue" => FontColor(100, 149, 237, 255),
-    "cornsilk" => FontColor(255, 248, 220, 255),
-    "crimson" => FontColor(220, 20, 60, 255),
-    "cyan" => FontColor(0, 255, 255, 255),
-    "darkblue" => FontColor(0, 0, 139, 255),
-    "darkcyan" => FontColor(0, 139, 139, 255),
-    "darkgoldenrod" => FontColor(184, 134, 11, 255),
-    "darkgray" | "darkgrey" => FontColor(169, 169, 169, 255),
-    "darkgreen" => FontColor(0, 100, 0, 255),
-    "darkkhaki" => FontColor(189, 183, 107, 255),
-    "darkmagenta" => FontColor(139, 0, 139, 255),
-    "darkolivegreen" => FontColor(85, 107, 47, 255),
-    "darkorange" => FontColor(255, 140, 0, 255),
-    "darkorchid" => FontColor(153, 50, 204, 255),
-    "darkred" => FontColor(139, 0, 0, 255),
-    "darksalmon" => FontColor(233, 150, 122, 255),
-    "darkseagreen" => FontColor(143, 188, 143, 255),
-    "darkslateblue" => FontColor(72, 61, 139, 255),
-    "darkslategray" | "darkslategrey" => FontColor(47, 79, 79, 255),
-    "darkturquoise" => FontColor(0, 206, 209, 255),
-    "darkviolet" => FontColor(148, 0, 211, 255),
-    "deeppink" => FontColor(255, 20, 147, 255),
-    "deepskyblue" => FontColor(0, 191, 255, 255),
-    "dimgray" | "dimgrey" => FontColor(105, 105, 105, 255),
-    "dodgerblue" => FontColor(30, 144, 255, 255),
-    "firebrick" => FontColor(178, 34, 34, 255),
-    "floralwhite" => FontColor(255, 250, 240, 255),
-    "forestgreen" => FontColor(34, 139, 34, 255),
-    "fuchsia" => FontColor(255, 0, 255, 255),
-    "gainsboro" => FontColor(220, 220, 220, 255),
-    "ghostwhite" => FontColor(248, 248, 255, 255),
-    "gold" => FontColor(255, 215, 0, 255),
-    "goldenrod" => FontColor(218, 165, 32, 255),
-    "gray" | "grey" => FontColor(128, 128, 128, 255),
-    "green" => FontColor(0, 128, 0, 255),
-    "greenyellow" => FontColor(173, 255, 47, 255),
-    "honeydew" => FontColor(240, 255, 240, 255),
-    "hotpink" => FontColor(255, 105, 180, 255),
-    "indianred" => FontColor(205, 92, 92, 255),
-    "indigo" => FontColor(75, 0, 130, 255),
-    "ivory" => FontColor(255, 255, 240, 255),
-    "khaki" => FontColor(240, 230, 140, 255),
-    "lavender" => FontColor(230, 230, 250, 255),
-    "lavenderblush" => FontColor(255, 240, 245, 255),
-    "lawngreen" => FontColor(124, 252, 0, 255),
-    "lemonchiffon" => FontColor(255, 250, 205, 255),
-    "lightblue" => FontColor(173, 216, 230, 255),
-    "lightcoral" => FontColor(240, 128, 128, 255),
-    "lightcyan" => FontColor(224, 255, 255, 255),
-    "lightgoldenrodyellow" => FontColor(250, 250, 210, 255),
-    "lightgreen" => FontColor(144, 238, 144, 255),
-    "lightgrey" => FontColor(211, 211, 211, 255),
-    "lightpink" => FontColor(255, 182, 193, 255),
-    "lightsalmon" => FontColor(255, 160, 122, 255),
-    "lightseagreen" => FontColor(32, 178, 170, 255),
-    "lightskyblue" => FontColor(135, 206, 250, 255),
-    "lightslategray" | "lightslategrey" => FontColor(119, 136, 153, 255),
-    "lightsteelblue" => FontColor(176, 196, 222, 255),
-    "lightyellow" => FontColor(255, 255, 224, 255),
-    "lime" => FontColor(0, 255, 0, 255),
-    "limegreen" => FontColor(50, 205, 50, 255),
-    "linen" => FontColor(250, 240, 230, 255),
-    "magenta" => FontColor(255, 0, 255, 255),
-    "maroon" => FontColor(128, 0, 0, 255),
-    "mediumaquamarine" => FontColor(102, 205, 170, 255),
-    "mediumblue" => FontColor(0, 0, 205, 255),
-    "mediumorchid" => FontColor(186, 85, 211, 255),
-    "mediumpurple" => FontColor(147, 112, 216, 255),
-    "mediumseagreen" => FontColor(60, 179, 113, 255),
-    "mediumslateblue" => FontColor(123, 104, 238, 255),
-    "mediumspringgreen" => FontColor(0, 250, 154, 255),
-    "mediumturquoise" => FontColor(72, 209, 204, 255),
-    "mediumvioletred" => FontColor(199, 21, 133, 255),
-    "midnightblue" => FontColor(25, 25, 112, 255),
-    "mintcream" => FontColor(245, 255, 250, 255),
-    "mistyrose" => FontColor(255, 228, 225, 255),
-    "moccasin" => FontColor(255, 228, 181, 255),
-    "navajowhite" => FontColor(255, 222, 173, 255),
-    "navy" => FontColor(0, 0, 128, 255),
-    "oldlace" => FontColor(253, 245, 230, 255),
-    "olive" => FontColor(128, 128, 0, 255),
-    "olivedrab" => FontColor(107, 142, 35, 255),
-    "orange" => FontColor(255, 165, 0, 255),
-    "orangered" => FontColor(255, 69, 0, 255),
-    "orchid" => FontColor(218, 112, 214, 255),
-    "palegoldenrod" => FontColor(238, 232, 170, 255),
-    "palegreen" => FontColor(152, 251, 152, 255),
-    "paleturquoise" => FontColor(175, 238, 238, 255),
-    "palevioletred" => FontColor(216, 112, 147, 255),
-    "papayawhip" => FontColor(255, 239, 213, 255),
-    "peachpuff" => FontColor(255, 218, 185, 255),
-    "peru" => FontColor(205, 133, 63, 255),
-    "pink" => FontColor(255, 192, 203, 255),
-    "plum" => FontColor(221, 160, 221, 255),
-    "powderblue" => FontColor(176, 224, 230, 255),
-    "purple" => FontColor(128, 0, 128, 255),
-    "red" => FontColor(255, 0, 0, 255),
-    "rosybrown" => FontColor(188, 143, 143, 255),
-    "royalblue" => FontColor(65, 105, 225, 255),
-    "saddlebrown" => FontColor(139, 69, 19, 255),
-    "salmon" => FontColor(250, 128, 114, 255),
-    "sandybrown" => FontColor(244, 164, 96, 255),
-    "seagreen" => FontColor(46, 139, 87, 255),
-    "seashell" => FontColor(255, 245, 238, 255),
-    "sienna" => FontColor(160, 82, 45, 255),
-    "silver" => FontColor(192, 192, 192, 255),
-    "skyblue" => FontColor(135, 206, 235, 255),
-    "slateblue" => FontColor(106, 90, 205, 255),
-    "slategray" | "slategrey" => FontColor(112, 128, 144, 255),
-    "snow" => FontColor(255, 250, 250, 255),
-    "springgreen" => FontColor(0, 255, 127, 255),
-    "steelblue" => FontColor(70, 130, 180, 255),
-    "tan" => FontColor(210, 180, 140, 255),
-    "teal" => FontColor(0, 128, 128, 255),
-    "thistle" => FontColor(216, 191, 216, 255),
-    "tomato" => FontColor(255, 99, 71, 255),
-    "turquoise" => FontColor(64, 224, 208, 255),
-    "violet" => FontColor(238, 130, 238, 255),
-    "wheat" => FontColor(245, 222, 179, 255),
-    "white" => FontColor(255, 255, 255, 255),
-    "whitesmoke" => FontColor(245, 245, 245, 255),
-    "yellow" => FontColor(255, 255, 0, 255),
-    "yellowgreen" => FontColor(154, 205, 50, 255),
-};
-
-impl FromStr for FontColor {
-    type Err = FontColorParseError;
-
-    fn from_str(value: &str) -> Result<FontColor, Self::Err> {
-        match value {
-            v if v.starts_with('#') => {
-                let Some(hex) = v.strip_prefix('#') else {
-                    return Err(FontColorParseError::UnknownMode);
-                };
-                let Ok(num_value) = u32::from_str_radix(hex, 16) else {
-                    return Err(FontColorParseError::UnknownMode);
-                };
-                match hex.len() {
-                    3 => {
-                        let r = (((num_value >> 8) & 0xF) * 0x11) as u8;
-                        let g = (((num_value >> 4) & 0xF) * 0x11) as u8;
-                        let b = ((num_value & 0xF) * 0x11) as u8;
-                        let a = 255;
-                        Ok(FontColor(r, g, b, a))
-                    }
-                    4 => {
-                        let r = (((num_value >> 12) & 0xF) * 0x11) as u8;
-                        let g = (((num_value >> 8) & 0xF) * 0x11) as u8;
-                        let b = (((num_value >> 4) & 0xF) * 0x11) as u8;
-                        let a = ((num_value & 0xF) * 0x11) as u8;
-                        Ok(FontColor(r, g, b, a))
-                    }
-                    6 => {
-                        let r = ((num_value >> 16) & 0xFF) as u8;
-                        let g = ((num_value >> 8) & 0xFF) as u8;
-                        let b = (num_value & 0xFF) as u8;
-                        let a = 255;
-                        Ok(FontColor(r, g, b, a))
-                    }
-                    8 => {
-                        let r = ((num_value >> 24) & 0xFF) as u8;
-                        let g = ((num_value >> 16) & 0xFF) as u8;
-                        let b = ((num_value >> 8) & 0xFF) as u8;
-                        let a = (num_value & 0xFF) as u8;
-                        Ok(FontColor(r, g, b, a))
-                    }
-                    _ => Err(FontColorParseError::UnknownMode),
-                }
-            }
-            v if v.starts_with("rgb(") => {
-                static RGB_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-                    Regex::new(r"^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$").unwrap()
-                });
-                if let Some(caps) = RGB_REGEX.captures(v) {
-                    let r = caps[1]
-                        .parse()
-                        .map_err(|_| FontColorParseError::UnknownMode)?;
-                    let g = caps[2]
-                        .parse()
-                        .map_err(|_| FontColorParseError::UnknownMode)?;
-                    let b = caps[3]
-                        .parse()
-                        .map_err(|_| FontColorParseError::UnknownMode)?;
-                    return Ok(FontColor(r, g, b, 255));
-                };
-                Err(FontColorParseError::UnknownMode)
-            }
-            v if v.starts_with("rgba(") => {
-                static RGBA_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-                    Regex::new(r"^rgba\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$")
-                        .unwrap()
-                });
-                if let Some(caps) = RGBA_REGEX.captures(v) {
-                    let r = caps[1]
-                        .parse()
-                        .map_err(|_| FontColorParseError::UnknownMode)?;
-                    let g = caps[2]
-                        .parse()
-                        .map_err(|_| FontColorParseError::UnknownMode)?;
-                    let b = caps[3]
-                        .parse()
-                        .map_err(|_| FontColorParseError::UnknownMode)?;
-                    let a = caps[4]
-                        .parse()
-                        .map_err(|_| FontColorParseError::UnknownMode)?;
-                    return Ok(FontColor(r, g, b, a));
-                }
-                Err(FontColorParseError::UnknownMode)
-            }
-            v => COLOR_MAP
-                .get(v)
-                .cloned()
-                .ok_or(FontColorParseError::UnknownMode),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum ObjectType<I, A> {
     Wrap,
@@ -475,7 +460,7 @@ impl<I, A> Debug for dyn ObjectProcessor<I, A> {
 
 #[derive(Debug, Clone)]
 pub struct TextStyleData {
-    pub color: Option<(u8, u8, u8, u8)>,
+    pub color: Option<Color>,
     pub font_family: Vec<String>,
 }
 
@@ -508,6 +493,7 @@ pub enum ObjectData<I, A> {
         duration: f64,
         /// 音量（1.0 = 100%）
         audio_volume: f64,
+        background_color: Option<Color>,
         attributes: HashMap<String, String>,
         /// エレメントの表示位置とサイズ
         /// x, yは親エレメントからの相対位置
