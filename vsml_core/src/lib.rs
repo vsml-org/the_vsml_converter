@@ -333,7 +333,12 @@ where
                     )
                 });
                 let child_audio = inner_mixer.mix(ancestor_duration.min(duration));
-                mixer.mix_audio(child_audio, start_time, ancestor_duration.min(duration), audio_volume);
+                mixer.mix_audio(
+                    child_audio,
+                    start_time,
+                    ancestor_duration.min(duration),
+                    audio_volume,
+                );
             }
             &ObjectData::Element {
                 object_type: ObjectType::Other(ref processor),
@@ -359,7 +364,12 @@ where
                 });
                 let result = processor.process_audio(attributes, child_audio);
                 if let Some(result) = result {
-                    mixer.mix_audio(result, start_time, ancestor_duration.min(duration), audio_volume);
+                    mixer.mix_audio(
+                        result,
+                        start_time,
+                        ancestor_duration.min(duration),
+                        audio_volume,
+                    );
                 }
             }
             ObjectData::Text(_) => {}

@@ -235,7 +235,7 @@ fn convert_tag_element<'a, I, A>(
         // TODO: OSのデフォルトのfont-familyを別箇所で設定する
         font_family: vec!["Meiryo".to_string()],
     });
-    let mut audio_volume = 1.0; // デフォルト100%
+    let mut audio_volume = 1.0;
 
     for rule in vss_scanner.scan() {
         match rule.property.as_str() {
