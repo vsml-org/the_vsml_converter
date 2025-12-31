@@ -8,7 +8,7 @@ use vsml_ast::vss::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
 use vsml_core::ElementRect;
 use vsml_core::schemas::{
     AudioVolume, Duration, FontColor, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType,
-    Order, RectSize, StyleData, TextData, TextStyleData, parse_font_family,
+    Order, RectSize, TextData, TextStyleData, parse_font_family,
 };
 
 pub fn convert<I, A>(
@@ -395,7 +395,6 @@ fn convert_tag_element<'a, I, A>(
             width: target_size.width,
             height: target_size.height,
         },
-        styles: StyleData::default(),
         children: object_data_children,
     }
 }

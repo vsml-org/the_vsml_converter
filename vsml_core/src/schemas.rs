@@ -16,12 +16,6 @@ pub struct Color {
     a: u8,
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct StyleData {
-    pub layer_mode: Option<LayerMode>,
-    pub background_color: Option<Color>,
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum LayerMode {
     Multi,
@@ -518,7 +512,6 @@ pub enum ObjectData<I, A> {
         /// エレメントの表示位置とサイズ
         /// x, yは親エレメントからの相対位置
         element_rect: ElementRect,
-        styles: StyleData,
         children: Vec<ObjectData<I, A>>,
     },
     Text(Vec<TextData>),

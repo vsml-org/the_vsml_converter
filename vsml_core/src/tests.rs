@@ -149,7 +149,6 @@ fn test_render_frame_image() {
                 height: 1080.0,
             },
             attributes: Default::default(),
-            styles: Default::default(),
             children: vec![],
         },
     };
@@ -187,7 +186,6 @@ fn test_mix_audio() {
                 height: 1080.0,
             },
             attributes: Default::default(),
-            styles: Default::default(),
             children: vec![],
         },
     };
