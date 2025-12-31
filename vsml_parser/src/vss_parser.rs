@@ -171,7 +171,7 @@ fn parse_vss_rule(input: &str) -> IResult<&str, Rule> {
     static QUOTE_STRING: LazyLock<Regex> =
         LazyLock::new(|| Regex::new(r#"^"((?:[^\\"]+|\\.)*)""#).unwrap());
     static COMMON_VALUE: LazyLock<Regex> =
-        LazyLock::new(|| Regex::new("^[a-zA-Z0-9-()%.#]").unwrap());
+        LazyLock::new(|| Regex::new("^[a-zA-Z0-9-()%.#,]").unwrap());
     static SPACES: LazyLock<Regex> = LazyLock::new(|| Regex::new(r#"^\s+"#).unwrap());
     let mut iter = iterator(
         input,

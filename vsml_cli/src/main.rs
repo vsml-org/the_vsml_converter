@@ -10,8 +10,11 @@ use vsml_encoder::encode;
 use vsml_image_renderer::RenderingContextImpl;
 use vsml_iv_converter::convert;
 use vsml_parser::{VSSLoader, parse};
-use vsml_processer::audio::AudioProcessor;
-use vsml_processer::image::ImageProcessor;
+use vsml_processor::audio::AudioProcessor;
+use vsml_processor::image::ImageProcessor;
+use vsml_processor::text::TextProcessor;
+use vsml_processor::video::VideoProcessor;
+use vsml_text_renderer::TextRendererContext;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -49,15 +52,14 @@ fn get_gpu_device() -> (wgpu::Device, wgpu::Queue) {
         force_fallback_adapter: false,
     }))
     .unwrap();
-    let (device, queue) = pollster::block_on(adapter.request_device(
-        &wgpu::DeviceDescriptor {
-            required_features: wgpu::Features::empty(),
-            required_limits: wgpu::Limits::default(),
-            label: None,
-            memory_hints: Default::default(),
-        },
-        None,
-    ))
+    let (device, queue) = pollster::block_on(adapter.request_device(&wgpu::DeviceDescriptor {
+        required_features: wgpu::Features::empty(),
+        required_limits: wgpu::Limits::default(),
+        label: None,
+        memory_hints: Default::default(),
+        experimental_features: Default::default(),
+        trace: Default::default(),
+    }))
     .unwrap();
     (device, queue)
 }
@@ -68,20 +70,30 @@ fn main() {
     let vsml_string = std::fs::read_to_string(args.input_path).unwrap();
     let vsml = parse(&vsml_string, &VSSFileLoader).unwrap();
     let (device, queue) = get_gpu_device();
-    let iv_data = convert(
-        &vsml,
-        &HashMap::from([
-            (
-                "img".to_string(),
-                Arc::new(ImageProcessor::new(device.clone(), queue.clone()))
-                    as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
-            ),
-            (
-                "aud".to_string(),
-                Arc::new(AudioProcessor) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
-            ),
-        ]),
-    );
+    let provider = HashMap::from([
+        (
+            "img".to_string(),
+            Arc::new(ImageProcessor::new(device.clone(), queue.clone()))
+                as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+        ),
+        (
+            "aud".to_string(),
+            Arc::new(AudioProcessor) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+        ),
+        (
+            "vid".to_string(),
+            Arc::new(VideoProcessor::new(device.clone(), queue.clone()))
+                as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+        ),
+        (
+            "txt".to_string(),
+            Arc::new(TextProcessor::new(TextRendererContext::new(
+                device.clone(),
+                queue.clone(),
+            ))) as Arc<dyn ObjectProcessor<VsmlImage, VsmlAudio>>,
+        ),
+    ]);
+    let iv_data = convert(&vsml, &provider);
 
     let mut rendering_context = RenderingContextImpl::new(device.clone(), queue.clone());
     let mut mixing_context = MixingContextImpl::new();

@@ -94,6 +94,10 @@ pub fn encode<R, M>(
     let mut last_frame_elements: Option<HashSet<String>> = None;
     let mut last_frame_path: Option<String> = None;
 
+    let bytes_per_row = (iv_data.resolution_x * 4).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
+        * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
+    let mut image_buffer = Vec::new();
+
     for f in 0..whole_frames.round() as u32 {
         let save_path = d.join(format!("frame_{}.png", f));
 
@@ -106,9 +110,8 @@ pub fn encode<R, M>(
             .map(|last| last == current_elements)
             .unwrap_or(false);
 
-        if should_reuse && last_frame_path.is_some() {
+        if let (true, Some(last_path)) = (should_reuse, &last_frame_path) {
             // 前フレームをコピー
-            let last_path = last_frame_path.as_ref().unwrap();
             std::fs::copy(last_path, &save_path).unwrap();
         } else {
             // 新規レンダリング
@@ -118,10 +121,7 @@ pub fn encode<R, M>(
                 device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
             let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
                 label: None,
-                contents: &vec![
-                    0u8;
-                    iv_data.resolution_x as usize * iv_data.resolution_y as usize * 4
-                ],
+                contents: &vec![0u8; bytes_per_row as usize * iv_data.resolution_y as usize],
                 usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
             });
             encoder.copy_texture_to_buffer(
@@ -135,7 +135,7 @@ pub fn encode<R, M>(
                     buffer: &buffer,
                     layout: wgpu::TexelCopyBufferLayout {
                         offset: 0,
-                        bytes_per_row: Some(4 * iv_data.resolution_x),
+                        bytes_per_row: Some(bytes_per_row),
                         rows_per_image: Some(iv_data.resolution_y),
                     },
                 },
@@ -150,11 +150,23 @@ pub fn encode<R, M>(
             let slice = &buffer.slice(..);
             slice.map_async(wgpu::MapMode::Read, |_| {});
 
-            device.poll(wgpu::MaintainBase::Wait);
+            device
+                .poll(wgpu::PollType::Wait {
+                    submission_index: None,
+                    timeout: None,
+                })
+                .expect("poll failed");
+
+            image_buffer.clear();
+            slice
+                .get_mapped_range()
+                .chunks(bytes_per_row as usize)
+                .map(|row| &row[..iv_data.resolution_x as usize * 4])
+                .for_each(|row| image_buffer.extend_from_slice(row));
 
             image::save_buffer(
                 &save_path,
-                &slice.get_mapped_range(),
+                &image_buffer,
                 iv_data.resolution_x,
                 iv_data.resolution_y,
                 image::ColorType::Rgba8,
@@ -198,6 +210,8 @@ pub fn encode<R, M>(
         .arg(d.join("audio.wav"))
         .arg("-vcodec")
         .arg("libx264")
+        .arg("-pix_fmt")
+        .arg("yuv420p")
         .arg("-acodec")
         .arg("aac")
         .arg(output_path)

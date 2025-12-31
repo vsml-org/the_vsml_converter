@@ -2,10 +2,7 @@
 mod tests;
 
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::{
-    ImageEffectStyle, Property, Rect, Renderer, RenderingContext, RenderingInfo, TextData,
-    TextRenderingInfo,
-};
+use vsml_core::{ImageEffectStyle, Property, Renderer, RenderingContext, RenderingInfo};
 use wgpu::util::DeviceExt;
 
 pub struct RendererImpl {
@@ -59,10 +56,6 @@ impl Renderer for RendererImpl {
 
     fn render_image(&mut self, image: Self::Image, info: RenderingInfo) {
         self.images.push((image, info));
-    }
-
-    fn render_text(&mut self, _text_data: &[TextData], _info: TextRenderingInfo) -> Rect {
-        todo!()
     }
 
     fn render_box(&mut self, _property: Property, _info: RenderingInfo) {
@@ -131,6 +124,7 @@ impl Renderer for RendererImpl {
                 label: Some("Render Pass"),
                 color_attachments: &[Some(wgpu::RenderPassColorAttachment {
                     view: &view,
+                    depth_slice: None,
                     resolve_target: None,
                     ops: wgpu::Operations {
                         load: wgpu::LoadOp::Load,
@@ -140,6 +134,7 @@ impl Renderer for RendererImpl {
                 depth_stencil_attachment: None,
                 occlusion_query_set: None,
                 timestamp_writes: None,
+                multiview_mask: None,
             });
             render_pass.set_pipeline(&self.render_pipeline);
             render_pass.set_bind_group(0, &diffuse_bind_group, &[]);
@@ -220,7 +215,7 @@ impl RenderingContextImpl {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: Some("Render Pipeline Layout"),
                 bind_group_layouts: &[&texture_bind_group_layout],
-                push_constant_ranges: &[],
+                immediate_size: 0,
             });
         let render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
             label: Some("Render Pipeline"),
@@ -256,7 +251,7 @@ impl RenderingContextImpl {
                 mask: !0,
                 alpha_to_coverage_enabled: false,
             },
-            multiview: None,
+            multiview_mask: None,
             cache: None,
         });
         let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
@@ -265,7 +260,7 @@ impl RenderingContextImpl {
             address_mode_w: wgpu::AddressMode::ClampToEdge,
             mag_filter: wgpu::FilterMode::Linear,
             min_filter: wgpu::FilterMode::Nearest,
-            mipmap_filter: wgpu::FilterMode::Nearest,
+            mipmap_filter: wgpu::MipmapFilterMode::Nearest,
             ..Default::default()
         });
 

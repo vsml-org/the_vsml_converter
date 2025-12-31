@@ -1,11 +1,14 @@
+#[cfg(test)]
+mod tests;
+
 use std::collections::{HashMap, HashSet};
 use std::sync::Arc;
 use vsml_ast::vsml::{Content, Element, Meta, VSML};
 use vsml_ast::vss::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
 use vsml_core::ElementRect;
 use vsml_core::schemas::{
-    Duration, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType, Order, RectSize,
-    StyleData,
+    Duration, FontColor, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType, Order,
+    RectSize, StyleData, TextData, TextStyleData, parse_font_family,
 };
 
 pub fn convert<I, A>(
@@ -23,6 +26,7 @@ pub fn convert<I, A>(
                 ref elements,
             },
     } = vsml;
+    let fps = fps.unwrap_or(60);
 
     let mut vss_scanner = VssScanner::new(vss_items);
     let cont_element = Element::Tag {
@@ -32,19 +36,32 @@ pub fn convert<I, A>(
     };
     let cont_element_list = vec![cont_element];
     let object = vss_scanner.traverse(&cont_element_list, |scanner| {
-        recursive(
-            &cont_element_list[0],
+        let Element::Tag {
+            name,
+            attributes,
+            children,
+        } = &cont_element_list[0]
+        else {
+            unreachable!()
+        };
+        convert_tag_element(
             scanner,
             0.0,
             (0.0, 0.0),
+            name,
+            attributes,
+            children,
             object_processor_provider,
+            None,
+            fps,
+            None,
         )
     });
 
     IVData {
         resolution_x: width,
         resolution_y: height,
-        fps: fps.unwrap_or(60),
+        fps,
         sampling_rate: sampling_rate.unwrap_or(48_000),
         object,
     }
@@ -52,6 +69,7 @@ pub fn convert<I, A>(
 
 struct VssScanner<'a> {
     vss_items: &'a [VSSItem],
+    /// ルート要素からscan対象の要素までの要素のリスト
     traverse_stack: Vec<&'a [Element]>,
 }
 
@@ -63,63 +81,62 @@ impl<'a> VssScanner<'a> {
         }
     }
 
-    fn scan(&self) -> impl Iterator<Item = &Rule> + '_ {
-        self.vss_items
+    /// traverse_stackに対して、selectorと一致するスタイルがないか絞り込み、一致するスタイルを取得している
+    fn scan(&mut self) -> impl Iterator<Item = &Rule> + '_ {
+        return self
+            .vss_items
             .iter()
             .filter(|vss_item| {
                 vss_item.selectors.iter().any(|selector| {
-                    for element in &self.traverse_stack {
-                        let element_tag;
-                        let element_id;
-                        let element_classes;
-                        match element.last().unwrap() {
-                            Element::Tag {
-                                name, attributes, ..
-                            } => {
-                                element_tag = Some(name.as_str());
-                                element_id = attributes.get("id").map(String::as_str);
-                                element_classes = attributes
-                                    .get("class")
-                                    .map_or_else(HashSet::new, |classes| {
-                                        classes.split_whitespace().collect()
-                                    });
-                            }
-                            Element::Text(_) => {
-                                element_tag = None;
-                                element_id = None;
-                                element_classes = HashSet::new();
-                            }
-                        }
-                        let selector_is_match = |selectors: &[VSSSelector]| {
-                            selectors
-                                .iter()
-                                .all(|single_selector| match single_selector {
-                                    VSSSelector::All => true,
-                                    VSSSelector::Tag(tag) => element_tag == Some(tag.as_str()),
-                                    VSSSelector::Class(class_name) => {
-                                        element_classes.contains(class_name.as_str())
-                                    }
-                                    VSSSelector::Id(id_name) => element_id == Some(id_name),
-                                    VSSSelector::PseudoClass(_) => {
-                                        todo!()
-                                    }
-                                    VSSSelector::Attribute(_, _) => {
-                                        todo!()
-                                    }
-                                })
-                        };
-                        // TODO: Selectors以外の処理を実装する
-                        let VSSSelectorTree::Selectors(selectors) = selector else {
-                            continue;
-                        };
-                        if selector_is_match(selectors) {
-                            return true;
-                        }
-                    }
-                    false
+                    SelectorTreeMatchChecker::new(&self.traverse_stack).is_match(selector)
                 })
             })
-            .flat_map(|vss_item| &vss_item.rules)
+            .flat_map(|vss_item| &vss_item.rules);
+        struct SelectorTreeMatchChecker<'a> {
+            target_stack: &'a [&'a [Element]],
+        }
+        impl SelectorTreeMatchChecker<'_> {
+            fn new<'a>(target_stack: &'a [&'a [Element]]) -> SelectorTreeMatchChecker<'a> {
+                SelectorTreeMatchChecker { target_stack }
+            }
+
+            fn is_match(&mut self, selector_tree: &VSSSelectorTree) -> bool {
+                match selector_tree {
+                    VSSSelectorTree::Selectors(selectors) => {
+                        let Some((tail, head)) = self.target_stack.split_last() else {
+                            return false;
+                        };
+                        self.target_stack = head;
+                        selector_is_match(selectors, tail)
+                    }
+                    VSSSelectorTree::Descendant(parent_selectors, child_tree) => {
+                        if !self.is_match(child_tree) {
+                            return false;
+                        }
+                        // この時点で、child_treeにマッチする部分はself.target_stackから消されているはず
+                        while let Some((tail, head)) = self.target_stack.split_last() {
+                            self.target_stack = head;
+                            if selector_is_match(parent_selectors, tail) {
+                                return true;
+                            }
+                        }
+                        false
+                    }
+                    VSSSelectorTree::Child(parent_selectors, child_tree) => {
+                        if !self.is_match(child_tree) {
+                            return false;
+                        }
+                        let Some((tail, head)) = self.target_stack.split_last() else {
+                            return false;
+                        };
+                        self.target_stack = head;
+                        selector_is_match(parent_selectors, tail)
+                    }
+                    // TODO: 他のセレクタも実装
+                    _ => todo!(),
+                }
+            }
+        }
     }
 
     fn traverse<R>(&mut self, element: &'a [Element], f: impl FnOnce(&mut Self) -> R) -> R {
@@ -129,30 +146,36 @@ impl<'a> VssScanner<'a> {
         result
     }
 }
-
-fn recursive<'a, I, A>(
-    element: &'a Element,
-    vss_scanner: &mut VssScanner<'a>,
-    offset_start_time: f64,
-    offset_position: (f32, f32),
-    object_processor_provider: &impl ObjectProcessorProvider<I, A>,
-) -> ObjectData<I, A> {
-    match element {
+fn selector_is_match(selectors: &[VSSSelector], element: &[Element]) -> bool {
+    let element_tag;
+    let element_id;
+    let element_classes;
+    match element.last().unwrap() {
         Element::Tag {
-            name,
-            attributes,
-            children,
-        } => convert_tag_element(
-            vss_scanner,
-            offset_start_time,
-            offset_position,
-            name,
-            attributes,
-            children,
-            object_processor_provider,
-        ),
-        Element::Text(text) => ObjectData::Text(text.clone()),
-    }
+            name, attributes, ..
+        } => {
+            element_tag = name.as_str();
+            element_id = attributes.get("id").map(String::as_str);
+            element_classes = attributes
+                .get("class")
+                .map_or_else(HashSet::new, |classes| classes.split_whitespace().collect());
+        }
+        Element::Text(_) => return false,
+    };
+    selectors
+        .iter()
+        .all(|single_selector| match single_selector {
+            VSSSelector::All => true,
+            VSSSelector::Tag(tag) => element_tag == tag.as_str(),
+            VSSSelector::Class(class_name) => element_classes.contains(class_name.as_str()),
+            VSSSelector::Id(id_name) => element_id == Some(id_name),
+            VSSSelector::PseudoClass(_) => {
+                todo!()
+            }
+            VSSSelector::Attribute(_, _) => {
+                todo!()
+            }
+        })
 }
 
 pub trait ObjectProcessorProvider<I, A> {
@@ -165,6 +188,8 @@ impl<I, A> ObjectProcessorProvider<I, A> for HashMap<String, Arc<dyn ObjectProce
     }
 }
 
+// TODO: 引数多すぎ警告を修正する
+#[allow(clippy::too_many_arguments)]
 fn convert_tag_element<'a, I, A>(
     vss_scanner: &mut VssScanner<'a>,
     offset_start_time: f64,
@@ -173,7 +198,11 @@ fn convert_tag_element<'a, I, A>(
     attributes: &HashMap<String, String>,
     children: &'a [Element],
     object_processor_provider: &impl ObjectProcessorProvider<I, A>,
+    parent_text_style: Option<TextStyleData>,
+    fps: u32,
+    parent_duration: Option<f64>,
 ) -> ObjectData<I, A> {
+    // スタイル情報
     let object_type = match name {
         "cont" | "seq" | "prl" | "layer" => ObjectType::Wrap,
         name => ObjectType::Other(
@@ -191,7 +220,6 @@ fn convert_tag_element<'a, I, A>(
         ObjectType::Wrap => RectSize::ZERO,
         ObjectType::Other(processor) => processor.default_image_size(attributes),
     };
-
     let mut order: Order = match name {
         "seq" | "cont" => Order::Sequence,
         "prl" | "layer" => Order::Parallel,
@@ -202,12 +230,18 @@ fn convert_tag_element<'a, I, A>(
         "layer" => LayerMode::Single,
         _ => LayerMode::Multi,
     };
+    let mut text_style = parent_text_style.unwrap_or(TextStyleData {
+        color: None,
+        // TODO: OSのデフォルトのfont-familyを別箇所で設定する
+        font_family: vec!["Meiryo".to_string()],
+    });
+
     for rule in vss_scanner.scan() {
         match rule.property.as_str() {
             "order" => {
                 order = match rule.value.as_str() {
-                    "seq" => Order::Sequence,
-                    "prl" => Order::Parallel,
+                    "sequence" => Order::Sequence,
+                    "parallel" => Order::Parallel,
                     _ => todo!("エラーを実装"),
                 };
             }
@@ -222,11 +256,17 @@ fn convert_tag_element<'a, I, A>(
                 let value = rule.value.as_str();
                 let duration: Duration = value.parse().unwrap();
                 match duration {
-                    Duration::Percent(_) => {
-                        todo!()
+                    Duration::Percent(percent) => {
+                        let parent_duration =
+                            parent_duration.expect("no parent duration available");
+                        if parent_duration.is_infinite() {
+                            panic!("parent duration is infinite (fit)");
+                        }
+                        rule_target_duration = Some(parent_duration * (percent / 100.0));
                     }
-                    Duration::Frame(_) => {
-                        todo!()
+                    Duration::Frame(frames) => {
+                        let duration_seconds = frames as f64 / fps as f64;
+                        rule_target_duration = Some(duration_seconds);
                     }
                     Duration::Second(duration) => {
                         rule_target_duration = Some(duration);
@@ -236,50 +276,92 @@ fn convert_tag_element<'a, I, A>(
                     }
                 }
             }
+            "font-color" => {
+                let value = rule.value.as_str();
+                let font_color: FontColor = value.parse().unwrap();
+                text_style.color = Some(font_color.value());
+            }
+            "font-family" => {
+                let mut font_family = parse_font_family(rule.value.as_str());
+                // 新しいfont-familyを先頭が来るようにする
+                font_family.append(&mut text_style.font_family);
+                text_style.font_family = font_family;
+            }
             _ => {}
         }
     }
+
+    // 子要素に渡すdurationを決定（明示的に指定されている場合のみ）
+    let duration_for_children = rule_target_duration.filter(|d| d.is_finite());
+
     let mut object_data_children = vec![];
     let mut start_offset = 0.0;
     let mut children_offset_position = (0.0, 0.0);
     let mut has_infinite_child = false;
 
     for (i, element) in children.iter().enumerate() {
-        let child_object_data = vss_scanner.traverse(&children[..=i], |scanner| {
-            recursive(
-                element,
+        let child_object_data = vss_scanner.traverse(&children[..=i], |scanner| match element {
+            Element::Tag {
+                name,
+                attributes,
+                children,
+                ..
+            } => convert_tag_element(
                 scanner,
                 start_offset,
                 children_offset_position,
+                name,
+                attributes,
+                children,
                 object_processor_provider,
-            )
+                Some(text_style.clone()),
+                fps,
+                duration_for_children,
+            ),
+            // TODO: VSSプロパティとしてwidth, heightが追加された場合、ここでwidth, heightも必要になる
+            // 仮に横書きであれば水平方向に書いた描画範囲の幅がwidthを超える場合、改行して次の行に続ける必要がある
+            // そのため、折り返しの判定をするために、width(縦書きの場合はheight)が必要になる
+            // 現状は、textの描画サイズがそのままtxtタグの描画サイズになるため、width, heightは不要
+            Element::Text(text) => convert_element_text(text, &text_style),
         });
-        if let &ObjectData::Element {
-            duration,
-            ref element_rect,
-            ..
-        } = &child_object_data
-        {
-            match order {
-                Order::Sequence => {
-                    start_offset += duration;
-                    target_duration += duration;
-                }
-                Order::Parallel => {
-                    if duration.is_finite() {
-                        target_duration = target_duration.max(duration);
-                    } else {
-                        has_infinite_child = true;
+        // 子要素によって親要素のstyleが変わる場合の処理
+        match &child_object_data {
+            &ObjectData::Element {
+                duration,
+                ref element_rect,
+                ..
+            } => {
+                match order {
+                    Order::Sequence => {
+                        start_offset += duration;
+                        target_duration += duration;
+                    }
+                    Order::Parallel => {
+                        if duration.is_finite() {
+                            target_duration = target_duration.max(duration);
+                        } else {
+                            has_infinite_child = true;
+                        }
                     }
                 }
+                if layer_mode == LayerMode::Single && order == Order::Parallel {
+                    // TODO: 並べる方向を決めるpropertyが来たらそれに従う
+                    children_offset_position.0 += element_rect.width;
+                    target_size.width += element_rect.width;
+                    target_size.height = target_size.height.max(element_rect.height);
+                } else {
+                    target_size.width = target_size.width.max(element_rect.width);
+                    target_size.height = target_size.height.max(element_rect.height);
+                }
             }
-            if layer_mode == LayerMode::Single {
-                children_offset_position.0 += element_rect.width;
-                target_size.width += element_rect.width;
-                target_size.height = target_size.height.max(element_rect.height);
-            } else {
-                target_size.width = target_size.width.max(element_rect.width);
-                target_size.height = target_size.height.max(element_rect.height);
+            ObjectData::Text(data) => {
+                // 親要素のprocessorを使ってテキストサイズを計算
+                if let ObjectType::Other(processor) = &object_type {
+                    let rect_size = processor.calculate_text_size(data);
+                    // TODO: 並べる方向を決めるpropertyが来たらそれに従う
+                    target_size.width += rect_size.width;
+                    target_size.height = target_size.height.max(rect_size.height);
+                }
             }
         }
         object_data_children.push(child_object_data);
@@ -305,4 +387,14 @@ fn convert_tag_element<'a, I, A>(
         styles: StyleData::default(),
         children: object_data_children,
     }
+}
+
+fn convert_element_text<I, A>(text: &str, style: &TextStyleData) -> ObjectData<I, A> {
+    let data = vec![TextData {
+        text: text.to_owned(),
+        style: style.clone(),
+    }];
+
+    // TODO: text内で部分色指定とかを対応する場合、textを分割して複数のTextDataを作る
+    ObjectData::Text(data)
 }

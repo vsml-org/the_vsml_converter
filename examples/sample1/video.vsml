@@ -1,0 +1,35 @@
+<vsml>
+  <meta>
+    <style>
+      txt {
+        font-color: red;
+      }
+      .message {
+        font-color: #FFFF00;
+      }
+      #msg {
+        font-color: rgb(100, 200, 255);
+      }
+      cont {
+        order: parallel;
+      }
+    </style>
+  </meta>
+  <cont resolution="1920x1080">
+    <img src="pigeons_house.png" />
+    <seq>
+    <prl>
+      <txt>sample message</txt>
+      <aud src="tsumugi.wav" />
+    </prl>
+    <prl>
+      <txt class="message">sample message</txt>
+      <aud src="metan.wav" />
+    </prl>
+    <prl>
+      <txt id="msg">sample message</txt>
+      <aud src="zundamon.wav" />
+    </prl>
+    </seq>
+  </cont>
+</vsml>

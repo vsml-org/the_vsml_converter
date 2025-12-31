@@ -44,12 +44,12 @@ VSMLの字句解析を行うための構造体定義ライブラリ
 ### vsml_common_image
 VSMLの画像生成の具体的な構造体を定義するライブラリ
 
-`vsml_image_renderer` や `vsml_processer` などで使用される構造体を定義するためライブラリを切っている
+`vsml_image_renderer` や `vsml_processor` などで使用される構造体を定義するためライブラリを切っている
 
 ### vsml_common_audio
 VSMLの音声処理の具体的な構造体を定義するライブラリ
 
-`vsml_audio_mixer` や `vsml_processer` などで使用される構造体を定義するためライブラリを切っている
+`vsml_audio_mixer` や `vsml_processor` などで使用される構造体を定義するためライブラリを切っている
 
 ### vsml_image_renderer
 `vsml_core` の画像のレンダリングの具体的な処理を定義したライブラリ

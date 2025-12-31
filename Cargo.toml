@@ -16,7 +16,8 @@ members = [
     "vsml_image_renderer",
     "vsml_iv_converter",
     "vsml_parser",
-    "vsml_processer",
+    "vsml_processor",
+    "vsml_text_renderer",
 ]
 
 [workspace.dependencies]
@@ -29,18 +30,21 @@ vsml_encoder = { path = "vsml_encoder" }
 vsml_image_renderer = { path = "vsml_image_renderer" }
 vsml_iv_converter = { path = "vsml_iv_converter" }
 vsml_parser = { path = "vsml_parser" }
-vsml_processer = { path = "vsml_processer" }
-bytemuck = { version = "1.22.0", features = [ "derive" ] }
-clap = { version = "4.5.32", features = ["derive"] }
-dasp = {version = "0.11.0", features = ["all"]}
+vsml_processor = { path = "vsml_processor" }
+vsml_text_renderer = { path = "vsml_text_renderer" }
+bytemuck = { version = "1.24.0", features = ["derive"] }
+clap = { version = "4.5.53", features = ["derive"] }
+cosmic-text = "0.15"
+dasp = { version = "0.11.0", features = ["all"] }
+font-kit = "0.14"
 hound = "3.5.1"
-image = "0.25.5"
-imageproc = "0.25.0"
-mockall = "0.13.1"
+image = "0.25.9"
+mockall = "0.14.0"
 nom = "8.0.0"
+phf = { version = "0.13.1", features = ["macros"] }
 pollster = "0.4.0"
-regex = "1.11.1"
-roxmltree = "0.20.0"
-temp-dir = "0.1.14"
-thiserror = "2.0.12"
-wgpu = "24.0.3"
+regex = "1.12.2"
+roxmltree = "0.21.1"
+temp-dir = "0.1.16"
+thiserror = "2.0.17"
+wgpu = "28.0.0"
