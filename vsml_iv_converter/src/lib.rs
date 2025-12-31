@@ -344,7 +344,7 @@ fn convert_tag_element<'a, I, A>(
                         }
                     }
                 }
-                if layer_mode == LayerMode::Single {
+                if layer_mode == LayerMode::Single && order == Order::Parallel {
                     // TODO: 並べる方向を決めるpropertyが来たらそれに従う
                     children_offset_position.0 += element_rect.width;
                     target_size.width += element_rect.width;
