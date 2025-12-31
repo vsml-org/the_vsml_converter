@@ -257,21 +257,12 @@ fn convert_tag_element<'a, I, A>(
                 let duration: Duration = value.parse().unwrap();
                 match duration {
                     Duration::Percent(percent) => {
-                        // 親のdurationが確定していればその場で計算
-                        if let Some(parent_dur) = parent_duration {
-                            if parent_dur.is_infinite() {
-                                panic!(
-                                    "Percent duration ({}%) cannot be resolved: parent duration is infinite (fit)",
-                                    percent
-                                );
-                            }
-                            rule_target_duration = Some(parent_dur * (percent / 100.0));
-                        } else {
-                            panic!(
-                                "Percent duration ({}%) cannot be resolved: no parent duration available",
-                                percent
-                            );
+                        let parent_duration =
+                            parent_duration.expect("no parent duration available");
+                        if parent_duration.is_infinite() {
+                            panic!("parent duration is infinite (fit)");
                         }
+                        rule_target_duration = Some(parent_duration * (percent / 100.0));
                     }
                     Duration::Frame(frames) => {
                         let duration_seconds = frames as f64 / fps as f64;
