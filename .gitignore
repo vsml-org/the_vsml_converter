@@ -1,5 +1,6 @@
 /.vscode
 /.idea
+/.serena
 /target
 .DS_Store
 *.mp4

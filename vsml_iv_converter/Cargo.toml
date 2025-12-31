@@ -7,3 +7,6 @@ authors.workspace = true
 [dependencies]
 vsml_ast.workspace = true
 vsml_core.workspace = true
+
+[dev-dependencies]
+mockall.workspace = true

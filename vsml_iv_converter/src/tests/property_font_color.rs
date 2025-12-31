@@ -1,0 +1,152 @@
+use super::common::*;
+use std::collections::HashMap;
+use vsml_ast::vsml::{Content, Element, Meta, VSML};
+use vsml_ast::vss::{VSSItem, VSSSelector, VSSSelectorTree};
+use vsml_core::schemas::ObjectData;
+
+#[test]
+fn font_color_property_hex() {
+    let elements = vec![Element::Tag {
+        name: "mock".to_string(),
+        attributes: {
+            let mut attrs = HashMap::new();
+            attrs.insert("class".to_string(), "target".to_string());
+            attrs
+        },
+        children: vec![Element::Text("Hello".to_string())],
+    }];
+
+    let vss_items = vec![VSSItem {
+        selectors: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Class(
+            "target".to_string(),
+        )])],
+        rules: vec![create_rule("font-color", "#ff0000")],
+    }];
+
+    let vsml = VSML {
+        meta: Meta { vss_items },
+        content: Content {
+            width: 1920,
+            height: 1080,
+            fps: Some(60),
+            sampling_rate: Some(48000),
+            elements,
+        },
+    };
+
+    let provider = TestObjectProcessorProvider::new();
+    let result = crate::convert(&vsml, &provider);
+
+    let ObjectData::Element { children, .. } = result.object else {
+        panic!("Expected Element");
+    };
+    let ObjectData::Element {
+        children: inner_children,
+        ..
+    } = &children[0]
+    else {
+        panic!("Expected Element");
+    };
+    let ObjectData::Text(text_data) = &inner_children[0] else {
+        panic!("Expected Text");
+    };
+    assert_eq!(text_data[0].style.color, Some((255, 0, 0, 255)));
+}
+
+#[test]
+fn font_color_property_rgb() {
+    let elements = vec![Element::Tag {
+        name: "mock".to_string(),
+        attributes: {
+            let mut attrs = HashMap::new();
+            attrs.insert("class".to_string(), "target".to_string());
+            attrs
+        },
+        children: vec![Element::Text("Hello".to_string())],
+    }];
+
+    let vss_items = vec![VSSItem {
+        selectors: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Class(
+            "target".to_string(),
+        )])],
+        rules: vec![create_rule("font-color", "rgb(0, 255, 0)")],
+    }];
+
+    let vsml = VSML {
+        meta: Meta { vss_items },
+        content: Content {
+            width: 1920,
+            height: 1080,
+            fps: Some(60),
+            sampling_rate: Some(48000),
+            elements,
+        },
+    };
+
+    let provider = TestObjectProcessorProvider::new();
+    let result = crate::convert(&vsml, &provider);
+
+    let ObjectData::Element { children, .. } = result.object else {
+        panic!("Expected Element");
+    };
+    let ObjectData::Element {
+        children: inner_children,
+        ..
+    } = &children[0]
+    else {
+        panic!("Expected Element");
+    };
+    let ObjectData::Text(text_data) = &inner_children[0] else {
+        panic!("Expected Text");
+    };
+    assert_eq!(text_data[0].style.color, Some((0, 255, 0, 255)));
+}
+
+#[test]
+fn font_color_property_rgba() {
+    let elements = vec![Element::Tag {
+        name: "mock".to_string(),
+        attributes: {
+            let mut attrs = HashMap::new();
+            attrs.insert("class".to_string(), "target".to_string());
+            attrs
+        },
+        children: vec![Element::Text("Hello".to_string())],
+    }];
+
+    let vss_items = vec![VSSItem {
+        selectors: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Class(
+            "target".to_string(),
+        )])],
+        rules: vec![create_rule("font-color", "rgba(100, 150, 200, 128)")],
+    }];
+
+    let vsml = VSML {
+        meta: Meta { vss_items },
+        content: Content {
+            width: 1920,
+            height: 1080,
+            fps: Some(60),
+            sampling_rate: Some(48000),
+            elements,
+        },
+    };
+
+    let provider = TestObjectProcessorProvider::new();
+    let result = crate::convert(&vsml, &provider);
+
+    let ObjectData::Element { children, .. } = result.object else {
+        panic!("Expected Element");
+    };
+    let ObjectData::Element {
+        children: inner_children,
+        ..
+    } = &children[0]
+    else {
+        panic!("Expected Element");
+    };
+    let ObjectData::Text(text_data) = &inner_children[0] else {
+        panic!("Expected Text");
+    };
+    assert_eq!(text_data[0].style.color, Some((100, 150, 200, 128)));
+}
