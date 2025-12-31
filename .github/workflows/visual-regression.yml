@@ -50,39 +50,8 @@ jobs:
             ${{ github.event_name == 'pull_request_target' && format('rust-{0}-pr-{1}-target-vrt-', runner.os, github.event.pull_request.number) }}
             ${{ github.event_name == 'pull_request_target' && format('rust-{0}-target-vrt-', runner.os) }}
 
-      - name: Build vsml_cli
-        run: cargo build -p vsml_cli --release --locked
-
-      - name: Run vsml-cli for each example and post-process outputs
-        shell: bash
-        env:
-          WGPU_BACKEND: vulkan
-        run: |
-          set -euo pipefail
-          VSML_EXECUTABLE="$(pwd)/target/release/vsml"
-          EXAMPLES_DIR="$(pwd)/examples"
-          OUT_ROOT="$(pwd)/visual-regression/images"
-          mkdir -p "${OUT_ROOT}"
-
-          find "${EXAMPLES_DIR}" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
-            name="$(basename "$dir")"
-            echo "Processing example: $name"
-            # 相対参照( https://github.com/vsml-org/the_vsml_converter/issues/41 )の仕様が入っていないので、カレントディレクトリの移動が必要 
-            pushd "$dir"
-            mkdir -p "${OUT_ROOT}/${name}"
-
-            # Pick the first .vsml file in the subdirectory
-            vsml_file="$(find "$dir" -maxdepth 1 -type f -name '*.vsml' | head -n 1 || true)"
-
-            out_mp4="/tmp/out.mp4"
-
-            echo "  -> Running vsml_cli on: $vsml_file"
-            "$VSML_EXECUTABLE" "$vsml_file" --output "$out_mp4" --overwrite
-
-            ffmpeg -hide_banner -loglevel error -y -i "$out_mp4" -vf fps=1 "${OUT_ROOT}/${name}/%04d.png"
-            ffmpeg -i "$out_mp4" -lavfi "showspectrumpic=s=1920x1080:legend=1" -y "${OUT_ROOT}/${name}/spectrogram.png"
-            popd
-          done
+      - name: Capture visual regression images for each example
+        run: ./.ci/capture_vrt_images.sh "$(pwd)/examples" "$(pwd)/visual-regression/images"
 
       - name: Upload visual regression images
         uses: actions/upload-artifact@v6
