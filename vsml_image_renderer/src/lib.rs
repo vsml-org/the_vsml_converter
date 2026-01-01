@@ -153,13 +153,13 @@ impl Renderer for RendererImpl {
                         height: info.height,
                         color: normalized_color,
                     }];
-                    let vertex_buffer = self
-                        .device
-                        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                            label: None,
-                            contents: bytemuck::cast_slice(box_vertex),
-                            usage: wgpu::BufferUsages::VERTEX,
-                        });
+                    let vertex_buffer =
+                        self.device
+                            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                                label: None,
+                                contents: bytemuck::cast_slice(box_vertex),
+                                usage: wgpu::BufferUsages::VERTEX,
+                            });
 
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: None,
@@ -200,20 +200,21 @@ impl Renderer for RendererImpl {
                 RenderItem::Image(image, info) => {
                     let child_view = image.create_view(&wgpu::TextureViewDescriptor::default());
 
-                    let diffuse_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                        layout: &self.texture_bind_group_layout,
-                        entries: &[
-                            wgpu::BindGroupEntry {
-                                binding: 0,
-                                resource: wgpu::BindingResource::TextureView(&child_view),
-                            },
-                            wgpu::BindGroupEntry {
-                                binding: 1,
-                                resource: wgpu::BindingResource::Sampler(&self.sampler),
-                            },
-                        ],
-                        label: None,
-                    });
+                    let diffuse_bind_group =
+                        self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                            layout: &self.texture_bind_group_layout,
+                            entries: &[
+                                wgpu::BindGroupEntry {
+                                    binding: 0,
+                                    resource: wgpu::BindingResource::TextureView(&child_view),
+                                },
+                                wgpu::BindGroupEntry {
+                                    binding: 1,
+                                    resource: wgpu::BindingResource::Sampler(&self.sampler),
+                                },
+                            ],
+                            label: None,
+                        });
 
                     let vertex: &[Vertex] = &[Vertex {
                         base_width: width,
@@ -223,13 +224,13 @@ impl Renderer for RendererImpl {
                         width: info.width,
                         height: info.height,
                     }];
-                    let vertex_buffer = self
-                        .device
-                        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                            label: Some("Vertex Buffer"),
-                            contents: bytemuck::cast_slice(vertex),
-                            usage: wgpu::BufferUsages::VERTEX,
-                        });
+                    let vertex_buffer =
+                        self.device
+                            .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                                label: Some("Vertex Buffer"),
+                                contents: bytemuck::cast_slice(vertex),
+                                usage: wgpu::BufferUsages::VERTEX,
+                            });
 
                     let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
                         label: Some("Render Pass"),
