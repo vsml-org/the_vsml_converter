@@ -2388,6 +2388,7 @@ dependencies = [
  "pollster",
  "vsml_common_image",
  "vsml_core",
+ "vsml_test_utils",
  "wgpu",
 ]
 
@@ -2424,6 +2425,10 @@ dependencies = [
  "vsml_text_renderer",
  "wgpu",
 ]
+
+[[package]]
+name = "vsml_test_utils"
+version = "0.1.0"
 
 [[package]]
 name = "vsml_text_renderer"

@@ -13,6 +13,10 @@ OUT_ROOT="$2"
 
 mkdir -p "${OUT_ROOT}"
 
+echo "Running cargo test..."
+export VSML_VRT_OUTPUT_PATH="${OUT_ROOT}/cargo_test"
+cargo test -- --nocapture vrt
+
 find "${EXAMPLES_DIR}" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
   name="$(basename "$dir")"
   echo "Processing example: $name"
