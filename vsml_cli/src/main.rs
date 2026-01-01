@@ -68,9 +68,12 @@ fn get_gpu_device() -> (wgpu::Device, wgpu::Queue) {
 fn main() {
     let args = Args::parse();
 
-    let output_path = args.output_path.map(|path| path::absolute(&path).expect("Failed to get output absolute path"));
+    let output_path = args
+        .output_path
+        .map(|path| path::absolute(&path).expect("Failed to get output absolute path"));
     let vsml_string = std::fs::read_to_string(&args.input_path).unwrap();
-    env::set_current_dir(args.input_path.parent().unwrap()).expect("Failed to set current directory");
+    env::set_current_dir(args.input_path.parent().unwrap())
+        .expect("Failed to set current directory");
     let vsml = parse(&vsml_string, &VSSFileLoader).unwrap();
     let (device, queue) = get_gpu_device();
     let provider = HashMap::from([
