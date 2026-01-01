@@ -19,16 +19,6 @@ pub struct Color {
     pub b: u8,
     pub a: u8,
 }
-impl Color {
-    pub fn white() -> Self {
-        Color {
-            r: 255,
-            g: 255,
-            b: 255,
-            a: 255,
-        }
-    }
-}
 static COLOR_MAP: phf::Map<&'static str, Color> = phf_map! {
     "aliceblue" => Color { r:240, g:248, b:255, a:255 },
     "antiquewhite" => Color { r:250, g:235, b:215, a:255 },
