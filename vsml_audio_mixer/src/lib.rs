@@ -1,4 +1,4 @@
-use dasp::{Signal, interpolate::sinc::Sinc, ring_buffer, signal, slice::add_in_place};
+use dasp::{Signal, interpolate::sinc::Sinc, ring_buffer, signal};
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_core::AudioEffectStyle;
 
@@ -11,7 +11,7 @@ pub struct MixingContextImpl {}
 impl vsml_core::Mixer for MixerImpl {
     type Audio = VsmlAudio;
 
-    fn mix_audio(&mut self, audio: Self::Audio, offset_time: f64, duration: f64) {
+    fn mix_audio(&mut self, audio: Self::Audio, offset_time: f64, duration: f64, volume: f64) {
         let signal = signal::from_iter(audio.samples);
 
         let ring_buffer = ring_buffer::Fixed::from([[0.0, 0.0]; 100]);
@@ -34,10 +34,13 @@ impl vsml_core::Mixer for MixerImpl {
                 .resize(offset_sample + duration_sample + 1, [0.0, 0.0]);
         }
 
-        add_in_place(
-            &mut self.audio.samples[offset_sample..][..=duration_sample],
-            &resampled_samples[..=duration_sample],
-        );
+        let volume = volume as f32;
+        let target = &mut self.audio.samples[offset_sample..][..=duration_sample];
+        let source = &resampled_samples[..=duration_sample];
+        for (target_sample, source_sample) in target.iter_mut().zip(source.iter()) {
+            target_sample[0] += source_sample[0] * volume;
+            target_sample[1] += source_sample[1] * volume;
+        }
     }
 
     fn mix(mut self, duration: f64) -> Self::Audio {

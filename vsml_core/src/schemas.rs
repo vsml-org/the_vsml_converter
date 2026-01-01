@@ -16,12 +16,6 @@ pub struct Color {
     a: u8,
 }
 
-#[derive(Debug, Clone, Default)]
-pub struct StyleData {
-    pub layer_mode: Option<LayerMode>,
-    pub background_color: Option<Color>,
-}
-
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum LayerMode {
     Multi,
@@ -93,6 +87,34 @@ impl FromStr for Duration {
             Ok(Duration::Percent(val))
         } else {
             Err(DurationParseError::UnknownUnit)
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum AudioVolume {
+    Percent(f64),
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Error)]
+pub enum AudioVolumeParseError {
+    #[error("number parse error")]
+    NumberParseError,
+    #[error("unknown unit")]
+    UnknownUnit,
+}
+
+impl FromStr for AudioVolume {
+    type Err = AudioVolumeParseError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        if let Some(value) = value.strip_suffix('%') {
+            let val = value
+                .parse()
+                .map_err(|_| AudioVolumeParseError::NumberParseError)?;
+            Ok(AudioVolume::Percent(val))
+        } else {
+            Err(AudioVolumeParseError::UnknownUnit)
         }
     }
 }
@@ -484,11 +506,12 @@ pub enum ObjectData<I, A> {
         start_time: f64,
         /// エレメントが表示される時間(s)
         duration: f64,
+        /// 音量（1.0 = 100%）
+        audio_volume: f64,
         attributes: HashMap<String, String>,
         /// エレメントの表示位置とサイズ
         /// x, yは親エレメントからの相対位置
         element_rect: ElementRect,
-        styles: StyleData,
         children: Vec<ObjectData<I, A>>,
     },
     Text(Vec<TextData>),
