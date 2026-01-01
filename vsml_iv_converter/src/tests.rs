@@ -1,5 +1,6 @@
 mod common;
 mod property_audio_volume;
+mod property_background_color;
 mod property_duration;
 mod property_font_color;
 mod property_font_family;
