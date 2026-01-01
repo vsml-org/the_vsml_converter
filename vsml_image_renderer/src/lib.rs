@@ -5,11 +5,17 @@ use vsml_common_image::Image as VsmlImage;
 use vsml_core::{ImageEffectStyle, RenderBoxProperty, Renderer, RenderingContext, RenderingInfo};
 use wgpu::util::DeviceExt;
 
+enum RenderItem {
+    Image(VsmlImage, RenderingInfo),
+    Box(RenderBoxProperty, RenderingInfo),
+}
+
 pub struct RendererImpl {
-    images: Vec<(VsmlImage, RenderingInfo)>,
+    items: Vec<RenderItem>,
     device: wgpu::Device,
     queue: wgpu::Queue,
     render_pipeline: wgpu::RenderPipeline,
+    box_render_pipeline: wgpu::RenderPipeline,
     texture_bind_group_layout: wgpu::BindGroupLayout,
     sampler: wgpu::Sampler,
 }
@@ -18,6 +24,7 @@ pub struct RenderingContextImpl {
     device: wgpu::Device,
     queue: wgpu::Queue,
     render_pipeline: wgpu::RenderPipeline,
+    box_render_pipeline: wgpu::RenderPipeline,
     texture_bind_group_layout: wgpu::BindGroupLayout,
     sampler: wgpu::Sampler,
 }
@@ -51,71 +58,46 @@ impl Vertex {
     }
 }
 
+#[repr(C)]
+#[derive(Copy, Clone, Debug, bytemuck::Pod, bytemuck::Zeroable)]
+struct BoxVertex {
+    base_width: u32,
+    base_height: u32,
+    x: f32,
+    y: f32,
+    width: f32,
+    height: f32,
+    color: [f32; 4],
+}
+
+impl BoxVertex {
+    const ATTRIBUTES: [wgpu::VertexAttribute; 7] = wgpu::vertex_attr_array![
+        0 => Uint32,
+        1 => Uint32,
+        2 => Float32,
+        3 => Float32,
+        4 => Float32,
+        5 => Float32,
+        6 => Float32x4,
+    ];
+    fn desc() -> wgpu::VertexBufferLayout<'static> {
+        wgpu::VertexBufferLayout {
+            array_stride: size_of::<BoxVertex>() as wgpu::BufferAddress,
+            step_mode: wgpu::VertexStepMode::Instance,
+            attributes: &Self::ATTRIBUTES,
+        }
+    }
+}
+
 impl Renderer for RendererImpl {
     type Image = VsmlImage;
 
     fn render_image(&mut self, image: Self::Image, info: RenderingInfo) {
-        self.images.push((image, info));
+        self.items.push(RenderItem::Image(image, info));
     }
 
     fn render_box(&mut self, property: RenderBoxProperty, info: RenderingInfo) {
-        // 背景色がない場合は何もしない
-        let Some(color) = property.background_color else {
-            return;
-        };
-
-        // 背景色の矩形を描画するための情報を保存
-        // 実際の描画はrenderメソッドで行う
-        // 現時点では、背景色付きの画像を作成してrender_imageで描画する
-        let width = info.width.ceil() as u32;
-        let height = info.height.ceil() as u32;
-
-        if width == 0 || height == 0 {
-            return;
-        }
-
-        // 背景色で塗りつぶされたテクスチャを作成
-        let texture = self.device.create_texture(&wgpu::TextureDescriptor {
-            label: Some("Background Color Texture"),
-            size: wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-            mip_level_count: 1,
-            sample_count: 1,
-            dimension: wgpu::TextureDimension::D2,
-            format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
-            view_formats: &[],
-        });
-
-        // 背景色のデータを作成
-        let pixel_data: Vec<u8> = (0..(width * height))
-            .flat_map(|_| vec![color.r, color.g, color.b, color.a])
-            .collect();
-
-        self.queue.write_texture(
-            wgpu::TexelCopyTextureInfo {
-                aspect: wgpu::TextureAspect::All,
-                texture: &texture,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-            },
-            &pixel_data,
-            wgpu::TexelCopyBufferLayout {
-                offset: 0,
-                bytes_per_row: Some(4 * width),
-                rows_per_image: Some(height),
-            },
-            wgpu::Extent3d {
-                width,
-                height,
-                depth_or_array_layers: 1,
-            },
-        );
-
-        self.render_image(texture, info);
+        self.items.push(RenderItem::Box(property, info));
     }
 
     fn render(self, width: u32, height: u32) -> Self::Image {
@@ -142,76 +124,151 @@ impl Renderer for RendererImpl {
             .device
             .create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
 
-        self.images.iter().for_each(|(image, info)| {
-            let child_view = image.create_view(&wgpu::TextureViewDescriptor::default());
+        // 登録順に描画
+        self.items.iter().for_each(|item| {
+            match item {
+                RenderItem::Box(property, info) => {
+                    // 背景色がない場合はスキップ
+                    let Some(color) = property.background_color else {
+                        return;
+                    };
 
-            let diffuse_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
-                layout: &self.texture_bind_group_layout,
-                entries: &[
-                    wgpu::BindGroupEntry {
-                        binding: 0,
-                        resource: wgpu::BindingResource::TextureView(&child_view),
-                    },
-                    wgpu::BindGroupEntry {
-                        binding: 1,
-                        resource: wgpu::BindingResource::Sampler(&self.sampler),
-                    },
-                ],
-                label: None,
-            });
+                    if info.width == 0.0 || info.height == 0.0 {
+                        return;
+                    }
 
-            let vertex: &[Vertex] = &[Vertex {
-                base_width: width,
-                base_height: height,
-                x: info.x,
-                y: info.y,
-                width: info.width,
-                height: info.height,
-            }];
-            let vertex_buffer = self
-                .device
-                .create_buffer_init(&wgpu::util::BufferInitDescriptor {
-                    label: Some("Vertex Buffer"),
-                    contents: bytemuck::cast_slice(vertex),
-                    usage: wgpu::BufferUsages::VERTEX,
-                });
+                    let normalized_color = [
+                        color.r as f32 / 255.0,
+                        color.g as f32 / 255.0,
+                        color.b as f32 / 255.0,
+                        color.a as f32 / 255.0,
+                    ];
 
-            let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-                label: Some("Render Pass"),
-                color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                    view: &view,
-                    depth_slice: None,
-                    resolve_target: None,
-                    ops: wgpu::Operations {
-                        load: wgpu::LoadOp::Load,
-                        store: wgpu::StoreOp::Store,
-                    },
-                })],
-                depth_stencil_attachment: None,
-                occlusion_query_set: None,
-                timestamp_writes: None,
-                multiview_mask: None,
-            });
-            render_pass.set_pipeline(&self.render_pipeline);
-            render_pass.set_bind_group(0, &diffuse_bind_group, &[]);
-            render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
-            let scissor_rect_width = if width < info.x as u32 + info.width as u32 {
-                width - info.x as u32
-            } else {
-                info.width as u32
-            };
-            let scissor_rect_height = if height < info.y as u32 + info.height as u32 {
-                height - info.y as u32
-            } else {
-                info.height as u32
-            };
-            render_pass.set_scissor_rect(
-                info.x as u32,
-                info.y as u32,
-                scissor_rect_width,
-                scissor_rect_height,
-            );
-            render_pass.draw(0..3, 0..1);
+                    let box_vertex: &[BoxVertex] = &[BoxVertex {
+                        base_width: width,
+                        base_height: height,
+                        x: info.x,
+                        y: info.y,
+                        width: info.width,
+                        height: info.height,
+                        color: normalized_color,
+                    }];
+                    let vertex_buffer = self
+                        .device
+                        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                            label: None,
+                            contents: bytemuck::cast_slice(box_vertex),
+                            usage: wgpu::BufferUsages::VERTEX,
+                        });
+
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: None,
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            depth_slice: None,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                        multiview_mask: None,
+                    });
+                    render_pass.set_pipeline(&self.box_render_pipeline);
+                    render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+                    let scissor_rect_width = if width < info.x as u32 + info.width as u32 {
+                        width - info.x as u32
+                    } else {
+                        info.width as u32
+                    };
+                    let scissor_rect_height = if height < info.y as u32 + info.height as u32 {
+                        height - info.y as u32
+                    } else {
+                        info.height as u32
+                    };
+                    render_pass.set_scissor_rect(
+                        info.x as u32,
+                        info.y as u32,
+                        scissor_rect_width,
+                        scissor_rect_height,
+                    );
+                    render_pass.draw(0..3, 0..1);
+                }
+                RenderItem::Image(image, info) => {
+                    let child_view = image.create_view(&wgpu::TextureViewDescriptor::default());
+
+                    let diffuse_bind_group = self.device.create_bind_group(&wgpu::BindGroupDescriptor {
+                        layout: &self.texture_bind_group_layout,
+                        entries: &[
+                            wgpu::BindGroupEntry {
+                                binding: 0,
+                                resource: wgpu::BindingResource::TextureView(&child_view),
+                            },
+                            wgpu::BindGroupEntry {
+                                binding: 1,
+                                resource: wgpu::BindingResource::Sampler(&self.sampler),
+                            },
+                        ],
+                        label: None,
+                    });
+
+                    let vertex: &[Vertex] = &[Vertex {
+                        base_width: width,
+                        base_height: height,
+                        x: info.x,
+                        y: info.y,
+                        width: info.width,
+                        height: info.height,
+                    }];
+                    let vertex_buffer = self
+                        .device
+                        .create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                            label: Some("Vertex Buffer"),
+                            contents: bytemuck::cast_slice(vertex),
+                            usage: wgpu::BufferUsages::VERTEX,
+                        });
+
+                    let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
+                        label: Some("Render Pass"),
+                        color_attachments: &[Some(wgpu::RenderPassColorAttachment {
+                            view: &view,
+                            depth_slice: None,
+                            resolve_target: None,
+                            ops: wgpu::Operations {
+                                load: wgpu::LoadOp::Load,
+                                store: wgpu::StoreOp::Store,
+                            },
+                        })],
+                        depth_stencil_attachment: None,
+                        occlusion_query_set: None,
+                        timestamp_writes: None,
+                        multiview_mask: None,
+                    });
+                    render_pass.set_pipeline(&self.render_pipeline);
+                    render_pass.set_bind_group(0, &diffuse_bind_group, &[]);
+                    render_pass.set_vertex_buffer(0, vertex_buffer.slice(..));
+                    let scissor_rect_width = if width < info.x as u32 + info.width as u32 {
+                        width - info.x as u32
+                    } else {
+                        info.width as u32
+                    };
+                    let scissor_rect_height = if height < info.y as u32 + info.height as u32 {
+                        height - info.y as u32
+                    } else {
+                        info.height as u32
+                    };
+                    render_pass.set_scissor_rect(
+                        info.x as u32,
+                        info.y as u32,
+                        scissor_rect_width,
+                        scissor_rect_height,
+                    );
+                    render_pass.draw(0..3, 0..1);
+                }
+            }
         });
         self.queue.submit(std::iter::once(encoder.finish()));
         texture
@@ -224,10 +281,11 @@ impl RenderingContext for RenderingContextImpl {
 
     fn create_renderer(&mut self) -> Self::Renderer {
         RendererImpl {
-            images: vec![],
+            items: vec![],
             device: self.device.clone(),
             queue: self.queue.clone(),
             render_pipeline: self.render_pipeline.clone(),
+            box_render_pipeline: self.box_render_pipeline.clone(),
             texture_bind_group_layout: self.texture_bind_group_layout.clone(),
             sampler: self.sampler.clone(),
         }
@@ -320,10 +378,60 @@ impl RenderingContextImpl {
             ..Default::default()
         });
 
+        // 背景色用のシェーダーとパイプライン
+        let box_shader = device.create_shader_module(wgpu::ShaderModuleDescriptor {
+            label: Some("Box Shader"),
+            source: wgpu::ShaderSource::Wgsl(include_str!("render_box.wgsl").into()),
+        });
+        let box_render_pipeline_layout =
+            device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
+                label: Some("Box Render Pipeline Layout"),
+                bind_group_layouts: &[],
+                immediate_size: 0,
+            });
+        let box_render_pipeline = device.create_render_pipeline(&wgpu::RenderPipelineDescriptor {
+            label: Some("Box Render Pipeline"),
+            layout: Some(&box_render_pipeline_layout),
+            vertex: wgpu::VertexState {
+                module: &box_shader,
+                entry_point: Some("vs_main"),
+                buffers: &[BoxVertex::desc()],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            },
+            fragment: Some(wgpu::FragmentState {
+                module: &box_shader,
+                entry_point: Some("fs_main"),
+                targets: &[Some(wgpu::ColorTargetState {
+                    format: wgpu::TextureFormat::Rgba8UnormSrgb,
+                    blend: Some(wgpu::BlendState::ALPHA_BLENDING),
+                    write_mask: wgpu::ColorWrites::ALL,
+                })],
+                compilation_options: wgpu::PipelineCompilationOptions::default(),
+            }),
+            primitive: wgpu::PrimitiveState {
+                topology: wgpu::PrimitiveTopology::TriangleList,
+                strip_index_format: None,
+                front_face: wgpu::FrontFace::Ccw,
+                cull_mode: None,
+                polygon_mode: wgpu::PolygonMode::Fill,
+                unclipped_depth: false,
+                conservative: false,
+            },
+            depth_stencil: None,
+            multisample: wgpu::MultisampleState {
+                count: 1,
+                mask: !0,
+                alpha_to_coverage_enabled: false,
+            },
+            multiview_mask: None,
+            cache: None,
+        });
+
         Self {
             device,
             queue,
             render_pipeline,
+            box_render_pipeline,
             texture_bind_group_layout,
             sampler,
         }

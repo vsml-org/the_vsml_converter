@@ -1,5 +1,6 @@
 use super::*;
 use image::GenericImageView;
+use vsml_core::schemas::Color;
 use wgpu::util::DeviceExt;
 
 fn create_image_data(
@@ -77,7 +78,23 @@ fn test_render() {
     let mut context = RenderingContextImpl::new(device.clone(), queue.clone());
     let mut renderer = context.create_renderer();
 
-    // 合成するテクスチャの作成
+    // 合成するテクスチャや矩形の描画情報の作成
+    renderer.render_box(
+        RenderBoxProperty {
+            background_color: Some(Color {
+                r: 0,
+                g: 255,
+                b: 0,
+                a: 255,
+            }),
+        },
+        RenderingInfo {
+            x: 0.0,
+            y: 0.0,
+            width: 1920.0,
+            height: 1080.0,
+        },
+    );
     let (texture, info) = create_image_data(
         device.clone(),
         queue.clone(),
@@ -102,6 +119,23 @@ fn test_render() {
         include_bytes!("../test_assets/icon.png"),
     );
     renderer.render_image(texture, info);
+    // 矩形の描画情報の作成
+    renderer.render_box(
+        RenderBoxProperty {
+            background_color: Some(Color {
+                r: 255,
+                g: 255,
+                b: 0,
+                a: 128,
+            }),
+        },
+        RenderingInfo {
+            x: 50.0,
+            y: 100.0,
+            width: 200.0,
+            height: 300.0,
+        },
+    );
 
     // テクスチャを合成
     let output_dimensions = (1920, 1080);
