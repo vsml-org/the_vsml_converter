@@ -16,8 +16,6 @@ mkdir -p "${OUT_ROOT}"
 find "${EXAMPLES_DIR}" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
   name="$(basename "$dir")"
   echo "Processing example: $name"
-  # 相対参照( https://github.com/vsml-org/the_vsml_converter/issues/41 )の仕様が入っていないので、カレントディレクトリの移動が必要
-  pushd "$dir" > /dev/null
   mkdir -p "${OUT_ROOT}/${name}"
 
   # Pick the first .vsml file in the subdirectory
@@ -25,7 +23,6 @@ find "${EXAMPLES_DIR}" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
 
   if [ -z "$vsml_file" ]; then
     echo "  -> No .vsml file found in $dir"
-    popd > /dev/null
     continue
   fi
 
@@ -36,5 +33,4 @@ find "${EXAMPLES_DIR}" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
 
   ffmpeg -hide_banner -loglevel error -y -i "$out_mp4" -vf fps=1 "${OUT_ROOT}/${name}/%04d.png"
   ffmpeg -i "$out_mp4" -lavfi "showspectrumpic=s=1920x1080:legend=1" -y "${OUT_ROOT}/${name}/spectrogram.png"
-  popd > /dev/null
 done
