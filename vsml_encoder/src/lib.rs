@@ -1,3 +1,4 @@
+use std::collections::HashSet;
 use std::path::Path;
 use std::process::Command;
 use temp_dir::TempDir;
@@ -6,6 +7,63 @@ use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::{IVData, ObjectData};
 use vsml_core::{MixingContext, RenderingContext, mix_audio, render_frame_image};
 use wgpu::util::DeviceExt;
+
+/// フレームごとのアクティブな要素を計算
+fn calculate_frame_changes<I, A>(iv_data: &IVData<I, A>) -> Vec<HashSet<String>> {
+    let ObjectData::Element { duration, .. } = &iv_data.object else {
+        panic!()
+    };
+    let whole_frames = (*duration * iv_data.fps as f64).round() as u32;
+    let mut frame_elements: Vec<HashSet<String>> = vec![HashSet::new(); whole_frames as usize];
+
+    fn collect_active_elements<I, A>(
+        object: &ObjectData<I, A>,
+        frame_elements: &mut [HashSet<String>],
+        fps: u32,
+        path: String,
+        parent_start: f64,
+    ) {
+        match object {
+            ObjectData::Element {
+                start_time,
+                duration,
+                children,
+                attributes: _,
+                ..
+            } => {
+                let global_start = parent_start + start_time;
+                let start_frame = (global_start * fps as f64).floor() as u32;
+                let end_frame = ((global_start + duration) * fps as f64).ceil() as u32;
+
+                // この要素がアクティブなフレームを記録
+                for frame in start_frame..end_frame.min(frame_elements.len() as u32) {
+                    frame_elements[frame as usize].insert(path.clone());
+                }
+
+                // 子要素を再帰的に処理
+                for (i, child) in children.iter().enumerate() {
+                    collect_active_elements(
+                        child,
+                        frame_elements,
+                        fps,
+                        format!("{}/{}", path, i),
+                        global_start,
+                    );
+                }
+            }
+            ObjectData::Text(_) => {}
+        }
+    }
+
+    collect_active_elements(
+        &iv_data.object,
+        &mut frame_elements,
+        iv_data.fps,
+        "root".to_string(),
+        0.0,
+    );
+    frame_elements
+}
 
 pub fn encode<R, M>(
     iv_data: IVData<R::Image, M::Audio>,
@@ -29,68 +87,96 @@ pub fn encode<R, M>(
     let d = TempDir::new().unwrap();
     let d = d.path();
 
+    // フレームごとのアクティブな要素を事前計算
+    let frame_changes = calculate_frame_changes(&iv_data);
+
+    // 前フレームの情報を保持
+    let mut last_frame_elements: Option<HashSet<String>> = None;
+    let mut last_frame_path: Option<String> = None;
+
     let bytes_per_row = (iv_data.resolution_x * 4).div_ceil(wgpu::COPY_BYTES_PER_ROW_ALIGNMENT)
         * wgpu::COPY_BYTES_PER_ROW_ALIGNMENT;
     let mut image_buffer = Vec::new();
+
     for f in 0..whole_frames.round() as u32 {
-        let frame_image = render_frame_image(&iv_data, f, &mut rendering_context);
         let save_path = d.join(format!("frame_{}.png", f));
 
-        let mut encoder =
-            device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
-        let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
-            label: None,
-            contents: &vec![0u8; bytes_per_row as usize * iv_data.resolution_y as usize],
-            usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
-        });
-        encoder.copy_texture_to_buffer(
-            wgpu::TexelCopyTextureInfo {
-                texture: &frame_image,
-                mip_level: 0,
-                origin: wgpu::Origin3d::ZERO,
-                aspect: wgpu::TextureAspect::All,
-            },
-            wgpu::TexelCopyBufferInfo {
-                buffer: &buffer,
-                layout: wgpu::TexelCopyBufferLayout {
-                    offset: 0,
-                    bytes_per_row: Some(bytes_per_row),
-                    rows_per_image: Some(iv_data.resolution_y),
+        let current_elements = &frame_changes[f as usize];
+
+        // フレーム間の変化をチェック
+        // TODO: アニメーション対応時は、要素の存在だけでなく属性値の変化も考慮する必要がある
+        let should_reuse = last_frame_elements
+            .as_ref()
+            .map(|last| last == current_elements)
+            .unwrap_or(false);
+
+        if let (true, Some(last_path)) = (should_reuse, &last_frame_path) {
+            // 前フレームをコピー
+            std::fs::copy(last_path, &save_path).unwrap();
+        } else {
+            // 新規レンダリング
+            let frame_image = render_frame_image(&iv_data, f, &mut rendering_context);
+
+            let mut encoder =
+                device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: None });
+            let buffer = device.create_buffer_init(&wgpu::util::BufferInitDescriptor {
+                label: None,
+                contents: &vec![0u8; bytes_per_row as usize * iv_data.resolution_y as usize],
+                usage: wgpu::BufferUsages::COPY_DST | wgpu::BufferUsages::MAP_READ,
+            });
+            encoder.copy_texture_to_buffer(
+                wgpu::TexelCopyTextureInfo {
+                    texture: &frame_image,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                    aspect: wgpu::TextureAspect::All,
                 },
-            },
-            wgpu::Extent3d {
-                width: iv_data.resolution_x,
-                height: iv_data.resolution_y,
-                depth_or_array_layers: 1,
-            },
-        );
-        queue.submit(std::iter::once(encoder.finish()));
+                wgpu::TexelCopyBufferInfo {
+                    buffer: &buffer,
+                    layout: wgpu::TexelCopyBufferLayout {
+                        offset: 0,
+                        bytes_per_row: Some(bytes_per_row),
+                        rows_per_image: Some(iv_data.resolution_y),
+                    },
+                },
+                wgpu::Extent3d {
+                    width: iv_data.resolution_x,
+                    height: iv_data.resolution_y,
+                    depth_or_array_layers: 1,
+                },
+            );
+            queue.submit(std::iter::once(encoder.finish()));
 
-        let slice = &buffer.slice(..);
-        slice.map_async(wgpu::MapMode::Read, |_| {});
+            let slice = &buffer.slice(..);
+            slice.map_async(wgpu::MapMode::Read, |_| {});
 
-        device
-            .poll(wgpu::PollType::Wait {
-                submission_index: None,
-                timeout: None,
-            })
-            .expect("poll failed");
+            device
+                .poll(wgpu::PollType::Wait {
+                    submission_index: None,
+                    timeout: None,
+                })
+                .expect("poll failed");
 
-        image_buffer.clear();
-        slice
-            .get_mapped_range()
-            .chunks(bytes_per_row as usize)
-            .map(|row| &row[..iv_data.resolution_x as usize * 4])
-            .for_each(|row| image_buffer.extend_from_slice(row));
+            image_buffer.clear();
+            slice
+                .get_mapped_range()
+                .chunks(bytes_per_row as usize)
+                .map(|row| &row[..iv_data.resolution_x as usize * 4])
+                .for_each(|row| image_buffer.extend_from_slice(row));
 
-        image::save_buffer(
-            save_path,
-            &image_buffer,
-            iv_data.resolution_x,
-            iv_data.resolution_y,
-            image::ColorType::Rgba8,
-        )
-        .unwrap();
+            image::save_buffer(
+                &save_path,
+                &image_buffer,
+                iv_data.resolution_x,
+                iv_data.resolution_y,
+                image::ColorType::Rgba8,
+            )
+            .unwrap();
+
+            // 現在のフレーム情報を保存
+            last_frame_elements = Some(current_elements.clone());
+            last_frame_path = Some(save_path.to_string_lossy().to_string());
+        }
     }
 
     let audio = mix_audio(&iv_data, &mut mixing_context);
