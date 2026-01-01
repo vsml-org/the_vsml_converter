@@ -4,10 +4,6 @@ set -euo pipefail
 export WGPU_BACKEND=vulkan
 export RUST_BACKTRACE=full
 
-cargo build -p vsml_cli --release --locked
-
-VSML_EXECUTABLE="$(pwd)/target/release/vsml"
-
 EXAMPLES_DIR="$1"
 OUT_ROOT="$2"
 
@@ -15,7 +11,11 @@ mkdir -p "${OUT_ROOT}"
 
 echo "Running cargo test..."
 export VSML_VRT_OUTPUT_PATH="${OUT_ROOT}/cargo_test"
-cargo test -- --nocapture vrt
+cargo test --release -- --nocapture vrt
+
+cargo build -p vsml_cli --release --locked
+
+VSML_EXECUTABLE="$(pwd)/target/release/vsml"
 
 find "${EXAMPLES_DIR}" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
   name="$(basename "$dir")"
