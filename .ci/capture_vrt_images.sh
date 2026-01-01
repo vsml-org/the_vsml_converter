@@ -6,6 +6,8 @@ export RUST_BACKTRACE=full
 
 cargo build -p vsml_cli --release --locked
 
+VSML_EXECUTABLE="$(pwd)/target/release/vsml"
+
 EXAMPLES_DIR="$1"
 OUT_ROOT="$2"
 
@@ -30,7 +32,7 @@ find "${EXAMPLES_DIR}" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
   out_mp4="/tmp/out.mp4"
 
   echo "  -> Running vsml_cli on: $vsml_file"
-  target/release/vsml "$vsml_file" --output "$out_mp4" --overwrite
+  "$VSML_EXECUTABLE" "$vsml_file" --output "$out_mp4" --overwrite
 
   ffmpeg -hide_banner -loglevel error -y -i "$out_mp4" -vf fps=1 "${OUT_ROOT}/${name}/%04d.png"
   ffmpeg -i "$out_mp4" -lavfi "showspectrumpic=s=1920x1080:legend=1" -y "${OUT_ROOT}/${name}/spectrogram.png"
