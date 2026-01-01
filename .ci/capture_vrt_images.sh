@@ -10,8 +10,7 @@ OUT_ROOT="$2"
 mkdir -p "${OUT_ROOT}"
 
 echo "Running cargo test..."
-export VSML_VRT_OUTPUT_PATH="${OUT_ROOT}/cargo_test"
-cargo test --release -- --nocapture vrt
+VSML_VRT_OUTPUT_PATH="${OUT_ROOT}/cargo_test" cargo test --release -- --nocapture vrt
 
 cargo build -p vsml_cli --release --locked
 
