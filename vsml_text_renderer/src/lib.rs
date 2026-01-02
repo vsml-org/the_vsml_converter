@@ -95,12 +95,7 @@ impl TextRendererContext {
         let mut rgba_buffer = vec![0u8; (width * height * 4) as usize];
 
         // テキストの色を取得（デフォルトは白）
-        let text_color = style.color.unwrap_or(Color {
-            r: 255,
-            g: 255,
-            b: 255,
-            a: 255,
-        });
+        let text_color = style.color.unwrap_or(Color::WHITE);
 
         // cosmic-textでテキストをラスタライズ（2回目のイテレーション）
         for run in buffer.layout_runs() {
