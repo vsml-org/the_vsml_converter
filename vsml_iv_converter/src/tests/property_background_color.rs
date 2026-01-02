@@ -46,15 +46,7 @@ fn background_color_property_hex() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(
-        background_color,
-        Some(Color {
-            r: 255,
-            g: 0,
-            b: 0,
-            a: 255
-        })
-    );
+    assert_eq!(background_color, Some(Color::from_rgb(255, 0, 0)));
 }
 
 #[test]
@@ -99,15 +91,7 @@ fn background_color_property_rgb() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(
-        background_color,
-        Some(Color {
-            r: 0,
-            g: 255,
-            b: 0,
-            a: 255
-        })
-    );
+    assert_eq!(background_color, Some(Color::from_rgb(0, 255, 0)));
 }
 
 #[test]
@@ -152,13 +136,5 @@ fn background_color_property_rgba() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(
-        background_color,
-        Some(Color {
-            r: 100,
-            g: 150,
-            b: 200,
-            a: 128
-        })
-    );
+    assert_eq!(background_color, Some(Color::from(100, 150, 200, 128)));
 }

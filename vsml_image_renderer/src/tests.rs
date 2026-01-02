@@ -81,12 +81,7 @@ fn test_render() {
     // 合成するテクスチャや矩形の描画情報の作成
     renderer.render_box(
         RenderBoxProperty {
-            background_color: Some(Color {
-                r: 0,
-                g: 255,
-                b: 0,
-                a: 255,
-            }),
+            background_color: Some(Color::from_rgb(0, 255, 0)),
         },
         RenderingInfo {
             x: 0.0,
@@ -122,12 +117,7 @@ fn test_render() {
     // 矩形の描画情報の作成
     renderer.render_box(
         RenderBoxProperty {
-            background_color: Some(Color {
-                r: 255,
-                g: 255,
-                b: 0,
-                a: 128,
-            }),
+            background_color: Some(Color::from(255, 255, 0, 128)),
         },
         RenderingInfo {
             x: 50.0,
