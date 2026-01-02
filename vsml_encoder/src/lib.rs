@@ -7,13 +7,17 @@ use vsml_core::schemas::{IVData, ObjectData};
 use vsml_core::{MixingContext, RenderingContext, mix_audio, render_frame_image};
 use wgpu::util::DeviceExt;
 
+pub struct EncoderOptions<'a> {
+    pub output_path: Option<&'a Path>,
+    pub overwrite: bool,
+    pub ffmpeg_options: Vec<String>,
+}
+
 pub fn encode<R, M>(
     iv_data: IVData<R::Image, M::Audio>,
     mut rendering_context: R,
     mut mixing_context: M,
-    output_path: Option<&Path>,
-    overwrite: bool,
-    ffmpeg_options: Vec<String>,
+    options: EncoderOptions,
     device: wgpu::Device,
     queue: wgpu::Queue,
 ) where
@@ -110,10 +114,10 @@ pub fn encode<R, M>(
     writer.finalize().unwrap();
 
     let fps = iv_data.fps.to_string();
-    let output_path = output_path.unwrap_or(Path::new("output.mp4"));
+    let output_path = options.output_path.unwrap_or(Path::new("output.mp4"));
 
     let mut command = Command::new("ffmpeg");
-    if overwrite {
+    if options.overwrite {
         command.arg("-y");
     }
     command
@@ -128,7 +132,7 @@ pub fn encode<R, M>(
         .arg("-i")
         .arg(d.join("audio.wav"));
 
-    if ffmpeg_options.is_empty() {
+    if options.ffmpeg_options.is_empty() {
         command
             .arg("-vcodec")
             .arg("libx264")
@@ -137,7 +141,7 @@ pub fn encode<R, M>(
             .arg("-acodec")
             .arg("aac");
     } else {
-        command.args(ffmpeg_options);
+        command.args(options.ffmpeg_options);
     }
 
     command.arg(output_path).spawn().unwrap().wait().unwrap();
