@@ -29,11 +29,9 @@ find "${EXAMPLES_DIR}" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
     continue
   fi
 
-  out_mp4="/tmp/out.mp4"
-
   echo "  -> Running vsml_cli on: $vsml_file"
-  "$VSML_EXECUTABLE" "$vsml_file" --output "$out_mp4" --overwrite
-
-  ffmpeg -hide_banner -loglevel error -y -i "$out_mp4" -vf fps=1 "${OUT_ROOT}/${name}/%04d.png"
-  ffmpeg -i "$out_mp4" -lavfi "showspectrumpic=s=1920x1080:legend=1" -y "${OUT_ROOT}/${name}/spectrogram.png"
+  "$VSML_EXECUTABLE" "$vsml_file" \
+    --output "${OUT_ROOT}/${name}/spectrogram.png" \
+    --overwrite \
+    "--experimental-ffmpeg-output-option=-filter_complex '[0:v]fps=1[v_out];[1:a]showspectrumpic=s=1920x1080:legend=1[spec_out]' -map [v_out] ${OUT_ROOT}/${name}/%04d.png -map [spec_out]"
 done
