@@ -237,11 +237,9 @@ fn convert_tag_element<'a, I, A>(
         "layer" => LayerMode::Single,
         _ => LayerMode::Multi,
     };
-    let mut text_style = parent_text_style.unwrap_or(TextStyleData {
-        color: None,
-        // TODO: OSのデフォルトのfont-familyを別箇所で設定する
-        font_family: vec!["Meiryo".to_string()],
-    });
+    let mut text_style = parent_text_style
+        .clone()
+        .unwrap_or(TextStyleData::default());
     let mut audio_volume = 1.0;
     let mut background_color = None;
     let mut rule_target_width = None;
@@ -289,8 +287,7 @@ fn convert_tag_element<'a, I, A>(
             }
             "font-color" => {
                 let value = rule.value.as_str();
-                let font_color = value.parse().unwrap();
-                text_style.color = Some(font_color);
+                text_style.color = value.parse().unwrap();
             }
             "background-color" => {
                 let value = rule.value.as_str();
@@ -351,6 +348,28 @@ fn convert_tag_element<'a, I, A>(
                             .expect("no parent size available for percentage height")
                             .height;
                         rule_target_height = Some(parent_size * (percent / 100.0) as f32);
+                    }
+                }
+            }
+            "font-size" => {
+                let value = rule.value.as_str();
+                let length = value.parse().unwrap();
+                match length {
+                    Length::Pixel(px) => {
+                        text_style.font_size = px;
+                    }
+                    Length::ResolutionWidth(rw) => {
+                        text_style.font_size = resolution.width * (rw / 100.0);
+                    }
+                    Length::ResolutionHeight(rh) => {
+                        text_style.font_size = resolution.height * (rh / 100.0);
+                    }
+                    Length::Percent(percent) => {
+                        let parent_font_size = parent_text_style
+                            .as_ref()
+                            .expect("no parent text style available for percentage font-size")
+                            .font_size;
+                        text_style.font_size = parent_font_size * (percent / 100.0) as f32;
                     }
                 }
             }

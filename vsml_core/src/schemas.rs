@@ -513,8 +513,19 @@ impl<I, A> Debug for dyn ObjectProcessor<I, A> {
 
 #[derive(Debug, Clone)]
 pub struct TextStyleData {
-    pub color: Option<Color>,
+    pub color: Color,
     pub font_family: Vec<String>,
+    pub font_size: f32,
+}
+impl Default for TextStyleData {
+    fn default() -> Self {
+        TextStyleData {
+            color: Color::WHITE,
+            font_size: 32.0,
+            // 環境によってプリインストールのフォントが変わるのでvsml_coreでは定義しない
+            font_family: vec![],
+        }
+    }
 }
 
 #[derive(Debug, Clone)]
