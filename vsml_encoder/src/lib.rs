@@ -144,5 +144,8 @@ pub fn encode<R, M>(
         command.args(options.ffmpeg_options);
     }
 
-    command.arg(output_path).spawn().unwrap().wait().unwrap();
+    let status = command.arg(output_path).spawn().unwrap().wait().unwrap();
+    if !status.success() {
+        panic!("FFmpeg command failed with status: {:?}", status);
+    }
 }
