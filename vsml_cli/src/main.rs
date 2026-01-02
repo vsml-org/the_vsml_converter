@@ -7,7 +7,7 @@ use vsml_audio_mixer::MixingContextImpl;
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
 use vsml_core::schemas::ObjectProcessor;
-use vsml_encoder::encode;
+use vsml_encoder::{EncoderOptions, encode};
 use vsml_image_renderer::RenderingContextImpl;
 use vsml_iv_converter::convert;
 use vsml_parser::{VSSLoader, parse};
@@ -30,6 +30,10 @@ struct Args {
     /// Overwrite the output file if it already exists
     #[arg(long)]
     overwrite: bool,
+
+    /// Experimental ffmpeg output options
+    #[arg(long, value_delimiter = ' ')]
+    experimental_ffmpeg_output_option: Vec<String>,
 }
 
 struct VSSFileLoader;
@@ -108,8 +112,11 @@ fn main() {
         iv_data,
         &mut rendering_context,
         &mut mixing_context,
-        output_path.as_deref(),
-        args.overwrite,
+        EncoderOptions {
+            output_path: output_path.as_deref(),
+            overwrite: args.overwrite,
+            ffmpeg_options: args.experimental_ffmpeg_output_option,
+        },
         device,
         queue,
     );

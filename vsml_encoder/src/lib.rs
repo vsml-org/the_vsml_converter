@@ -7,12 +7,17 @@ use vsml_core::schemas::{IVData, ObjectData};
 use vsml_core::{MixingContext, RenderingContext, mix_audio, render_frame_image};
 use wgpu::util::DeviceExt;
 
+pub struct EncoderOptions<'a> {
+    pub output_path: Option<&'a Path>,
+    pub overwrite: bool,
+    pub ffmpeg_options: Vec<String>,
+}
+
 pub fn encode<R, M>(
     iv_data: IVData<R::Image, M::Audio>,
     mut rendering_context: R,
     mut mixing_context: M,
-    output_path: Option<&Path>,
-    overwrite: bool,
+    options: EncoderOptions,
     device: wgpu::Device,
     queue: wgpu::Queue,
 ) where
@@ -109,28 +114,38 @@ pub fn encode<R, M>(
     writer.finalize().unwrap();
 
     let fps = iv_data.fps.to_string();
-    let output_path = output_path.unwrap_or(Path::new("output.mp4"));
+    let output_path = options.output_path.unwrap_or(Path::new("output.mp4"));
 
     let mut command = Command::new("ffmpeg");
-    if overwrite {
+    if options.overwrite {
         command.arg("-y");
     }
     command
-        .arg("-r")
+        .arg("-thread_queue_size")
+        .arg("1024")
+        .arg("-framerate")
         .arg(&fps)
         .arg("-i")
         .arg(d.join("frame_%d.png"))
+        .arg("-thread_queue_size")
+        .arg("1024")
         .arg("-i")
-        .arg(d.join("audio.wav"))
-        .arg("-vcodec")
-        .arg("libx264")
-        .arg("-pix_fmt")
-        .arg("yuv420p")
-        .arg("-acodec")
-        .arg("aac")
-        .arg(output_path)
-        .spawn()
-        .unwrap()
-        .wait()
-        .unwrap();
+        .arg(d.join("audio.wav"));
+
+    if options.ffmpeg_options.is_empty() {
+        command
+            .arg("-vcodec")
+            .arg("libx264")
+            .arg("-pix_fmt")
+            .arg("yuv420p")
+            .arg("-acodec")
+            .arg("aac");
+    } else {
+        command.args(options.ffmpeg_options);
+    }
+
+    let status = command.arg(output_path).spawn().unwrap().wait().unwrap();
+    if !status.success() {
+        panic!("FFmpeg command failed with status: {:?}", status);
+    }
 }
