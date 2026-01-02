@@ -50,12 +50,51 @@ pub struct ElementRect {
     pub parent_alignment: Alignment,
     pub x: f32,
     pub y: f32,
+    /// レイアウト計算に使用される幅
     pub width: f32,
+    /// レイアウト計算に使用される高さ
     pub height: f32,
+    /// 実際に描画される幅（overflow対応用）
+    pub rendering_width: f32,
+    /// 実際に描画される高さ（overflow対応用）
+    pub rendering_height: f32,
 }
 
 impl ElementRect {
+    /// コンテンツ描画用のレンダリング情報を計算（rendering_width/heightを使用）
     fn calc_rendering_info(&self, outer_width: f32, outer_height: f32) -> RenderingInfo {
+        let x = self.x
+            - match self.alignment.x_axis() {
+                AlignmentSingle::Start => 0.0,
+                AlignmentSingle::Center => self.rendering_width / 2.0,
+                AlignmentSingle::End => self.rendering_width,
+            }
+            + match self.parent_alignment.x_axis() {
+                AlignmentSingle::Start => 0.0,
+                AlignmentSingle::Center => outer_width / 2.0,
+                AlignmentSingle::End => outer_width,
+            };
+        let y = self.y
+            - match self.alignment.y_axis() {
+                AlignmentSingle::Start => 0.0,
+                AlignmentSingle::Center => self.rendering_height / 2.0,
+                AlignmentSingle::End => self.rendering_height,
+            }
+            + match self.parent_alignment.y_axis() {
+                AlignmentSingle::Start => 0.0,
+                AlignmentSingle::Center => outer_height / 2.0,
+                AlignmentSingle::End => outer_height,
+            };
+        RenderingInfo {
+            x,
+            y,
+            width: self.rendering_width,
+            height: self.rendering_height,
+        }
+    }
+
+    /// 背景描画用のレンダリング情報を計算（width/heightを使用）
+    fn calc_layout_rendering_info(&self, outer_width: f32, outer_height: f32) -> RenderingInfo {
         let x = self.x
             - match self.alignment.x_axis() {
                 AlignmentSingle::Start => 0.0,
@@ -180,7 +219,7 @@ where
                         background_color: Some(background_color),
                     };
                     let rendering_info =
-                        element_rect.calc_rendering_info(outer_width, outer_height);
+                        element_rect.calc_layout_rendering_info(outer_width, outer_height);
                     renderer.render_box(property, rendering_info);
                 }
 
@@ -196,13 +235,13 @@ where
                                 &mut inner_renderer,
                                 object,
                                 target_time,
-                                element_rect.width,
-                                element_rect.height,
+                                element_rect.rendering_width,
+                                element_rect.rendering_height,
                             )
                         });
                         let child_image = inner_renderer.render(
-                            element_rect.width.ceil() as u32,
-                            element_rect.height.ceil() as u32,
+                            element_rect.rendering_width.ceil() as u32,
+                            element_rect.rendering_height.ceil() as u32,
                         );
                         let rendering_info =
                             element_rect.calc_rendering_info(outer_width, outer_height);
@@ -229,13 +268,13 @@ where
                                     &mut inner_renderer,
                                     object,
                                     target_time,
-                                    element_rect.width,
-                                    element_rect.height,
+                                    element_rect.rendering_width,
+                                    element_rect.rendering_height,
                                 )
                             });
                             let image = inner_renderer.render(
-                                element_rect.width.ceil() as u32,
-                                element_rect.height.ceil() as u32,
+                                element_rect.rendering_width.ceil() as u32,
+                                element_rect.rendering_height.ceil() as u32,
                             );
                             ProcessorInput::Image(image)
                         } else {

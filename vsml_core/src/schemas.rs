@@ -353,6 +353,56 @@ impl FromStr for AudioVolume {
     }
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub enum Length {
+    /// Pixel value
+    Px(f32),
+    /// Resolution width relative (like CSS vw)
+    Rw(f32),
+    /// Resolution height relative (like CSS vh)
+    Rh(f32),
+    /// Percentage (relative to parent)
+    Percent(f64),
+}
+
+#[derive(Debug, PartialEq, Eq, Hash, Error)]
+pub enum LengthParseError {
+    #[error("number parse error")]
+    NumberParseError,
+    #[error("unknown unit")]
+    UnknownUnit,
+}
+
+impl FromStr for Length {
+    type Err = LengthParseError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        if let Some(value) = value.strip_suffix("px") {
+            let val = value
+                .parse()
+                .map_err(|_| LengthParseError::NumberParseError)?;
+            Ok(Length::Px(val))
+        } else if let Some(value) = value.strip_suffix("rw") {
+            let val = value
+                .parse()
+                .map_err(|_| LengthParseError::NumberParseError)?;
+            Ok(Length::Rw(val))
+        } else if let Some(value) = value.strip_suffix("rh") {
+            let val = value
+                .parse()
+                .map_err(|_| LengthParseError::NumberParseError)?;
+            Ok(Length::Rh(val))
+        } else if let Some(value) = value.strip_suffix('%') {
+            let val = value
+                .parse()
+                .map_err(|_| LengthParseError::NumberParseError)?;
+            Ok(Length::Percent(val))
+        } else {
+            Err(LengthParseError::UnknownUnit)
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Hash)]
 pub enum Order {
     Sequence,
@@ -552,6 +602,26 @@ mod tests {
         assert_eq!(
             "unknown".parse::<Order>(),
             Err(OrderParseError::UnknownMode)
+        );
+    }
+
+    #[test]
+    fn test_parse_length() {
+        assert_eq!("100px".parse::<Length>(), Ok(Length::Px(100.0)));
+        assert_eq!("50.5px".parse::<Length>(), Ok(Length::Px(50.5)));
+        assert_eq!("50rw".parse::<Length>(), Ok(Length::Rw(50.0)));
+        assert_eq!("25.5rw".parse::<Length>(), Ok(Length::Rw(25.5)));
+        assert_eq!("50rh".parse::<Length>(), Ok(Length::Rh(50.0)));
+        assert_eq!("75.5rh".parse::<Length>(), Ok(Length::Rh(75.5)));
+        assert_eq!("100%".parse::<Length>(), Ok(Length::Percent(100.0)));
+        assert_eq!("50.5%".parse::<Length>(), Ok(Length::Percent(50.5)));
+        assert_eq!(
+            "100".parse::<Length>(),
+            Err(LengthParseError::UnknownUnit)
+        );
+        assert_eq!(
+            "100vw".parse::<Length>(),
+            Err(LengthParseError::UnknownUnit)
         );
     }
 }

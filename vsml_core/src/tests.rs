@@ -10,6 +10,8 @@ fn test_calc_rendering_info() {
         y: 2.0,
         width: 1.0,
         height: 2.0,
+        rendering_width: 1.0,
+        rendering_height: 2.0,
     };
 
     // x軸方向のテスト
@@ -148,6 +150,8 @@ fn test_render_frame_image() {
                 y: 0.0,
                 width: 1920.0,
                 height: 1080.0,
+                rendering_width: 1920.0,
+                rendering_height: 1080.0,
             },
             attributes: Default::default(),
             children: vec![],
@@ -186,6 +190,8 @@ fn test_mix_audio() {
                 y: 0.0,
                 width: 1920.0,
                 height: 1080.0,
+                rendering_width: 1920.0,
+                rendering_height: 1080.0,
             },
             attributes: Default::default(),
             children: vec![],
