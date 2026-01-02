@@ -5,7 +5,7 @@ use vsml_ast::vss::{VSSItem, VSSSelector, VSSSelectorTree};
 use vsml_core::schemas::{Color, ObjectData};
 
 #[test]
-fn font_color_property_hex() {
+fn background_color_property_hex() {
     let elements = vec![Element::Tag {
         name: "mock".to_string(),
         attributes: {
@@ -13,14 +13,14 @@ fn font_color_property_hex() {
             attrs.insert("class".to_string(), "target".to_string());
             attrs
         },
-        children: vec![Element::Text("Hello".to_string())],
+        children: vec![],
     }];
 
     let vss_items = vec![VSSItem {
         selectors: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Class(
             "target".to_string(),
         )])],
-        rules: vec![create_rule("font-color", "#ff0000")],
+        rules: vec![create_rule("background-color", "#ff0000")],
     }];
 
     let vsml = VSML {
@@ -41,20 +41,16 @@ fn font_color_property_hex() {
         panic!("Expected Element");
     };
     let ObjectData::Element {
-        children: inner_children,
-        ..
-    } = &children[0]
+        background_color, ..
+    } = children[0]
     else {
         panic!("Expected Element");
     };
-    let ObjectData::Text(text_data) = &inner_children[0] else {
-        panic!("Expected Text");
-    };
-    assert_eq!(text_data[0].style.color, Some(Color::from_rgb(255, 0, 0)));
+    assert_eq!(background_color, Some(Color::from_rgb(255, 0, 0)));
 }
 
 #[test]
-fn font_color_property_rgb() {
+fn background_color_property_rgb() {
     let elements = vec![Element::Tag {
         name: "mock".to_string(),
         attributes: {
@@ -62,14 +58,14 @@ fn font_color_property_rgb() {
             attrs.insert("class".to_string(), "target".to_string());
             attrs
         },
-        children: vec![Element::Text("Hello".to_string())],
+        children: vec![],
     }];
 
     let vss_items = vec![VSSItem {
         selectors: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Class(
             "target".to_string(),
         )])],
-        rules: vec![create_rule("font-color", "rgb(0, 255, 0)")],
+        rules: vec![create_rule("background-color", "rgb(0, 255, 0)")],
     }];
 
     let vsml = VSML {
@@ -90,20 +86,16 @@ fn font_color_property_rgb() {
         panic!("Expected Element");
     };
     let ObjectData::Element {
-        children: inner_children,
-        ..
-    } = &children[0]
+        background_color, ..
+    } = children[0]
     else {
         panic!("Expected Element");
     };
-    let ObjectData::Text(text_data) = &inner_children[0] else {
-        panic!("Expected Text");
-    };
-    assert_eq!(text_data[0].style.color, Some(Color::from_rgb(0, 255, 0)));
+    assert_eq!(background_color, Some(Color::from_rgb(0, 255, 0)));
 }
 
 #[test]
-fn font_color_property_rgba() {
+fn background_color_property_rgba() {
     let elements = vec![Element::Tag {
         name: "mock".to_string(),
         attributes: {
@@ -111,14 +103,14 @@ fn font_color_property_rgba() {
             attrs.insert("class".to_string(), "target".to_string());
             attrs
         },
-        children: vec![Element::Text("Hello".to_string())],
+        children: vec![],
     }];
 
     let vss_items = vec![VSSItem {
         selectors: vec![VSSSelectorTree::Selectors(vec![VSSSelector::Class(
             "target".to_string(),
         )])],
-        rules: vec![create_rule("font-color", "rgba(100, 150, 200, 128)")],
+        rules: vec![create_rule("background-color", "rgba(100, 150, 200, 128)")],
     }];
 
     let vsml = VSML {
@@ -139,17 +131,10 @@ fn font_color_property_rgba() {
         panic!("Expected Element");
     };
     let ObjectData::Element {
-        children: inner_children,
-        ..
-    } = &children[0]
+        background_color, ..
+    } = children[0]
     else {
         panic!("Expected Element");
     };
-    let ObjectData::Text(text_data) = &inner_children[0] else {
-        panic!("Expected Text");
-    };
-    assert_eq!(
-        text_data[0].style.color,
-        Some(Color::from(100, 150, 200, 128))
-    );
+    assert_eq!(background_color, Some(Color::from(100, 150, 200, 128)));
 }

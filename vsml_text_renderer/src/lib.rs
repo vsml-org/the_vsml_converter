@@ -1,7 +1,7 @@
 use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, SwashCache};
 use std::sync::RwLock;
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::schemas::{RectSize, TextData};
+use vsml_core::schemas::{Color, RectSize, TextData};
 
 pub struct TextRendererContext {
     device: wgpu::Device,
@@ -95,7 +95,7 @@ impl TextRendererContext {
         let mut rgba_buffer = vec![0u8; (width * height * 4) as usize];
 
         // テキストの色を取得（デフォルトは白）
-        let text_color = style.color.unwrap_or((255, 255, 255, 255));
+        let text_color = style.color.unwrap_or(Color::WHITE);
 
         // cosmic-textでテキストをラスタライズ（2回目のイテレーション）
         for run in buffer.layout_runs() {
@@ -129,13 +129,13 @@ impl TextRendererContext {
                                 // TODO: アルファブレンド後で見直す
                                 let alpha_f = alpha as f32 / 255.0;
                                 let target_rgba_buffer = &mut rgba_buffer[pixel_index..][..4];
-                                target_rgba_buffer[0] = ((text_color.0 as f32 * alpha_f) as u8)
+                                target_rgba_buffer[0] = ((text_color.r as f32 * alpha_f) as u8)
                                     .max(target_rgba_buffer[0]);
-                                target_rgba_buffer[1] = ((text_color.1 as f32 * alpha_f) as u8)
+                                target_rgba_buffer[1] = ((text_color.g as f32 * alpha_f) as u8)
                                     .max(target_rgba_buffer[1]);
-                                target_rgba_buffer[2] = ((text_color.2 as f32 * alpha_f) as u8)
+                                target_rgba_buffer[2] = ((text_color.b as f32 * alpha_f) as u8)
                                     .max(target_rgba_buffer[2]);
-                                target_rgba_buffer[3] = ((text_color.3 as f32 * alpha_f) as u8)
+                                target_rgba_buffer[3] = ((text_color.a as f32 * alpha_f) as u8)
                                     .max(target_rgba_buffer[3]);
                             }
                         }

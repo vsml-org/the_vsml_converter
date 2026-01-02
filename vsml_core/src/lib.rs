@@ -87,7 +87,9 @@ impl ElementRect {
     }
 }
 
-pub struct Property {}
+pub struct RenderBoxProperty {
+    pub background_color: Option<schemas::Color>,
+}
 
 pub struct ImageEffectStyle {}
 pub struct AudioEffectStyle {}
@@ -105,7 +107,7 @@ pub struct RenderingInfo {
 pub trait Renderer {
     type Image;
     fn render_image(&mut self, image: Self::Image, info: RenderingInfo);
-    fn render_box(&mut self, property: Property, info: RenderingInfo);
+    fn render_box(&mut self, property: RenderBoxProperty, info: RenderingInfo);
     fn render(self, width: u32, height: u32) -> Self::Image;
 }
 
@@ -163,6 +165,7 @@ where
                 ref element_rect,
                 ref attributes,
                 ref children,
+                background_color,
                 ..
             } => {
                 let range = start_time..start_time + duration;
@@ -170,6 +173,17 @@ where
                     return;
                 }
                 let target_time = target_time - start_time;
+
+                // 背景色のレンダリング
+                if let Some(background_color) = background_color {
+                    let property = RenderBoxProperty {
+                        background_color: Some(background_color),
+                    };
+                    let rendering_info =
+                        element_rect.calc_rendering_info(outer_width, outer_height);
+                    renderer.render_box(property, rendering_info);
+                }
+
                 match object_type {
                     ObjectType::Wrap => {
                         if children.is_empty() {
