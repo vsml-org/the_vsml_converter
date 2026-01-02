@@ -1,6 +1,7 @@
 use super::*;
 use image::GenericImageView;
 use vsml_core::schemas::Color;
+use vsml_test_utils::vrt_out_path;
 use wgpu::util::DeviceExt;
 
 fn create_image_data(
@@ -52,7 +53,7 @@ fn create_image_data(
 }
 
 #[test]
-fn test_render() {
+fn test_render_vrt() {
     // GPUのdeviceとqueueを作成
     let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
         backends: wgpu::Backends::PRIMARY,
@@ -177,7 +178,7 @@ fn test_render() {
         .unwrap();
 
     image::save_buffer(
-        "output.png",
+        vrt_out_path!("output.png"),
         &slice.get_mapped_range(),
         output_dimensions.0,
         output_dimensions.1,

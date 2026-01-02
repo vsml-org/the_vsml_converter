@@ -17,6 +17,7 @@ members = [
     "vsml_iv_converter",
     "vsml_parser",
     "vsml_processor",
+    "vsml_test_utils",
     "vsml_text_renderer",
 ]
 
@@ -31,6 +32,7 @@ vsml_image_renderer = { path = "vsml_image_renderer" }
 vsml_iv_converter = { path = "vsml_iv_converter" }
 vsml_parser = { path = "vsml_parser" }
 vsml_processor = { path = "vsml_processor" }
+vsml_test_utils = { path = "vsml_test_utils" }
 vsml_text_renderer = { path = "vsml_text_renderer" }
 bytemuck = { version = "1.24.0", features = ["derive"] }
 clap = { version = "4.5.53", features = ["derive"] }

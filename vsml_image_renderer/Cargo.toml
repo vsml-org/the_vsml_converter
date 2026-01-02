@@ -13,3 +13,4 @@ wgpu.workspace = true
 [dev-dependencies]
 image.workspace = true
 pollster.workspace = true
+vsml_test_utils.workspace = true
