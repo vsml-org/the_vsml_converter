@@ -117,10 +117,14 @@ pub fn encode<R, M>(
         command.arg("-y");
     }
     command
-        .arg("-r")
+        .arg("-thread_queue_size")
+        .arg("1024")
+        .arg("-framerate")
         .arg(&fps)
         .arg("-i")
         .arg(d.join("frame_%d.png"))
+        .arg("-thread_queue_size")
+        .arg("1024")
         .arg("-i")
         .arg(d.join("audio.wav"));
 
