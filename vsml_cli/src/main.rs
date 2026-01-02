@@ -30,6 +30,10 @@ struct Args {
     /// Overwrite the output file if it already exists
     #[arg(long)]
     overwrite: bool,
+
+    /// Experimental ffmpeg output options
+    #[arg(long, value_delimiter = ' ')]
+    experimental_ffmpeg_output_option: Vec<String>,
 }
 
 struct VSSFileLoader;
@@ -110,6 +114,7 @@ fn main() {
         &mut mixing_context,
         output_path.as_deref(),
         args.overwrite,
+        args.experimental_ffmpeg_output_option,
         device,
         queue,
     );

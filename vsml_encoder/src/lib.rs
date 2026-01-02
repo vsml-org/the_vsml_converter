@@ -13,6 +13,7 @@ pub fn encode<R, M>(
     mut mixing_context: M,
     output_path: Option<&Path>,
     overwrite: bool,
+    ffmpeg_options: Vec<String>,
     device: wgpu::Device,
     queue: wgpu::Queue,
 ) where
@@ -121,16 +122,19 @@ pub fn encode<R, M>(
         .arg("-i")
         .arg(d.join("frame_%d.png"))
         .arg("-i")
-        .arg(d.join("audio.wav"))
-        .arg("-vcodec")
-        .arg("libx264")
-        .arg("-pix_fmt")
-        .arg("yuv420p")
-        .arg("-acodec")
-        .arg("aac")
-        .arg(output_path)
-        .spawn()
-        .unwrap()
-        .wait()
-        .unwrap();
+        .arg(d.join("audio.wav"));
+
+    if ffmpeg_options.is_empty() {
+        command
+            .arg("-vcodec")
+            .arg("libx264")
+            .arg("-pix_fmt")
+            .arg("yuv420p")
+            .arg("-acodec")
+            .arg("aac");
+    } else {
+        command.args(ffmpeg_options);
+    }
+
+    command.arg(output_path).spawn().unwrap().wait().unwrap();
 }
