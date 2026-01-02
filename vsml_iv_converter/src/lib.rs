@@ -223,12 +223,12 @@ fn convert_tag_element<'a, I, A>(
         ObjectType::Other(processor) => processor.default_duration(attributes),
     };
     let mut rule_target_duration = None;
-    let mut target_size: RectSize = match &object_type {
+    let mut target_size = match &object_type {
         ObjectType::Wrap => RectSize::ZERO,
         ObjectType::Other(processor) => processor.default_image_size(attributes),
     };
-    // default_image_sizeを保存（アスペクト比維持の判定に使用）
-    let has_default_size = target_size.width > 0.0 || target_size.height > 0.0;
+    // default_image_sizeを持っているか（アスペクト比維持の判定に使用）
+    let has_default_size = target_size != RectSize::ZERO;
     // rendering_sizeの初期値はtarget_sizeと同じ（default_image_sizeを含む）
     let mut target_rendering_size = target_size;
     let mut order: Order = match name {
@@ -367,49 +367,38 @@ fn convert_tag_element<'a, I, A>(
 
     // 子要素に渡すサイズ情報を準備（アスペクト比を適用）
     // default_image_sizeを使って事前にアスペクト比を計算
-    let size_for_children = if rule_target_width.is_some() || rule_target_height.is_some() {
-        let pre_size = match (rule_target_width, rule_target_height) {
-            (Some(width), Some(height)) => {
-                // 両方指定されている場合はそのまま使用
-                RectSize { width, height }
+    let size_for_children = match (rule_target_width, rule_target_height) {
+        // 両方指定されている場合はそのまま使用
+        (Some(width), Some(height)) => Some(RectSize { width, height }),
+        // width/height一方のみ指定: アスペクト比を維持して縮小（拡大はしない）
+        (Some(width), None) => {
+            if target_size.width > 0.0 && width < target_size.width {
+                Some(RectSize {
+                    width,
+                    height: target_size.height * width / target_size.width,
+                })
+            } else {
+                Some(RectSize {
+                    width,
+                    height: target_size.height,
+                })
             }
-            (Some(width), None) => {
-                // widthのみ指定: アスペクト比を維持して縮小（拡大はしない）
-                if target_size.width > 0.0 && width < target_size.width {
-                    let aspect_ratio = target_size.height / target_size.width;
-                    let calculated_height = width * aspect_ratio;
-                    RectSize {
-                        width,
-                        height: calculated_height,
-                    }
-                } else {
-                    RectSize {
-                        width,
-                        height: target_size.height,
-                    }
-                }
+        }
+        (None, Some(height)) => {
+            if target_size.height > 0.0 && height < target_size.height {
+                Some(RectSize {
+                    width: target_size.width * height / target_size.height,
+                    height,
+                })
+            } else {
+                Some(RectSize {
+                    width: target_size.width,
+                    height,
+                })
             }
-            (None, Some(height)) => {
-                // heightのみ指定: アスペクト比を維持して縮小（拡大はしない）
-                if target_size.height > 0.0 && height < target_size.height {
-                    let aspect_ratio = target_size.width / target_size.height;
-                    let calculated_width = height * aspect_ratio;
-                    RectSize {
-                        width: calculated_width,
-                        height,
-                    }
-                } else {
-                    RectSize {
-                        width: target_size.width,
-                        height,
-                    }
-                }
-            }
-            (None, None) => unreachable!(),
-        };
-        Some(pre_size)
-    } else {
-        None
+        }
+        // style指定がない場合は親のサイズは未確定
+        (None, None) => None,
     };
 
     let mut object_data_children = vec![];
@@ -505,6 +494,7 @@ fn convert_tag_element<'a, I, A>(
 
     // レイアウト用のサイズを計算
     // 一方だけ指定されていたらアス比を維持しつつ収まるように縮小
+    // 子要素を加味したtarget_sizeが必要なのでsize_for_childrenとは別にもう一度計算している
     let (final_width, final_height) = match (rule_target_width, rule_target_height) {
         (Some(w), Some(h)) => (w, h),
         (Some(w), None) => {
@@ -527,17 +517,14 @@ fn convert_tag_element<'a, I, A>(
     };
 
     // 描画されるサイズを計算
-    // wrapでなく、default_sizeを持つオブジェクト(ex. vid, img)は引き伸ばす
-    // imgはwidth/heightで引き伸ばすが、txtはfont-sizeで指定するので引き伸ばさない
+    // wrapでなく、default_sizeを持つオブジェクト(ex. vid, img)はレイアウトサイズを埋めるように描画
+    // 例えばimgはwidth/heightで引き伸ばせるが、txtはfont-sizeで指定するので引き伸ばさない
     let (final_rendering_width, final_rendering_height) = if let ObjectType::Other(_) = object_type
         && has_default_size
         && target_size.width > 0.0
         && target_size.height > 0.0
     {
-        (
-            target_rendering_size.width * final_width / target_size.width,
-            target_rendering_size.height * final_height / target_size.height,
-        )
+        (final_width, final_height)
     } else {
         (target_rendering_size.width, target_rendering_size.height)
     };
