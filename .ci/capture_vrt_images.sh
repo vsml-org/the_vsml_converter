@@ -33,5 +33,5 @@ find "${EXAMPLES_DIR}" -mindepth 1 -maxdepth 1 -type d | while read -r dir; do
   "$VSML_EXECUTABLE" "$vsml_file" \
     --output "${OUT_ROOT}/${name}/spectrogram.png" \
     --overwrite \
-    "--experimental-ffmpeg-output-option=-filter_complex '[0:v]fps=1[v_out];[1:a]showspectrumpic=s=1920x1080:legend=1[spec_out]' -map [v_out] ${OUT_ROOT}/${name}/%04d.png -map [spec_out]"
+    "--experimental-ffmpeg-output-option=-filter_complex [0:v]fps=1[v_out];[1:a]showspectrumpic=s=1920x1080:legend=1[spec_out] -map [v_out] ${OUT_ROOT}/${name}/%04d.png -map [spec_out]"
 done
