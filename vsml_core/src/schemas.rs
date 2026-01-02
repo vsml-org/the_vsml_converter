@@ -615,10 +615,7 @@ mod tests {
         assert_eq!("75.5rh".parse::<Length>(), Ok(Length::Rh(75.5)));
         assert_eq!("100%".parse::<Length>(), Ok(Length::Percent(100.0)));
         assert_eq!("50.5%".parse::<Length>(), Ok(Length::Percent(50.5)));
-        assert_eq!(
-            "100".parse::<Length>(),
-            Err(LengthParseError::UnknownUnit)
-        );
+        assert_eq!("100".parse::<Length>(), Err(LengthParseError::UnknownUnit));
         assert_eq!(
             "100vw".parse::<Length>(),
             Err(LengthParseError::UnknownUnit)
