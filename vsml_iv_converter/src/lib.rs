@@ -515,12 +515,14 @@ fn convert_tag_element<'a, I, A>(
     };
 
     // 描画されるサイズを計算
-    // wrapでなく、default_sizeを持つオブジェクト(ex. vid, img)はレイアウトサイズを埋めるように描画
-    // 例えばimgはwidth/heightで引き伸ばせるが、txtはfont-sizeで指定するので引き伸ばさない
-    let (final_rendering_width, final_rendering_height) = if has_default_size {
-        (final_width, final_height)
-    } else {
+    let (final_rendering_width, final_rendering_height) = if let ObjectType::Other(_) = object_type
+        && !has_default_size
+    {
+        // txt, audioなど: 子要素の実際のサイズを使用（歪ませない）
         (target_rendering_size.width, target_rendering_size.height)
+    } else {
+        // img, vid, seq, prlなど: スケールを適用して縮小
+        (final_width, final_height)
     };
 
     ObjectData::Element {
