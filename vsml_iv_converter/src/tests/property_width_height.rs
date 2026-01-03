@@ -47,7 +47,7 @@ fn width_property_pixel() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.width, 500.0);
+    assert_eq!(element_rect.layout_width, 500.0);
     // default_sizeを持つオブジェクトなので、rendering_sizeはlayout sizeと同じ
     assert_eq!(element_rect.rendering_width, 500.0);
     assert_eq!(element_rect.rendering_height, 100.0);
@@ -95,7 +95,7 @@ fn width_property_resolution_width() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.width, 960.0); // 1920 * 50 / 100
+    assert_eq!(element_rect.layout_width, 960.0); // 1920 * 50 / 100
     assert_eq!(element_rect.rendering_width, 960.0);
     assert_eq!(element_rect.rendering_height, 100.0);
 }
@@ -142,7 +142,7 @@ fn width_property_resolution_height() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.width, 540.0); // 1080 * 50 / 100
+    assert_eq!(element_rect.layout_width, 540.0); // 1080 * 50 / 100
     assert_eq!(element_rect.rendering_width, 540.0);
     assert_eq!(element_rect.rendering_height, 100.0);
 }
@@ -212,7 +212,7 @@ fn width_property_percent() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.width, 400.0); // 800 * 50 / 100
+    assert_eq!(element_rect.layout_width, 400.0); // 800 * 50 / 100
     assert_eq!(element_rect.rendering_width, 400.0);
     assert_eq!(element_rect.rendering_height, 100.0);
 }
@@ -260,7 +260,7 @@ fn height_property_pixel() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.height, 300.0);
+    assert_eq!(element_rect.layout_height, 300.0);
     assert_eq!(element_rect.rendering_width, 100.0);
     assert_eq!(element_rect.rendering_height, 300.0);
 }
@@ -307,7 +307,7 @@ fn height_property_resolution_width() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.height, 480.0); // 1920 * 25 / 100
+    assert_eq!(element_rect.layout_height, 480.0); // 1920 * 25 / 100
     assert_eq!(element_rect.rendering_width, 100.0);
     assert_eq!(element_rect.rendering_height, 480.0);
 }
@@ -354,7 +354,7 @@ fn height_property_resolution_height() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.height, 810.0); // 1080 * 75 / 100
+    assert_eq!(element_rect.layout_height, 810.0); // 1080 * 75 / 100
     assert_eq!(element_rect.rendering_width, 100.0);
     assert_eq!(element_rect.rendering_height, 810.0);
 }
@@ -424,7 +424,7 @@ fn height_property_percent() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.height, 300.0); // 600 * 50 / 100
+    assert_eq!(element_rect.layout_height, 300.0); // 600 * 50 / 100
     assert_eq!(element_rect.rendering_width, 100.0);
     assert_eq!(element_rect.rendering_height, 300.0);
 }
@@ -475,8 +475,8 @@ fn width_and_height_property_both_pixel() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.width, 640.0);
-    assert_eq!(element_rect.height, 480.0);
+    assert_eq!(element_rect.layout_width, 640.0);
+    assert_eq!(element_rect.layout_height, 480.0);
     assert_eq!(element_rect.rendering_width, 640.0);
     assert_eq!(element_rect.rendering_height, 480.0);
 }
@@ -525,8 +525,8 @@ fn width_property_with_aspect_ratio() {
     };
     // default_image_size is 100x100, width is set to 50
     // height should maintain aspect ratio: 100 * 50 / 100 = 50
-    assert_eq!(element_rect.width, 50.0);
-    assert_eq!(element_rect.height, 50.0);
+    assert_eq!(element_rect.layout_width, 50.0);
+    assert_eq!(element_rect.layout_height, 50.0);
     assert_eq!(element_rect.rendering_width, 50.0);
     assert_eq!(element_rect.rendering_height, 50.0);
 }
@@ -575,8 +575,8 @@ fn height_property_with_aspect_ratio() {
     };
     // default_image_size is 100x100, height is set to 200
     // height is expanded, not shrunk, so aspect ratio is not maintained
-    assert_eq!(element_rect.width, 100.0);
-    assert_eq!(element_rect.height, 200.0);
+    assert_eq!(element_rect.layout_width, 100.0);
+    assert_eq!(element_rect.layout_height, 200.0);
     assert_eq!(element_rect.rendering_width, 100.0);
     assert_eq!(element_rect.rendering_height, 200.0);
 }
@@ -623,8 +623,8 @@ fn width_and_height_property_mixed_units() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.width, 960.0); // 1920 * 50 / 100
-    assert_eq!(element_rect.height, 540.0); // 1080 * 50 / 100
+    assert_eq!(element_rect.layout_width, 960.0); // 1920 * 50 / 100
+    assert_eq!(element_rect.layout_height, 540.0); // 1080 * 50 / 100
     assert_eq!(element_rect.rendering_width, 960.0);
     assert_eq!(element_rect.rendering_height, 540.0);
 }
@@ -674,8 +674,8 @@ fn width_property_without_default_size() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.width, 500.0);
-    assert_eq!(element_rect.height, 0.0);
+    assert_eq!(element_rect.layout_width, 500.0);
+    assert_eq!(element_rect.layout_height, 0.0);
     // default_sizeを持たないオブジェクトなので、rendering_sizeはtarget_rendering_size
     assert_eq!(element_rect.rendering_width, 0.0);
     assert_eq!(element_rect.rendering_height, 0.0);
@@ -725,8 +725,8 @@ fn height_property_without_default_size() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.width, 0.0);
-    assert_eq!(element_rect.height, 300.0);
+    assert_eq!(element_rect.layout_width, 0.0);
+    assert_eq!(element_rect.layout_height, 300.0);
     // default_sizeを持たないオブジェクトなので、rendering_sizeはtarget_rendering_size
     assert_eq!(element_rect.rendering_width, 0.0);
     assert_eq!(element_rect.rendering_height, 0.0);
@@ -779,8 +779,8 @@ fn width_and_height_property_without_default_size() {
     else {
         panic!("Expected Element");
     };
-    assert_eq!(element_rect.width, 640.0);
-    assert_eq!(element_rect.height, 480.0);
+    assert_eq!(element_rect.layout_width, 640.0);
+    assert_eq!(element_rect.layout_height, 480.0);
     // default_sizeを持たないオブジェクトなので、rendering_sizeはtarget_rendering_size
     assert_eq!(element_rect.rendering_width, 0.0);
     assert_eq!(element_rect.rendering_height, 0.0);
@@ -832,8 +832,8 @@ fn width_property_with_custom_default_size() {
         panic!("Expected Element");
     };
     // width: 80, aspect ratio maintained: 150 * 80 / 200 = 60
-    assert_eq!(element_rect.width, 80.0);
-    assert_eq!(element_rect.height, 60.0);
+    assert_eq!(element_rect.layout_width, 80.0);
+    assert_eq!(element_rect.layout_height, 60.0);
     assert_eq!(element_rect.rendering_width, 80.0);
     assert_eq!(element_rect.rendering_height, 60.0);
 }
@@ -884,8 +884,8 @@ fn height_property_with_custom_default_size() {
         panic!("Expected Element");
     };
     // height: 75, aspect ratio maintained: 200 * 75 / 150 = 100
-    assert_eq!(element_rect.width, 100.0);
-    assert_eq!(element_rect.height, 75.0);
+    assert_eq!(element_rect.layout_width, 100.0);
+    assert_eq!(element_rect.layout_height, 75.0);
     assert_eq!(element_rect.rendering_width, 100.0);
     assert_eq!(element_rect.rendering_height, 75.0);
 }

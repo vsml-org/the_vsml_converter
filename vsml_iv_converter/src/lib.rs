@@ -223,14 +223,14 @@ fn convert_tag_element<'a, I, A>(
         ObjectType::Other(processor) => processor.default_duration(attributes),
     };
     let mut rule_target_duration = None;
-    let mut target_size = match &object_type {
+    let mut target_layout_size = match &object_type {
         ObjectType::Wrap => RectSize::ZERO,
         ObjectType::Other(processor) => processor.default_image_size(attributes),
     };
     // default_image_sizeを持っているか（アスペクト比維持の判定に使用）
-    let has_default_size = target_size != RectSize::ZERO;
+    let has_default_size = target_layout_size != RectSize::ZERO;
     // rendering_sizeの初期値はtarget_sizeと同じ（default_image_sizeを含む）
-    let mut target_rendering_size = target_size;
+    let mut target_rendering_size = target_layout_size;
     let mut order: Order = match name {
         "seq" | "cont" => Order::Sequence,
         "prl" | "layer" => Order::Parallel,
@@ -372,27 +372,27 @@ fn convert_tag_element<'a, I, A>(
         (Some(width), Some(height)) => Some(RectSize { width, height }),
         // width/height一方のみ指定: アスペクト比を維持して縮小（拡大はしない）
         (Some(width), None) => {
-            if target_size.width > 0.0 && width < target_size.width {
+            if target_layout_size.width > 0.0 && width < target_layout_size.width {
                 Some(RectSize {
                     width,
-                    height: target_size.height * width / target_size.width,
+                    height: target_layout_size.height * width / target_layout_size.width,
                 })
             } else {
                 Some(RectSize {
                     width,
-                    height: target_size.height,
+                    height: target_layout_size.height,
                 })
             }
         }
         (None, Some(height)) => {
-            if target_size.height > 0.0 && height < target_size.height {
+            if target_layout_size.height > 0.0 && height < target_layout_size.height {
                 Some(RectSize {
-                    width: target_size.width * height / target_size.height,
+                    width: target_layout_size.width * height / target_layout_size.height,
                     height,
                 })
             } else {
                 Some(RectSize {
-                    width: target_size.width,
+                    width: target_layout_size.width,
                     height,
                 })
             }
@@ -455,25 +455,32 @@ fn convert_tag_element<'a, I, A>(
                 }
                 if layer_mode == LayerMode::Single && order == Order::Parallel {
                     // TODO: 並べる方向を決めるpropertyが来たらそれに従う
-                    children_offset_position.0 += element_rect.width;
-                    target_size.width += element_rect.width;
-                    target_size.height = target_size.height.max(element_rect.height);
-                    // rendering_sizeは、widthとrendering_widthの両方を考慮する
+                    children_offset_position.0 += element_rect.layout_width;
+                    target_layout_size.width += element_rect.layout_width;
+                    target_layout_size.height =
+                        target_layout_size.height.max(element_rect.layout_height);
+                    // rendering_sizeは、layout_widthとrendering_widthの両方を考慮する
                     target_rendering_size.width +=
-                        element_rect.width.max(element_rect.rendering_width);
-                    target_rendering_size.height = target_rendering_size
-                        .height
-                        .max(element_rect.height.max(element_rect.rendering_height));
+                        element_rect.layout_width.max(element_rect.rendering_width);
+                    target_rendering_size.height = target_rendering_size.height.max(
+                        element_rect
+                            .layout_height
+                            .max(element_rect.rendering_height),
+                    );
                 } else {
-                    target_size.width = target_size.width.max(element_rect.width);
-                    target_size.height = target_size.height.max(element_rect.height);
-                    // rendering_sizeは、widthとrendering_widthの両方を考慮する
+                    target_layout_size.width =
+                        target_layout_size.width.max(element_rect.layout_width);
+                    target_layout_size.height =
+                        target_layout_size.height.max(element_rect.layout_height);
+                    // rendering_sizeは、layout_widthとrendering_widthの両方を考慮する
                     target_rendering_size.width = target_rendering_size
                         .width
-                        .max(element_rect.width.max(element_rect.rendering_width));
-                    target_rendering_size.height = target_rendering_size
-                        .height
-                        .max(element_rect.height.max(element_rect.rendering_height));
+                        .max(element_rect.layout_width.max(element_rect.rendering_width));
+                    target_rendering_size.height = target_rendering_size.height.max(
+                        element_rect
+                            .layout_height
+                            .max(element_rect.rendering_height),
+                    );
                 }
             }
             ObjectData::Text(data) => {
@@ -481,8 +488,8 @@ fn convert_tag_element<'a, I, A>(
                 if let ObjectType::Other(processor) = &object_type {
                     let rect_size = processor.calculate_text_size(data);
                     // TODO: 並べる方向を決めるpropertyが来たらそれに従う
-                    target_size.width += rect_size.width;
-                    target_size.height = target_size.height.max(rect_size.height);
+                    target_layout_size.width += rect_size.width;
+                    target_layout_size.height = target_layout_size.height.max(rect_size.height);
                     target_rendering_size.width += rect_size.width;
                     target_rendering_size.height =
                         target_rendering_size.height.max(rect_size.height);
@@ -498,35 +505,41 @@ fn convert_tag_element<'a, I, A>(
     // レイアウト用のサイズを計算
     // 一方だけ指定されていたらアス比を維持しつつ収まるように縮小
     // 子要素を加味したtarget_sizeが必要なのでsize_for_childrenとは別にもう一度計算している
-    let (final_width, final_height) = match (rule_target_width, rule_target_height) {
+    let (final_layout_width, final_layout_height) = match (rule_target_width, rule_target_height) {
         (Some(width), Some(height)) => (width, height),
         (Some(width), None) => {
-            if width.max(0.0) < target_size.width {
-                (width, target_size.height * width / target_size.width)
+            if width.max(0.0) < target_layout_size.width {
+                (
+                    width,
+                    target_layout_size.height * width / target_layout_size.width,
+                )
             } else {
-                (width, target_size.height)
+                (width, target_layout_size.height)
             }
         }
         (None, Some(height)) => {
-            if height.max(0.0) < target_size.height {
-                (target_size.width * height / target_size.height, height)
+            if height.max(0.0) < target_layout_size.height {
+                (
+                    target_layout_size.width * height / target_layout_size.height,
+                    height,
+                )
             } else {
-                (target_size.width, height)
+                (target_layout_size.width, height)
             }
         }
-        (None, None) => (target_size.width, target_size.height),
+        (None, None) => (target_layout_size.width, target_layout_size.height),
     };
 
     // 描画されるサイズを計算
     let (final_rendering_width, final_rendering_height) = if let ObjectType::Other(_) = object_type
         && has_default_size
-        && target_size.width > 0.0
-        && target_size.height > 0.0
+        && target_layout_size.width > 0.0
+        && target_layout_size.height > 0.0
     {
         // img, vidなど: スケールを適用
         (
-            target_rendering_size.width * final_width / target_size.width,
-            target_rendering_size.height * final_height / target_size.height,
+            target_rendering_size.width * final_layout_width / target_layout_size.width,
+            target_rendering_size.height * final_layout_height / target_layout_size.height,
         )
     } else {
         // txt, aud, seq, prlなど: 常に子要素の実際のサイズ
@@ -546,8 +559,8 @@ fn convert_tag_element<'a, I, A>(
             parent_alignment: Default::default(),
             x: offset_position.0,
             y: offset_position.1,
-            width: final_width,
-            height: final_height,
+            layout_width: final_layout_width,
+            layout_height: final_layout_height,
             rendering_width: final_rendering_width,
             rendering_height: final_rendering_height,
         },

@@ -51,9 +51,9 @@ pub struct ElementRect {
     pub x: f32,
     pub y: f32,
     /// レイアウト計算に使用される幅
-    pub width: f32,
+    pub layout_width: f32,
     /// レイアウト計算に使用される高さ
-    pub height: f32,
+    pub layout_height: f32,
     /// 実際に描画される幅（overflow対応用）
     pub rendering_width: f32,
     /// 実際に描画される高さ（overflow対応用）
@@ -98,8 +98,8 @@ impl ElementRect {
         let x = self.x
             - match self.alignment.x_axis() {
                 AlignmentSingle::Start => 0.0,
-                AlignmentSingle::Center => self.width / 2.0,
-                AlignmentSingle::End => self.width,
+                AlignmentSingle::Center => self.layout_width / 2.0,
+                AlignmentSingle::End => self.layout_width,
             }
             + match self.parent_alignment.x_axis() {
                 AlignmentSingle::Start => 0.0,
@@ -109,8 +109,8 @@ impl ElementRect {
         let y = self.y
             - match self.alignment.y_axis() {
                 AlignmentSingle::Start => 0.0,
-                AlignmentSingle::Center => self.height / 2.0,
-                AlignmentSingle::End => self.height,
+                AlignmentSingle::Center => self.layout_height / 2.0,
+                AlignmentSingle::End => self.layout_height,
             }
             + match self.parent_alignment.y_axis() {
                 AlignmentSingle::Start => 0.0,
@@ -120,8 +120,8 @@ impl ElementRect {
         RenderingInfo {
             x,
             y,
-            width: self.width,
-            height: self.height,
+            width: self.layout_width,
+            height: self.layout_height,
         }
     }
 }

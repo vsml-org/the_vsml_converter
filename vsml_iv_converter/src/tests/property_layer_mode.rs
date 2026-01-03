@@ -50,8 +50,8 @@ fn layer_mode_property_single() {
     } = result.object
     {
         assert_eq!(children.len(), 2);
-        assert_eq!(element_rect.width, 200.0);
-        assert_eq!(element_rect.height, 100.0);
+        assert_eq!(element_rect.layout_width, 200.0);
+        assert_eq!(element_rect.layout_height, 100.0);
     } else {
         panic!("Expected Element");
     }
@@ -103,8 +103,8 @@ fn layer_mode_property_multi() {
     } = result.object
     {
         assert_eq!(children.len(), 2);
-        assert_eq!(element_rect.width, 100.0);
-        assert_eq!(element_rect.height, 100.0);
+        assert_eq!(element_rect.layout_width, 100.0);
+        assert_eq!(element_rect.layout_height, 100.0);
     } else {
         panic!("Expected Element");
     }
