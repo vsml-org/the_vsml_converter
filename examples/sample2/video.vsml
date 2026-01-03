@@ -1,0 +1,34 @@
+<vsml>
+  <meta>
+    <style>
+      cont {
+        background-color: blue;
+        width: 100rw;
+        height: 100rh;
+      }
+      seq {
+        width: 100%;
+        height: 100%;
+      }
+      txt {
+        background-color: gray;
+        duration: 1s;
+        width: 70%;
+      }
+      img {
+        background-color: white;
+        duration: 1s;
+        height: 50%;
+      }
+      vid {
+        width: 300px;
+        duration: 1s;
+      }
+    </style>
+  </meta>
+  <cont resolution="1920x1080">
+    <txt>Hello, World</txt>
+    <img src="./trees.jpg" />
+    <vid src="./butterfly.mp4" />
+  </cont>
+</vsml>
