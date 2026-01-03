@@ -6,16 +6,12 @@
         width: 100rw;
         height: 100rh;
       }
-      seq {
-        width: 100%;
-        height: 100%;
-      }
-      txt {
+      .hello {
         background-color: gray;
         duration: 1s;
         width: 70%;
       }
-      img {
+      .single-img {
         background-color: white;
         duration: 1s;
         height: 50%;
@@ -24,11 +20,24 @@
         width: 300px;
         duration: 1s;
       }
+      prl {
+        width: 100px;
+        height: 100px;
+        duration: 1s;
+        background-color: red;
+      }
+      prl txt {
+        background-color: black;
+        color: red;
+      }
     </style>
   </meta>
   <cont resolution="1920x1080">
-    <txt>Hello, World</txt>
-    <img src="./trees.jpg" />
+    <txt class="hello">Hello, World</txt>
+    <img class="single-img" src="./trees.jpg" />
     <vid src="./butterfly.mp4" />
+    <prl>
+      <txt>This is trees.</txt>
+    </prl>
   </cont>
 </vsml>

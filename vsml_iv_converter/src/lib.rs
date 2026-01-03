@@ -458,19 +458,22 @@ fn convert_tag_element<'a, I, A>(
                     children_offset_position.0 += element_rect.width;
                     target_size.width += element_rect.width;
                     target_size.height = target_size.height.max(element_rect.height);
-                    target_rendering_size.width += element_rect.rendering_width;
+                    // rendering_sizeは、widthとrendering_widthの両方を考慮する
+                    target_rendering_size.width +=
+                        element_rect.width.max(element_rect.rendering_width);
                     target_rendering_size.height = target_rendering_size
                         .height
-                        .max(element_rect.rendering_height);
+                        .max(element_rect.height.max(element_rect.rendering_height));
                 } else {
                     target_size.width = target_size.width.max(element_rect.width);
                     target_size.height = target_size.height.max(element_rect.height);
+                    // rendering_sizeは、widthとrendering_widthの両方を考慮する
                     target_rendering_size.width = target_rendering_size
                         .width
-                        .max(element_rect.rendering_width);
+                        .max(element_rect.width.max(element_rect.rendering_width));
                     target_rendering_size.height = target_rendering_size
                         .height
-                        .max(element_rect.rendering_height);
+                        .max(element_rect.height.max(element_rect.rendering_height));
                 }
             }
             ObjectData::Text(data) => {
@@ -516,13 +519,18 @@ fn convert_tag_element<'a, I, A>(
 
     // 描画されるサイズを計算
     let (final_rendering_width, final_rendering_height) = if let ObjectType::Other(_) = object_type
-        && !has_default_size
+        && has_default_size
+        && target_size.width > 0.0
+        && target_size.height > 0.0
     {
-        // txt, audioなど: 子要素の実際のサイズを使用（歪ませない）
-        (target_rendering_size.width, target_rendering_size.height)
+        // img, vidなど: スケールを適用
+        (
+            target_rendering_size.width * final_width / target_size.width,
+            target_rendering_size.height * final_height / target_size.height,
+        )
     } else {
-        // img, vid, seq, prlなど: スケールを適用して縮小
-        (final_width, final_height)
+        // txt, aud, seq, prlなど: 常に子要素の実際のサイズ
+        (target_rendering_size.width, target_rendering_size.height)
     };
 
     ObjectData::Element {
