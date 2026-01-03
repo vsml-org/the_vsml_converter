@@ -320,13 +320,13 @@ fn convert_tag_element<'a, I, A>(
                 let value = rule.value.as_str();
                 let length = value.parse().unwrap();
                 match length {
-                    Length::Px(px) => {
+                    Length::Pixel(px) => {
                         rule_target_width = Some(px);
                     }
-                    Length::Rw(rw) => {
+                    Length::ResolutionWidth(rw) => {
                         rule_target_width = Some(resolution.width * (rw / 100.0));
                     }
-                    Length::Rh(rh) => {
+                    Length::ResolutionHeight(rh) => {
                         rule_target_width = Some(resolution.height * (rh / 100.0));
                     }
                     Length::Percent(percent) => {
@@ -341,13 +341,13 @@ fn convert_tag_element<'a, I, A>(
                 let value = rule.value.as_str();
                 let length = value.parse().unwrap();
                 match length {
-                    Length::Px(px) => {
+                    Length::Pixel(px) => {
                         rule_target_height = Some(px);
                     }
-                    Length::Rw(rw) => {
+                    Length::ResolutionWidth(rw) => {
                         rule_target_height = Some(resolution.width * (rw / 100.0));
                     }
-                    Length::Rh(rh) => {
+                    Length::ResolutionHeight(rh) => {
                         rule_target_height = Some(resolution.height * (rh / 100.0));
                     }
                     Length::Percent(percent) => {
@@ -496,21 +496,19 @@ fn convert_tag_element<'a, I, A>(
     // 一方だけ指定されていたらアス比を維持しつつ収まるように縮小
     // 子要素を加味したtarget_sizeが必要なのでsize_for_childrenとは別にもう一度計算している
     let (final_width, final_height) = match (rule_target_width, rule_target_height) {
-        (Some(w), Some(h)) => (w, h),
-        (Some(w), None) => {
-            if target_size.width > 0.0 && w < target_size.width {
-                let reduce_height = w / target_size.width * target_size.height;
-                (w, reduce_height)
+        (Some(width), Some(height)) => (width, height),
+        (Some(width), None) => {
+            if width.max(0.0) < target_size.width {
+                (width, target_size.height * width / target_size.width)
             } else {
-                (w, target_size.height)
+                (width, target_size.height)
             }
         }
-        (None, Some(h)) => {
-            if target_size.height > 0.0 && h < target_size.height {
-                let reduce_width = h / target_size.height * target_size.width;
-                (reduce_width, h)
+        (None, Some(height)) => {
+            if height.max(0.0) < target_size.height {
+                (target_size.width * height / target_size.height, height)
             } else {
-                (target_size.width, h)
+                (target_size.width, height)
             }
         }
         (None, None) => (target_size.width, target_size.height),
@@ -519,11 +517,7 @@ fn convert_tag_element<'a, I, A>(
     // 描画されるサイズを計算
     // wrapでなく、default_sizeを持つオブジェクト(ex. vid, img)はレイアウトサイズを埋めるように描画
     // 例えばimgはwidth/heightで引き伸ばせるが、txtはfont-sizeで指定するので引き伸ばさない
-    let (final_rendering_width, final_rendering_height) = if let ObjectType::Other(_) = object_type
-        && has_default_size
-        && target_size.width > 0.0
-        && target_size.height > 0.0
-    {
+    let (final_rendering_width, final_rendering_height) = if has_default_size {
         (final_width, final_height)
     } else {
         (target_rendering_size.width, target_rendering_size.height)
