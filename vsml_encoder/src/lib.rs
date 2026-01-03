@@ -8,7 +8,7 @@ use vsml_core::{MixingContext, RenderingContext, mix_audio, render_frame_image};
 use wgpu::util::DeviceExt;
 
 pub struct EncoderOptions<'a> {
-    pub output_path: Option<&'a Path>,
+    pub output_path: &'a Path,
     pub overwrite: bool,
     pub ffmpeg_options: Vec<String>,
 }
@@ -114,7 +114,6 @@ pub fn encode<R, M>(
     writer.finalize().unwrap();
 
     let fps = iv_data.fps.to_string();
-    let output_path = options.output_path.unwrap_or(Path::new("output.mp4"));
 
     let mut command = Command::new("ffmpeg");
     command
@@ -148,7 +147,12 @@ pub fn encode<R, M>(
         command.args(options.ffmpeg_options);
     }
 
-    let status = command.arg(output_path).spawn().unwrap().wait().unwrap();
+    let status = command
+        .arg(options.output_path)
+        .spawn()
+        .unwrap()
+        .wait()
+        .unwrap();
     if !status.success() {
         panic!("FFmpeg command failed with status: {:?}", status);
     }

@@ -1,7 +1,7 @@
 use clap::Parser;
 use std::collections::HashMap;
 use std::env;
-use std::path::{self, PathBuf};
+use std::path::{self, Path, PathBuf};
 use std::sync::Arc;
 use vsml_audio_mixer::MixingContextImpl;
 use vsml_common_audio::Audio as VsmlAudio;
@@ -72,9 +72,12 @@ fn get_gpu_device() -> (wgpu::Device, wgpu::Queue) {
 fn main() {
     let args = Args::parse();
 
-    let output_path = args
-        .output_path
-        .map(|path| path::absolute(&path).expect("Failed to get output absolute path"));
+    let output_path = path::absolute(
+        args.output_path
+            .as_deref()
+            .unwrap_or(Path::new("output.mp4")),
+    )
+    .expect("Failed to get output absolute path");
     let vsml_string = std::fs::read_to_string(&args.input_path).unwrap();
     env::set_current_dir(args.input_path.parent().unwrap())
         .expect("Failed to set current directory");
@@ -113,7 +116,7 @@ fn main() {
         &mut rendering_context,
         &mut mixing_context,
         EncoderOptions {
-            output_path: output_path.as_deref(),
+            output_path: &output_path,
             overwrite: args.overwrite,
             ffmpeg_options: args.experimental_ffmpeg_output_option,
         },
