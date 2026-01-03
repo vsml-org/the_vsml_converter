@@ -1,5 +1,5 @@
 use std::path::Path;
-use std::process::Command;
+use std::process::{Command, Stdio};
 use temp_dir::TempDir;
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
@@ -117,6 +117,10 @@ pub fn encode<R, M>(
     let output_path = options.output_path.unwrap_or(Path::new("output.mp4"));
 
     let mut command = Command::new("ffmpeg");
+    command
+        .stdin(Stdio::null())
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit());
     if options.overwrite {
         command.arg("-y");
     }
