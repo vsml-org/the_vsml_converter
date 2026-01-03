@@ -237,9 +237,7 @@ fn convert_tag_element<'a, I, A>(
         "layer" => LayerMode::Single,
         _ => LayerMode::Multi,
     };
-    let mut text_style = parent_text_style
-        .clone()
-        .unwrap_or(TextStyleData::default());
+    let mut text_style = parent_text_style.clone().unwrap_or_default();
     let mut audio_volume = 1.0;
     let mut background_color = None;
     let mut rule_target_width = None;
