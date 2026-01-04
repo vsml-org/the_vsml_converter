@@ -7,8 +7,8 @@ use vsml_ast::vsml::{Content, Element, Meta, VSML};
 use vsml_ast::vss::{Rule, VSSItem, VSSSelector, VSSSelectorTree};
 use vsml_core::ElementRect;
 use vsml_core::schemas::{
-    AudioVolume, Duration, IVData, LayerMode, ObjectData, ObjectProcessor, ObjectType, Order,
-    RectSize, TextData, TextStyleData, parse_font_family,
+    AudioVolume, Duration, IVData, LayerMode, Length, ObjectData, ObjectProcessor, ObjectType,
+    Order, RectSize, TextData, TextStyleData, parse_font_family,
 };
 
 pub fn convert<I, A>(
@@ -52,8 +52,13 @@ pub fn convert<I, A>(
             attributes,
             children,
             object_processor_provider,
-            None,
             fps,
+            RectSize {
+                width: width as f32,
+                height: height as f32,
+            },
+            None,
+            None,
             None,
         )
     });
@@ -198,9 +203,11 @@ fn convert_tag_element<'a, I, A>(
     attributes: &HashMap<String, String>,
     children: &'a [Element],
     object_processor_provider: &impl ObjectProcessorProvider<I, A>,
-    parent_text_style: Option<TextStyleData>,
     fps: u32,
+    resolution: RectSize,
+    parent_text_style: Option<TextStyleData>,
     parent_duration: Option<f64>,
+    parent_size: Option<RectSize>,
 ) -> ObjectData<I, A> {
     // スタイル情報
     let object_type = match name {
@@ -237,6 +244,8 @@ fn convert_tag_element<'a, I, A>(
     });
     let mut audio_volume = 1.0;
     let mut background_color = None;
+    let mut rule_target_width = None;
+    let mut rule_target_height = None;
 
     for rule in vss_scanner.scan() {
         match rule.property.as_str() {
@@ -303,12 +312,90 @@ fn convert_tag_element<'a, I, A>(
                     }
                 }
             }
+            "width" => {
+                let value = rule.value.as_str();
+                let length = value.parse().unwrap();
+                match length {
+                    Length::Pixel(px) => {
+                        rule_target_width = Some(px);
+                    }
+                    Length::ResolutionWidth(rw) => {
+                        rule_target_width = Some(resolution.width * (rw / 100.0));
+                    }
+                    Length::ResolutionHeight(rh) => {
+                        rule_target_width = Some(resolution.height * (rh / 100.0));
+                    }
+                    Length::Percent(percent) => {
+                        let parent_width = parent_size
+                            .expect("no parent size available for percentage width")
+                            .width;
+                        rule_target_width = Some(parent_width * (percent / 100.0) as f32);
+                    }
+                }
+            }
+            "height" => {
+                let value = rule.value.as_str();
+                let length = value.parse().unwrap();
+                match length {
+                    Length::Pixel(px) => {
+                        rule_target_height = Some(px);
+                    }
+                    Length::ResolutionWidth(rw) => {
+                        rule_target_height = Some(resolution.width * (rw / 100.0));
+                    }
+                    Length::ResolutionHeight(rh) => {
+                        rule_target_height = Some(resolution.height * (rh / 100.0));
+                    }
+                    Length::Percent(percent) => {
+                        let parent_size = parent_size
+                            .expect("no parent size available for percentage height")
+                            .height;
+                        rule_target_height = Some(parent_size * (percent / 100.0) as f32);
+                    }
+                }
+            }
             _ => {}
         }
     }
 
     // 子要素に渡すdurationを決定（明示的に指定されている場合のみ）
     let duration_for_children = rule_target_duration.filter(|d| d.is_finite());
+
+    // 子要素に渡すサイズ情報を準備（アスペクト比を適用）
+    // default_image_sizeを使って事前にアスペクト比を計算
+    let size_for_children = match (rule_target_width, rule_target_height) {
+        // 両方指定されている場合はそのまま使用
+        (Some(width), Some(height)) => Some(RectSize { width, height }),
+        // width/height一方のみ指定: アスペクト比を維持して縮小（拡大はしない）
+        (Some(width), None) => {
+            if target_size.width > 0.0 && width < target_size.width {
+                Some(RectSize {
+                    width,
+                    height: target_size.height * width / target_size.width,
+                })
+            } else {
+                Some(RectSize {
+                    width,
+                    height: target_size.height,
+                })
+            }
+        }
+        (None, Some(height)) => {
+            if target_size.height > 0.0 && height < target_size.height {
+                Some(RectSize {
+                    width: target_size.width * height / target_size.height,
+                    height,
+                })
+            } else {
+                Some(RectSize {
+                    width: target_size.width,
+                    height,
+                })
+            }
+        }
+        // style指定がない場合は親のサイズは未確定
+        (None, None) => None,
+    };
 
     let mut object_data_children = vec![];
     let mut start_offset = 0.0;
@@ -330,9 +417,11 @@ fn convert_tag_element<'a, I, A>(
                 attributes,
                 children,
                 object_processor_provider,
-                Some(text_style.clone()),
                 fps,
+                resolution,
+                Some(text_style.clone()),
                 duration_for_children,
+                size_for_children,
             ),
             // TODO: VSSプロパティとしてwidth, heightが追加された場合、ここでwidth, heightも必要になる
             // 仮に横書きであれば水平方向に書いた描画範囲の幅がwidthを超える場合、改行して次の行に続ける必要がある
@@ -386,6 +475,28 @@ fn convert_tag_element<'a, I, A>(
         target_duration = f64::INFINITY
     }
 
+    // レイアウト用のサイズを計算
+    // 一方だけ指定されていたらアス比を維持しつつ収まるように縮小
+    // 子要素を加味したtarget_sizeが必要なのでsize_for_childrenとは別にもう一度計算している
+    let (final_layout_width, final_layout_height) = match (rule_target_width, rule_target_height) {
+        (Some(width), Some(height)) => (width, height),
+        (Some(width), None) => {
+            if width.max(0.0) < target_size.width {
+                (width, target_size.height * width / target_size.width)
+            } else {
+                (width, target_size.height)
+            }
+        }
+        (None, Some(height)) => {
+            if height.max(0.0) < target_size.height {
+                (target_size.width * height / target_size.height, height)
+            } else {
+                (target_size.width, height)
+            }
+        }
+        (None, None) => (target_size.width, target_size.height),
+    };
+
     ObjectData::Element {
         object_type,
         // time-margin, time-paddingとかが来たらここまでに計算する
@@ -399,8 +510,8 @@ fn convert_tag_element<'a, I, A>(
             parent_alignment: Default::default(),
             x: offset_position.0,
             y: offset_position.1,
-            width: target_size.width,
-            height: target_size.height,
+            width: final_layout_width,
+            height: final_layout_height,
         },
         children: object_data_children,
     }
