@@ -358,6 +358,18 @@ fn convert_tag_element<'a, I, A>(
         }
     }
 
+    // ここでinvalidな値が入っていたらpanicする
+    if let Some(width) = rule_target_width
+        && width < 0.0
+    {
+        panic!("width is expected to be a non-negative number")
+    }
+    if let Some(height) = rule_target_height
+        && height < 0.0
+    {
+        panic!("height is expected to be a non-negative number")
+    }
+
     // 子要素に渡すdurationを決定（明示的に指定されている場合のみ）
     let duration_for_children = rule_target_duration.filter(|d| d.is_finite());
 
@@ -368,7 +380,7 @@ fn convert_tag_element<'a, I, A>(
         (Some(width), Some(height)) => Some(RectSize { width, height }),
         // width/height一方のみ指定: アスペクト比を維持して縮小（拡大はしない）
         (Some(width), None) => {
-            if target_size.width != 0.0 && width < target_size.width {
+            if width < target_size.width {
                 Some(RectSize {
                     width,
                     height: target_size.height * width / target_size.width,
@@ -381,7 +393,7 @@ fn convert_tag_element<'a, I, A>(
             }
         }
         (None, Some(height)) => {
-            if target_size.height != 0.0 && height < target_size.height {
+            if height < target_size.height {
                 Some(RectSize {
                     width: target_size.width * height / target_size.height,
                     height,
@@ -481,14 +493,14 @@ fn convert_tag_element<'a, I, A>(
     let (final_layout_width, final_layout_height) = match (rule_target_width, rule_target_height) {
         (Some(width), Some(height)) => (width, height),
         (Some(width), None) => {
-            if target_size.width != 0.0 && width < target_size.width {
+            if width < target_size.width {
                 (width, target_size.height * width / target_size.width)
             } else {
                 (width, target_size.height)
             }
         }
         (None, Some(height)) => {
-            if target_size.height != 0.0 && height < target_size.height {
+            if height < target_size.height {
                 (target_size.width * height / target_size.height, height)
             } else {
                 (target_size.width, height)
