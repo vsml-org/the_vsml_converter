@@ -106,7 +106,7 @@ pub struct RenderingInfo {
 #[cfg_attr(test, mockall::automock(type Image=tests::MockImage;))]
 pub trait Renderer {
     type Image;
-    fn render_image(&mut self, image: Self::Image, info: RenderingInfo);
+    fn render_image(&mut self, image: Self::Image, info: RenderingInfo, no_resize_child: bool);
     fn render_box(&mut self, property: RenderBoxProperty, info: RenderingInfo);
     fn render(self, width: u32, height: u32) -> Self::Image;
 }
@@ -206,7 +206,7 @@ where
                         );
                         let rendering_info =
                             element_rect.calc_rendering_info(outer_width, outer_height);
-                        renderer.render_image(child_image, rendering_info);
+                        renderer.render_image(child_image, rendering_info, false);
                     }
                     ObjectType::Other(processor) => {
                         // 子要素からTextDataを収集
@@ -216,8 +216,9 @@ where
                                 text_data_list.extend(data.iter().cloned());
                             }
                         }
+                        let is_text_children = !text_data_list.is_empty();
 
-                        let input = if !text_data_list.is_empty() {
+                        let input = if is_text_children {
                             // txtタグなどの場合: TextDataを渡す
                             ProcessorInput::Text(text_data_list)
                         } else if !children.is_empty() {
@@ -247,7 +248,7 @@ where
                         if let Some(result) = result {
                             let rendering_info =
                                 element_rect.calc_rendering_info(outer_width, outer_height);
-                            renderer.render_image(result, rendering_info);
+                            renderer.render_image(result, rendering_info, is_text_children);
                         }
                     }
                 }

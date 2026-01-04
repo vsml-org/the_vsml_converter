@@ -92,7 +92,15 @@ impl BoxVertex {
 impl Renderer for RendererImpl {
     type Image = VsmlImage;
 
-    fn render_image(&mut self, image: Self::Image, info: RenderingInfo) {
+    fn render_image(&mut self, image: Self::Image, info: RenderingInfo, no_resize_children: bool) {
+        let info = if no_resize_children {
+            let mut info = info;
+            info.width = image.size().width as f32;
+            info.height = image.size().height as f32;
+            info
+        } else {
+            info
+        };
         self.items.push(RenderItem::Image(image, info));
     }
 
