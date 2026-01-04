@@ -96,25 +96,25 @@ fn test_render_vrt() {
         queue.clone(),
         include_bytes!("../test_assets/origin.png"),
     );
-    renderer.render_image(texture, info, false);
+    renderer.render_image(texture, info);
     let (texture, info) = create_image_data(
         device.clone(),
         queue.clone(),
         include_bytes!("../test_assets/red.png"),
     );
-    renderer.render_image(texture, info, false);
+    renderer.render_image(texture, info);
     let (texture, info) = create_image_data(
         device.clone(),
         queue.clone(),
         include_bytes!("../test_assets/portrait-alpha.png"),
     );
-    renderer.render_image(texture, info, false);
+    renderer.render_image(texture, info);
     let (texture, info) = create_image_data(
         device.clone(),
         queue.clone(),
         include_bytes!("../test_assets/icon.png"),
     );
-    renderer.render_image(texture, info, false);
+    renderer.render_image(texture, info);
     // 矩形の描画情報の作成
     renderer.render_box(
         RenderBoxProperty {

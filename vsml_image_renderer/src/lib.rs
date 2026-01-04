@@ -2,7 +2,9 @@
 mod tests;
 
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::{ImageEffectStyle, RenderBoxProperty, Renderer, RenderingContext, RenderingInfo};
+use vsml_core::{
+    ImageEffectStyle, ImageSize, RenderBoxProperty, Renderer, RenderingContext, RenderingInfo,
+};
 use wgpu::util::DeviceExt;
 
 enum RenderItem {
@@ -92,15 +94,7 @@ impl BoxVertex {
 impl Renderer for RendererImpl {
     type Image = VsmlImage;
 
-    fn render_image(&mut self, image: Self::Image, info: RenderingInfo, no_resize_children: bool) {
-        let info = if no_resize_children {
-            let mut info = info;
-            info.width = image.size().width as f32;
-            info.height = image.size().height as f32;
-            info
-        } else {
-            info
-        };
+    fn render_image(&mut self, image: Self::Image, info: RenderingInfo) {
         self.items.push(RenderItem::Image(image, info));
     }
 
@@ -287,6 +281,14 @@ impl Renderer for RendererImpl {
 impl RenderingContext for RenderingContextImpl {
     type Image = VsmlImage;
     type Renderer = RendererImpl;
+
+    fn get_size(&self, image: &Self::Image) -> ImageSize {
+        let size = image.size();
+        ImageSize {
+            width: size.width as f32,
+            height: size.height as f32,
+        }
+    }
 
     fn create_renderer(&mut self) -> Self::Renderer {
         RendererImpl {

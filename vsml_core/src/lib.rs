@@ -106,15 +106,20 @@ pub struct RenderingInfo {
 #[cfg_attr(test, mockall::automock(type Image=tests::MockImage;))]
 pub trait Renderer {
     type Image;
-    fn render_image(&mut self, image: Self::Image, info: RenderingInfo, no_resize_child: bool);
+    fn render_image(&mut self, image: Self::Image, info: RenderingInfo);
     fn render_box(&mut self, property: RenderBoxProperty, info: RenderingInfo);
     fn render(self, width: u32, height: u32) -> Self::Image;
 }
 
+pub struct ImageSize {
+    pub width: f32,
+    pub height: f32,
+}
 #[cfg_attr(test, mockall::automock(type Image=tests::MockImage; type Renderer=MockRenderer;))]
 pub trait RenderingContext {
     type Image;
     type Renderer: Renderer<Image = Self::Image>;
+    fn get_size(&self, image: &Self::Image) -> ImageSize;
     fn create_renderer(&mut self) -> Self::Renderer;
     fn apply_style(&mut self, image: Self::Image, style: ImageEffectStyle) -> Self::Image;
 }
@@ -125,6 +130,9 @@ where
 {
     type Image = R::Image;
     type Renderer = R::Renderer;
+    fn get_size(&self, image: &Self::Image) -> ImageSize {
+        R::get_size(&self, image)
+    }
     fn create_renderer(&mut self) -> Self::Renderer {
         R::create_renderer(self)
     }
@@ -206,7 +214,7 @@ where
                         );
                         let rendering_info =
                             element_rect.calc_rendering_info(outer_width, outer_height);
-                        renderer.render_image(child_image, rendering_info, false);
+                        renderer.render_image(child_image, rendering_info);
                     }
                     ObjectType::Other(processor) => {
                         // 子要素からTextDataを収集
@@ -246,9 +254,17 @@ where
                         println!("[debug] target_time: {}", target_time);
                         let result = processor.process_image(target_time, attributes, input);
                         if let Some(result) = result {
-                            let rendering_info =
-                                element_rect.calc_rendering_info(outer_width, outer_height);
-                            renderer.render_image(result, rendering_info, is_text_children);
+                            let rendering_info = if is_text_children {
+                                let mut info =
+                                    element_rect.calc_rendering_info(outer_width, outer_height);
+                                let result_size = rendering_context.get_size(&result);
+                                info.width = result_size.width;
+                                info.height = result_size.height;
+                                info
+                            } else {
+                                element_rect.calc_rendering_info(outer_width, outer_height)
+                            };
+                            renderer.render_image(result, rendering_info);
                         }
                     }
                 }
