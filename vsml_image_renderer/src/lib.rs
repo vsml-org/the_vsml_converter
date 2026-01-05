@@ -2,7 +2,9 @@
 mod tests;
 
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::{ImageEffectStyle, RenderBoxProperty, Renderer, RenderingContext, RenderingInfo};
+use vsml_core::{
+    ImageEffectStyle, ImageSize, RenderBoxProperty, Renderer, RenderingContext, RenderingInfo,
+};
 use wgpu::util::DeviceExt;
 
 enum RenderItem {
@@ -279,6 +281,14 @@ impl Renderer for RendererImpl {
 impl RenderingContext for RenderingContextImpl {
     type Image = VsmlImage;
     type Renderer = RendererImpl;
+
+    fn get_size(&self, image: &Self::Image) -> ImageSize {
+        let size = image.size();
+        ImageSize {
+            width: size.width as f32,
+            height: size.height as f32,
+        }
+    }
 
     fn create_renderer(&mut self) -> Self::Renderer {
         RendererImpl {

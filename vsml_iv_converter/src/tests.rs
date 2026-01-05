@@ -6,6 +6,7 @@ mod property_font_color;
 mod property_font_family;
 mod property_layer_mode;
 mod property_order;
+mod property_width_height;
 mod selector_child;
 mod selector_descendant;
 mod selector_simple;

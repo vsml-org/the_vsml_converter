@@ -111,10 +111,15 @@ pub trait Renderer {
     fn render(self, width: u32, height: u32) -> Self::Image;
 }
 
+pub struct ImageSize {
+    pub width: f32,
+    pub height: f32,
+}
 #[cfg_attr(test, mockall::automock(type Image=tests::MockImage; type Renderer=MockRenderer;))]
 pub trait RenderingContext {
     type Image;
     type Renderer: Renderer<Image = Self::Image>;
+    fn get_size(&self, image: &Self::Image) -> ImageSize;
     fn create_renderer(&mut self) -> Self::Renderer;
     fn apply_style(&mut self, image: Self::Image, style: ImageEffectStyle) -> Self::Image;
 }
@@ -125,6 +130,9 @@ where
 {
     type Image = R::Image;
     type Renderer = R::Renderer;
+    fn get_size(&self, image: &Self::Image) -> ImageSize {
+        R::get_size(self, image)
+    }
     fn create_renderer(&mut self) -> Self::Renderer {
         R::create_renderer(self)
     }
@@ -245,8 +253,18 @@ where
                         println!("[debug] target_time: {}", target_time);
                         let result = processor.process_image(target_time, attributes, input);
                         if let Some(result) = result {
-                            let rendering_info =
-                                element_rect.calc_rendering_info(outer_width, outer_height);
+                            let rendering_info = if processor.has_default_image_size() {
+                                element_rect.calc_rendering_info(outer_width, outer_height)
+                            } else {
+                                let info =
+                                    element_rect.calc_rendering_info(outer_width, outer_height);
+                                let result_size = rendering_context.get_size(&result);
+                                RenderingInfo {
+                                    width: result_size.width,
+                                    height: result_size.height,
+                                    ..info
+                                }
+                            };
                             renderer.render_image(result, rendering_info);
                         }
                     }

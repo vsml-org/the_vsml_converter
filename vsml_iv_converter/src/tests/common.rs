@@ -44,6 +44,7 @@ mock! {
         fn name(&self) -> &str;
         fn default_duration(&self, attributes: &HashMap<String, String>) -> f64;
         fn default_image_size(&self, attributes: &HashMap<String, String>) -> RectSize;
+        fn has_default_image_size(&self) -> bool;
         fn calculate_text_size(&self, text_data: &[TextData]) -> RectSize;
         fn process_image(
             &self,
@@ -84,18 +85,14 @@ impl TestObjectProcessorProperty {
         self.default_duration = duration;
         self
     }
-    // pub fn with_tag_name(mut self, name: impl Into<String>) -> Self {
-    //     self.tag_name = name.into();
-    //     self
-    // }
-    // pub fn with_image_size(mut self, width: f32, height: f32) -> Self {
-    //     self.default_image_size = RectSize { width, height };
-    //     self
-    // }
-    // pub fn with_text_size(mut self, width: f32, height: f32) -> Self {
-    //     self.calculate_image_size = RectSize { width, height };
-    //     self
-    // }
+    pub fn with_image_size(mut self, width: f32, height: f32) -> Self {
+        self.default_image_size = RectSize { width, height };
+        self
+    }
+    pub fn without_default_size(mut self) -> Self {
+        self.default_image_size = RectSize::ZERO;
+        self
+    }
 }
 
 pub struct TestObjectProcessorProvider {

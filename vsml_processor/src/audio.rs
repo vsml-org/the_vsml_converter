@@ -19,6 +19,10 @@ impl<I> ObjectProcessor<I, VsmlAudio> for AudioProcessor {
         RectSize::ZERO
     }
 
+    fn has_default_image_size(&self) -> bool {
+        false
+    }
+
     fn calculate_text_size(&self, _text_data: &[vsml_core::schemas::TextData]) -> RectSize {
         RectSize::ZERO
     }

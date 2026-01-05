@@ -29,6 +29,10 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for TextProcessor {
         RectSize::ZERO
     }
 
+    fn has_default_image_size(&self) -> bool {
+        false
+    }
+
     fn calculate_text_size(&self, text_data: &[vsml_core::schemas::TextData]) -> RectSize {
         self.text_renderer.calculate_text_size(text_data)
     }
