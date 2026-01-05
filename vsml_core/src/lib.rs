@@ -226,9 +226,8 @@ where
                                 text_data_list.extend(data.iter().cloned());
                             }
                         }
-                        let is_text_children = !text_data_list.is_empty();
 
-                        let input = if is_text_children {
+                        let input = if !text_data_list.is_empty() {
                             // txtタグなどの場合: TextDataを渡す
                             ProcessorInput::Text(text_data_list)
                         } else if !children.is_empty() {
