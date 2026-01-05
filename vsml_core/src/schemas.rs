@@ -377,7 +377,9 @@ impl FromStr for Length {
     type Err = LengthParseError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        if let Some(value) = value.strip_suffix("px") {
+        if value == "0" {
+            Ok(Length::Pixel(0.0))
+        } else if let Some(value) = value.strip_suffix("px") {
             let val = value
                 .parse()
                 .map_err(|_| LengthParseError::NumberParseError)?;
@@ -626,5 +628,8 @@ mod tests {
             "100vw".parse::<Length>(),
             Err(LengthParseError::UnknownUnit)
         );
+        assert_eq!("0px".parse::<Length>(), Ok(Length::Pixel(0.0)));
+        assert_eq!("0".parse::<Length>(), Ok(Length::Pixel(0.0)));
+        assert_eq!("-100px".parse::<Length>(), Ok(Length::Pixel(-100.0)));
     }
 }
