@@ -44,6 +44,7 @@ mock! {
         fn name(&self) -> &str;
         fn default_duration(&self, attributes: &HashMap<String, String>) -> f64;
         fn default_image_size(&self, attributes: &HashMap<String, String>) -> RectSize;
+        fn has_default_image_size(&self) -> bool;
         fn calculate_text_size(&self, text_data: &[TextData]) -> RectSize;
         fn process_image(
             &self,

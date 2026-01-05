@@ -1,4 +1,4 @@
-use crate::schemas::{ObjectData, ObjectType, ProcessorInput, RectSize};
+use crate::schemas::{ObjectData, ObjectType, ProcessorInput};
 
 pub mod schemas;
 #[cfg(test)]
@@ -217,8 +217,6 @@ where
                         renderer.render_image(child_image, rendering_info);
                     }
                     ObjectType::Other(processor) => {
-                        let has_default_image_size =
-                            processor.default_image_size(attributes) == RectSize::ZERO;
                         // 子要素からTextDataを収集
                         let mut text_data_list: Vec<schemas::TextData> = Vec::new();
                         for child in children {
@@ -255,7 +253,9 @@ where
                         println!("[debug] target_time: {}", target_time);
                         let result = processor.process_image(target_time, attributes, input);
                         if let Some(result) = result {
-                            let rendering_info = if has_default_image_size {
+                            let rendering_info = if processor.has_default_image_size() {
+                                element_rect.calc_rendering_info(outer_width, outer_height)
+                            } else {
                                 let info =
                                     element_rect.calc_rendering_info(outer_width, outer_height);
                                 let result_size = rendering_context.get_size(&result);
@@ -264,8 +264,6 @@ where
                                     height: result_size.height,
                                     ..info
                                 }
-                            } else {
-                                element_rect.calc_rendering_info(outer_width, outer_height)
                             };
                             renderer.render_image(result, rendering_info);
                         }
