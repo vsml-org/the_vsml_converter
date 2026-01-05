@@ -131,7 +131,7 @@ where
     type Image = R::Image;
     type Renderer = R::Renderer;
     fn get_size(&self, image: &Self::Image) -> ImageSize {
-        R::get_size(&self, image)
+        R::get_size(self, image)
     }
     fn create_renderer(&mut self) -> Self::Renderer {
         R::create_renderer(self)
