@@ -2456,6 +2456,7 @@ version = "0.1.0"
 dependencies = [
  "cosmic-text",
  "font-kit",
+ "ttf-parser",
  "vsml_common_image",
  "vsml_core",
  "vsml_iv_converter",

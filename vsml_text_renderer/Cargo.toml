@@ -10,4 +10,5 @@ vsml_common_image.workspace = true
 vsml_iv_converter.workspace = true
 cosmic-text.workspace = true
 font-kit.workspace = true
+ttf-parser.workspace = true
 wgpu.workspace = true
