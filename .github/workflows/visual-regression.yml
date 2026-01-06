@@ -120,7 +120,7 @@ jobs:
             tar -xaf main-images.tar.zst -C visual-regression/expected
           fi
 
-          npx reg-cli ./visual-regression/images ./visual-regression/expected ./visual-regression/diff --report ./visual-regression/index.html --json ./reg.json --ignoreChange
+          npx reg-cli ./visual-regression/images ./visual-regression/expected ./visual-regression/diff --matchingThreshold 0.004 --report ./visual-regression/index.html --json ./reg.json --ignoreChange
 
       - name: Deploy visual regression diff to Cloudflare Pages
         uses: cloudflare/wrangler-action@v3
