@@ -31,9 +31,7 @@ fn calculate_line_height_from_font(
         let units_per_em = face.units_per_em() as f32;
 
         let scale = font_size / units_per_em;
-        let line_height = (ascent - descent + line_gap) * scale;
-
-        line_height
+        (ascent - descent + line_gap) * scale
     })
     .unwrap_or(fallback_default)
 }
@@ -132,6 +130,8 @@ impl TextRendererContext {
 
                 if let Some(image) =
                     swash_cache.get_image(&mut font_system, physical_glyph.cache_key)
+                    && image.placement.width != 0
+                    && image.placement.height != 0
                 {
                     let glyph_x = physical_glyph.x + image.placement.left - min_x;
                     let glyph_y = physical_glyph.y - image.placement.top - offset_y;
