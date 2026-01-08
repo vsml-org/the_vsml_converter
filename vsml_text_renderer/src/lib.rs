@@ -1,7 +1,43 @@
-use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, SwashCache};
+#[cfg(test)]
+mod tests;
+
+use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, SwashCache, fontdb};
 use std::sync::RwLock;
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::schemas::{Color, RectSize, TextData};
+use vsml_core::schemas::{RectSize, TextData, TextStyleData};
+
+fn calculate_line_height_from_font(
+    font_system: &FontSystem,
+    families: &Vec<Family>,
+    font_size: f32,
+) -> f32 {
+    let fallback_default = font_size * 1.25;
+
+    let db = font_system.db();
+
+    let face_id = db.query(&fontdb::Query {
+        families,
+        weight: fontdb::Weight::NORMAL,
+        stretch: fontdb::Stretch::Normal,
+        style: fontdb::Style::Normal,
+    });
+    let Some(face_id) = face_id else {
+        return fallback_default;
+    };
+
+    db.with_face_data(face_id, |data, face_index| {
+        let face = ttf_parser::Face::parse(data, face_index).ok().unwrap();
+
+        let ascent = face.ascender() as f32;
+        let descent = face.descender() as f32;
+        let line_gap = face.line_gap() as f32;
+        let units_per_em = face.units_per_em() as f32;
+
+        let scale = font_size / units_per_em;
+        (ascent - descent + line_gap) * scale
+    })
+    .unwrap_or(fallback_default)
+}
 
 pub struct TextRendererContext {
     device: wgpu::Device,
@@ -37,20 +73,13 @@ impl TextRendererContext {
         // TODO: 複数のTextDataに対応（現状は最初の要素のみ）
         let TextData { text, style } = &text_data[0];
 
-        // TODO: font-sizeをTextStyleDataから取得
-        // 現状はデフォルト値を使用
-        let font_size = 32.0;
-        let line_height = 40.0;
+        let font_family = Self::get_font_family_from_style(style);
+
+        let font_size = style.font_size;
+        let line_height =
+            calculate_line_height_from_font(&font_system, &vec![font_family], font_size);
 
         let mut buffer = Buffer::new(&mut font_system, Metrics::new(font_size, line_height));
-
-        // フォントファミリーの設定
-        // TODO: フォールバックフォントは未対応
-        let font_family = if !style.font_family.is_empty() {
-            Family::Name(&style.font_family[0])
-        } else {
-            Family::SansSerif
-        };
 
         let attrs = Attrs::new().family(font_family);
 
@@ -94,8 +123,8 @@ impl TextRendererContext {
         // RGBAバッファを作成（透明で初期化）
         let mut rgba_buffer = vec![0u8; (width * height * 4) as usize];
 
-        // テキストの色を取得（デフォルトは白）
-        let text_color = style.color.unwrap_or(Color::WHITE);
+        // テキストの色を取得
+        let text_color = style.color;
 
         // cosmic-textでテキストをラスタライズ（2回目のイテレーション）
         for run in buffer.layout_runs() {
@@ -104,6 +133,8 @@ impl TextRendererContext {
 
                 if let Some(image) =
                     swash_cache.get_image(&mut font_system, physical_glyph.cache_key)
+                    && image.placement.width != 0
+                    && image.placement.height != 0
                 {
                     let glyph_x = physical_glyph.x + image.placement.left - min_x;
                     let glyph_y = physical_glyph.y - image.placement.top - offset_y;
@@ -157,7 +188,9 @@ impl TextRendererContext {
             sample_count: 1,
             dimension: wgpu::TextureDimension::D2,
             format: wgpu::TextureFormat::Rgba8UnormSrgb,
-            usage: wgpu::TextureUsages::TEXTURE_BINDING | wgpu::TextureUsages::COPY_DST,
+            usage: wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_DST
+                | wgpu::TextureUsages::COPY_SRC,
             view_formats: &[],
         });
 
@@ -185,23 +218,17 @@ impl TextRendererContext {
         let mut font_system = self.font_system.write().unwrap();
 
         // TODO: 複数のTextDataに対応（現状は最初の要素のみ）
-        let TextData { text, style: _ } = &text_data[0];
+        let TextData { text, style } = &text_data[0];
 
-        // TODO: font-sizeをTextStyleDataから取得
-        let font_size = 32.0;
-        let line_height = 40.0;
+        let font_size = style.font_size;
+        let font_family = Self::get_font_family_from_style(style);
+        let line_height =
+            calculate_line_height_from_font(&font_system, &vec![font_family], font_size);
 
         let mut buffer = Buffer::new(&mut font_system, Metrics::new(font_size, line_height));
 
-        // TODO: フォントファミリーの設定
-
-        buffer.set_text(
-            &mut font_system,
-            text,
-            &cosmic_text::Attrs::new(),
-            Shaping::Advanced,
-            None,
-        );
+        let attrs = Attrs::new().family(font_family);
+        buffer.set_text(&mut font_system, text, &attrs, Shaping::Advanced, None);
         buffer.shape_until_scroll(&mut font_system, false);
 
         let (width, height) = self.calculate_buffer_size(&buffer);
@@ -219,5 +246,15 @@ impl TextRendererContext {
         let height = total_lines as f32 * buffer.metrics().line_height;
 
         (width, height)
+    }
+
+    /// TextStyleからフォントファミリーを取得
+    /// TODO: フォールバック機能とフォールバック先の標準フォントは未対応
+    fn get_font_family_from_style(style: &TextStyleData) -> Family<'_> {
+        if !style.font_family.is_empty() {
+            Family::Name(&style.font_family[0])
+        } else {
+            Family::SansSerif
+        }
     }
 }
