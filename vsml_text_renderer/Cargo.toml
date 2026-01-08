@@ -12,3 +12,8 @@ cosmic-text.workspace = true
 font-kit.workspace = true
 ttf-parser.workspace = true
 wgpu.workspace = true
+
+[dev-dependencies]
+vsml_test_utils.workspace = true
+pollster.workspace = true
+image.workspace = true

@@ -2456,10 +2456,13 @@ version = "0.1.0"
 dependencies = [
  "cosmic-text",
  "font-kit",
+ "image",
+ "pollster",
  "ttf-parser",
  "vsml_common_image",
  "vsml_core",
  "vsml_iv_converter",
+ "vsml_test_utils",
  "wgpu",
 ]
 
