@@ -26,7 +26,9 @@ fn calculate_line_height_from_font(
     };
 
     db.with_face_data(face_id, |data, face_index| {
-        let face = ttf_parser::Face::parse(data, face_index).ok().unwrap();
+        let Ok(face) = ttf_parser::Face::parse(data, face_index) else {
+            return fallback_default;
+        };
 
         let ascent = face.ascender() as f32;
         let descent = face.descender() as f32;
