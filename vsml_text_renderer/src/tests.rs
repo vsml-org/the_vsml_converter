@@ -105,7 +105,7 @@ fn test_render_simple_text_vrt() {
     let text_data = vec![TextData {
         text: "Hello World".to_string(),
         style: TextStyleData {
-            color: Color::from_rgb(255, 255, 255),
+            color: Color::WHITE,
             font_size: 32.0,
             font_family: vec![],
         },
@@ -184,6 +184,36 @@ fn test_render_text_with_alpha_vrt() {
         size.width,
         size.height,
         vrt_out_path!("test_render_text_with_alpha.png"),
+    );
+}
+
+#[test]
+fn test_render_text_with_line_break_vrt() {
+    let (device, queue) = create_gpu_context();
+    let context = TextRendererContext::new(device.clone(), queue.clone());
+
+    let text_data = vec![TextData {
+        text: "Multi Line\nText".to_string(),
+        style: TextStyleData {
+            color: Color::WHITE,
+            font_size: 48.0,
+            font_family: vec![],
+        },
+    }];
+
+    let texture = context.render_text(&text_data);
+
+    let size = texture.size();
+    assert!(size.width > 0);
+    assert!(size.height > 0);
+
+    save_texture_to_file(
+        &device,
+        &queue,
+        &texture,
+        size.width,
+        size.height,
+        vrt_out_path!("test_render_text_with_line_break.png"),
     );
 }
 
