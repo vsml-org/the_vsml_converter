@@ -4,7 +4,7 @@ mod tests;
 use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, SwashCache, fontdb};
 use std::sync::RwLock;
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::schemas::{RectSize, TextData, TextStyleData};
+use vsml_core::schemas::{Color, RectSize, TextData, TextStyleData};
 
 #[derive(Debug)]
 struct TextBounds {
@@ -23,12 +23,8 @@ impl TextBounds {
             bottom: 0.0,
         }
     }
-    fn width(&self) -> f32 {
-        if self.left == i32::MAX || self.right == i32::MIN {
-            0.0
-        } else {
-            (self.right - self.left).max(0) as f32
-        }
+    fn width(&self) -> i32 {
+        self.right.saturating_sub(self.left).max(0)
     }
     fn height(&self) -> f32 {
         (self.bottom - self.top).ceil().max(0.0)
@@ -158,15 +154,14 @@ impl TextRendererContext {
                         let pixel_index = (y * width as usize + x) * 4;
                         // TODO: アルファブレンディング処理後で見直す
                         let alpha_f = alpha as f32 / 255.0;
-                        let target_rgba_buffer = &mut rgba_buffer[pixel_index..][..4];
-                        target_rgba_buffer[0] =
-                            ((style.color.r as f32 * alpha_f) as u8).max(target_rgba_buffer[0]);
-                        target_rgba_buffer[1] =
-                            ((style.color.g as f32 * alpha_f) as u8).max(target_rgba_buffer[1]);
-                        target_rgba_buffer[2] =
-                            ((style.color.b as f32 * alpha_f) as u8).max(target_rgba_buffer[2]);
-                        target_rgba_buffer[3] =
-                            ((style.color.a as f32 * alpha_f) as u8).max(target_rgba_buffer[3]);
+                        let [dr, dg, db, da, ..] = &mut rgba_buffer[pixel_index..] else {
+                            unreachable!();
+                        };
+                        let Color { r, g, b, a } = style.color;
+                        *dr = ((r as f32 * alpha_f) as u8).max(*dr);
+                        *dg = ((g as f32 * alpha_f) as u8).max(*dg);
+                        *db = ((b as f32 * alpha_f) as u8).max(*db);
+                        *da = ((a as f32 * alpha_f) as u8).max(*da);
                     }
                 }
             }
@@ -231,7 +226,7 @@ impl TextRendererContext {
         let bounds = self.calculate_buffer_bounds(&mut font_system, &mut swash_cache, &buffer);
 
         RectSize {
-            width: bounds.width(),
+            width: bounds.width() as f32,
             height: bounds.height(),
         }
     }
