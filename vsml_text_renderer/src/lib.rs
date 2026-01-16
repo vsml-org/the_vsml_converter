@@ -4,7 +4,32 @@ mod tests;
 use cosmic_text::{Attrs, Buffer, Family, FontSystem, Metrics, Shaping, SwashCache, fontdb};
 use std::sync::RwLock;
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::schemas::{RectSize, TextData, TextStyleData};
+use vsml_core::schemas::{Color, RectSize, TextData, TextStyleData};
+
+#[derive(Debug)]
+struct TextBounds {
+    left: i32,
+    right: i32,
+    top: f32,
+    bottom: f32,
+}
+
+impl TextBounds {
+    fn new() -> Self {
+        TextBounds {
+            left: i32::MAX,
+            right: i32::MIN,
+            top: 0.0,
+            bottom: 0.0,
+        }
+    }
+    fn width(&self) -> i32 {
+        self.right.saturating_sub(self.left).max(0)
+    }
+    fn height(&self) -> f32 {
+        (self.bottom - self.top).max(0.0)
+    }
+}
 
 fn calculate_line_height_from_font(
     font_system: &FontSystem,
@@ -26,7 +51,9 @@ fn calculate_line_height_from_font(
     };
 
     db.with_face_data(face_id, |data, face_index| {
-        let face = ttf_parser::Face::parse(data, face_index).ok().unwrap();
+        let Ok(face) = ttf_parser::Face::parse(data, face_index) else {
+            return fallback_default;
+        };
 
         let ascent = face.ascender() as f32;
         let descent = face.descender() as f32;
@@ -73,109 +100,73 @@ impl TextRendererContext {
         // TODO: 複数のTextDataに対応（現状は最初の要素のみ）
         let TextData { text, style } = &text_data[0];
 
+        // レイアウトを計算する
         let font_family = Self::get_font_family_from_style(style);
-
         let font_size = style.font_size;
         let line_height =
             calculate_line_height_from_font(&font_system, &vec![font_family], font_size);
-
         let mut buffer = Buffer::new(&mut font_system, Metrics::new(font_size, line_height));
-
         let attrs = Attrs::new().family(font_family);
-
         buffer.set_text(&mut font_system, text, &attrs, Shaping::Advanced, None);
         buffer.shape_until_scroll(&mut font_system, false);
 
-        // 行の範囲とグリフの横幅を計算
-        let mut min_x = i32::MAX;
-        let mut max_x = i32::MIN;
-        let mut min_y = 0.0f32;
-        let mut max_y = 0.0f32;
-
-        for run in buffer.layout_runs() {
-            // 行の範囲を更新
-            min_y = min_y.min(run.line_top);
-            max_y = max_y.max(run.line_top + run.line_height);
-
-            for glyph in run.glyphs.iter() {
-                let physical_glyph = glyph.physical((0.0, run.line_y), 1.0);
-
-                if let Some(image) =
-                    swash_cache.get_image(&mut font_system, physical_glyph.cache_key)
-                {
-                    let glyph_x = physical_glyph.x + image.placement.left;
-
-                    min_x = min_x.min(glyph_x);
-                    max_x = max_x.max(glyph_x + image.placement.width as i32);
-                }
-            }
-        }
-
-        // バッファサイズを決定（行の高さ全体を使用）
-        let width = if max_x > min_x {
-            (max_x - min_x) as u32
-        } else {
-            1
-        };
-        let height = (max_y - min_y).ceil() as u32;
-        let offset_y = min_y as i32;
+        // 描画サイズの取得
+        let bounds = self.calculate_buffer_bounds(&mut font_system, &mut swash_cache, &buffer);
+        let width = bounds.width() as u32;
+        let height = bounds.height().ceil() as u32;
 
         // RGBAバッファを作成（透明で初期化）
         let mut rgba_buffer = vec![0u8; (width * height * 4) as usize];
+        // バッファ内のピクセルの値を計算
+        for layout_run in buffer.layout_runs() {
+            for glyph in layout_run.glyphs.iter() {
+                let physical_glyph = glyph.physical((0.0, layout_run.line_y), 1.0);
+                let Some(image) = swash_cache.get_image(&mut font_system, physical_glyph.cache_key)
+                else {
+                    continue;
+                };
+                if image.placement.width == 0 || image.placement.height == 0 {
+                    continue;
+                }
 
-        // テキストの色を取得
-        let text_color = style.color;
+                // 描画領域の左上を原点(0,0)とした相対座標に変換
+                let glyph_x = physical_glyph.x + image.placement.left - bounds.left;
+                let glyph_y = physical_glyph.y - image.placement.top - bounds.top as i32;
 
-        // cosmic-textでテキストをラスタライズ（2回目のイテレーション）
-        for run in buffer.layout_runs() {
-            for glyph in run.glyphs.iter() {
-                let physical_glyph = glyph.physical((0.0, run.line_y), 1.0);
-
-                if let Some(image) =
-                    swash_cache.get_image(&mut font_system, physical_glyph.cache_key)
-                    && image.placement.width != 0
-                    && image.placement.height != 0
+                // グリフの各ピクセルをRGBAバッファに描画
+                for (pixel_y, row) in image
+                    .data
+                    .chunks(image.placement.width as usize)
+                    .enumerate()
                 {
-                    let glyph_x = physical_glyph.x + image.placement.left - min_x;
-                    let glyph_y = physical_glyph.y - image.placement.top - offset_y;
-
-                    // グリフの各ピクセルをRGBAバッファに描画
-                    for (pixel_y, row) in image
-                        .data
-                        .chunks(image.placement.width as usize)
-                        .enumerate()
-                    {
-                        for (pixel_x, &alpha) in row.iter().enumerate() {
-                            let Some(x) = pixel_x.checked_add_signed(glyph_x as isize) else {
-                                continue;
-                            };
-                            let Some(y) = pixel_y.checked_add_signed(glyph_y as isize) else {
-                                continue;
-                            };
-
-                            if (0..width as usize).contains(&x) && (0..height as usize).contains(&y)
-                            {
-                                let pixel_index = (y * width as usize + x) * 4;
-
-                                // TODO: アルファブレンド後で見直す
-                                let alpha_f = alpha as f32 / 255.0;
-                                let target_rgba_buffer = &mut rgba_buffer[pixel_index..][..4];
-                                target_rgba_buffer[0] = ((text_color.r as f32 * alpha_f) as u8)
-                                    .max(target_rgba_buffer[0]);
-                                target_rgba_buffer[1] = ((text_color.g as f32 * alpha_f) as u8)
-                                    .max(target_rgba_buffer[1]);
-                                target_rgba_buffer[2] = ((text_color.b as f32 * alpha_f) as u8)
-                                    .max(target_rgba_buffer[2]);
-                                target_rgba_buffer[3] = ((text_color.a as f32 * alpha_f) as u8)
-                                    .max(target_rgba_buffer[3]);
-                            }
+                    for (pixel_x, &alpha) in row.iter().enumerate() {
+                        let Some(x) = pixel_x.checked_add_signed(glyph_x as isize) else {
+                            continue;
+                        };
+                        let Some(y) = pixel_y.checked_add_signed(glyph_y as isize) else {
+                            continue;
+                        };
+                        if !((0..width as usize).contains(&x) && (0..height as usize).contains(&y))
+                        {
+                            continue;
                         }
+
+                        let pixel_index = (y * width as usize + x) * 4;
+                        // TODO: アルファブレンディング処理後で見直す
+                        let alpha_f = alpha as f32 / 255.0;
+                        let [dr, dg, db, da, ..] = &mut rgba_buffer[pixel_index..] else {
+                            unreachable!();
+                        };
+                        let Color { r, g, b, a } = style.color;
+                        *dr = ((r as f32 * alpha_f) as u8).max(*dr);
+                        *dg = ((g as f32 * alpha_f) as u8).max(*dg);
+                        *db = ((b as f32 * alpha_f) as u8).max(*db);
+                        *da = ((a as f32 * alpha_f) as u8).max(*da);
                     }
                 }
             }
         }
 
-        // wgpu::Textureに変換
         let size = wgpu::Extent3d {
             width,
             height,
@@ -216,36 +207,64 @@ impl TextRendererContext {
     /// TextDataからサイズを計算
     pub fn calculate_text_size(&self, text_data: &[TextData]) -> RectSize {
         let mut font_system = self.font_system.write().unwrap();
+        let mut swash_cache = self.swash_cache.write().unwrap();
 
         // TODO: 複数のTextDataに対応（現状は最初の要素のみ）
         let TextData { text, style } = &text_data[0];
 
-        let font_size = style.font_size;
+        // レイアウトを計算する
         let font_family = Self::get_font_family_from_style(style);
+        let font_size = style.font_size;
         let line_height =
             calculate_line_height_from_font(&font_system, &vec![font_family], font_size);
-
         let mut buffer = Buffer::new(&mut font_system, Metrics::new(font_size, line_height));
-
         let attrs = Attrs::new().family(font_family);
         buffer.set_text(&mut font_system, text, &attrs, Shaping::Advanced, None);
         buffer.shape_until_scroll(&mut font_system, false);
 
-        let (width, height) = self.calculate_buffer_size(&buffer);
+        // 描画サイズの取得
+        let bounds = self.calculate_buffer_bounds(&mut font_system, &mut swash_cache, &buffer);
 
-        RectSize { width, height }
+        RectSize {
+            width: bounds.width() as f32,
+            height: bounds.height(),
+        }
     }
 
-    fn calculate_buffer_size(&self, buffer: &Buffer) -> (f32, f32) {
-        let (width, total_lines) = buffer
-            .layout_runs()
-            .fold((0.0f32, 0usize), |(max_width, lines), run| {
-                (max_width.max(run.line_w), lines + 1)
-            });
+    /// Bufferからテキストの境界を計算
+    fn calculate_buffer_bounds(
+        &self,
+        font_system: &mut FontSystem,
+        swash_cache: &mut SwashCache,
+        buffer: &Buffer,
+    ) -> TextBounds {
+        let mut bounds = TextBounds::new();
 
-        let height = total_lines as f32 * buffer.metrics().line_height;
+        // 1行辺りの処理
+        for layout_run in buffer.layout_runs() {
+            // テキスト領域内のその行のtop
+            bounds.top = bounds.top.min(layout_run.line_top);
+            // テキスト領域内のその行のtop + その行のheight
+            bounds.bottom = bounds
+                .bottom
+                .max(layout_run.line_top + layout_run.line_height);
 
-        (width, height)
+            // 1文字辺りの処理
+            for glyph in layout_run.glyphs.iter() {
+                let physical_glyph = glyph.physical((0.0, layout_run.line_y), 1.0);
+                let Some(image) = swash_cache.get_image(font_system, physical_glyph.cache_key)
+                else {
+                    continue;
+                };
+
+                // テキスト領域内の1文字の領域のleft + その文字のleft開始位置
+                let glyph_left = physical_glyph.x + image.placement.left;
+                bounds.left = bounds.left.min(glyph_left);
+                bounds.right = bounds.right.max(glyph_left + image.placement.width as i32);
+            }
+        }
+
+        bounds
     }
 
     /// TextStyleからフォントファミリーを取得
