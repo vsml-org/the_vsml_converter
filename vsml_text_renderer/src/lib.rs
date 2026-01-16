@@ -238,19 +238,16 @@ impl TextRendererContext {
         swash_cache: &mut SwashCache,
         buffer: &Buffer,
     ) -> TextBounds {
-        let TextBounds {
-            mut left,
-            mut right,
-            mut top,
-            mut bottom,
-        } = TextBounds::new();
+        let mut bounds = TextBounds::new();
 
         // 1行辺りの処理
         for layout_run in buffer.layout_runs() {
             // テキスト領域内のその行のtop
-            top = top.min(layout_run.line_top);
+            bounds.top = bounds.top.min(layout_run.line_top);
             // テキスト領域内のその行のtop + その行のheight
-            bottom = bottom.max(layout_run.line_top + layout_run.line_height);
+            bounds.bottom = bounds
+                .bottom
+                .max(layout_run.line_top + layout_run.line_height);
 
             // 1文字辺りの処理
             for glyph in layout_run.glyphs.iter() {
@@ -262,17 +259,12 @@ impl TextRendererContext {
 
                 // テキスト領域内の1文字の領域のleft + その文字のleft開始位置
                 let glyph_left = physical_glyph.x + image.placement.left;
-                left = left.min(glyph_left);
-                right = right.max(glyph_left + image.placement.width as i32);
+                bounds.left = bounds.left.min(glyph_left);
+                bounds.right = bounds.right.max(glyph_left + image.placement.width as i32);
             }
         }
 
-        TextBounds {
-            left,
-            right,
-            top,
-            bottom,
-        }
+        bounds
     }
 
     /// TextStyleからフォントファミリーを取得
