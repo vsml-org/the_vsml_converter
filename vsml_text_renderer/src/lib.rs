@@ -27,7 +27,7 @@ impl TextBounds {
         self.right.saturating_sub(self.left).max(0)
     }
     fn height(&self) -> f32 {
-        (self.bottom - self.top).ceil().max(0.0)
+        (self.bottom - self.top).max(0.0)
     }
 }
 
@@ -113,7 +113,7 @@ impl TextRendererContext {
         // 描画サイズの取得
         let bounds = self.calculate_buffer_bounds(&mut font_system, &mut swash_cache, &buffer);
         let width = bounds.width() as u32;
-        let height = bounds.height() as u32;
+        let height = bounds.height().ceil() as u32;
 
         // RGBAバッファを作成（透明で初期化）
         let mut rgba_buffer = vec![0u8; (width * height * 4) as usize];
