@@ -1,0 +1,58 @@
+name: Check format
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  rustfmt:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt
+
+      - name: Run rustfmt
+        run: cargo fmt --all --check
+
+  taplo:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Get latest taplo-cli version
+        id: taplo-version
+        shell: bash
+        run: |
+          V=$(curl https://index.crates.io/ta/pl/taplo-cli | jq -r 'select(.yanked == false) | .vers' | grep --extended-regexp '^[0-9]+\.[0-9]+\.[0-9]+$' | sort --reverse --version-sort | head --lines=1)
+          echo "Latest version of taplo-cli: $V"
+          echo "version=$V" >> $GITHUB_OUTPUT
+
+      - name: Cache taplo-cli binary
+        id: taplo-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.cargo/bin/taplo
+          key: ${{ runner.os }}-taplo-cli-${{ steps.taplo-version.outputs.version }}
+
+      - name: Set up Rust
+        uses: dtolnay/rust-toolchain@stable
+        if: steps.taplo-cache.outputs.cache-hit != 'true'
+
+      - name: Install taplo-cli
+        if: steps.taplo-cache.outputs.cache-hit != 'true'
+        run: cargo install taplo-cli@${{ steps.taplo-version.outputs.version }} --locked
+
+      - name: Run taplo fmt
+        run: ~/.cargo/bin/taplo fmt --check
