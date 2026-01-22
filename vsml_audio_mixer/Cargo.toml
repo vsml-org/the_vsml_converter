@@ -7,4 +7,5 @@ authors.workspace = true
 [dependencies]
 vsml_core.workspace = true
 vsml_common_audio.workspace = true
+
 dasp.workspace = true

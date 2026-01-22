@@ -6,6 +6,7 @@ authors.workspace = true
 
 [dependencies]
 vsml_ast.workspace = true
+
 nom.workspace = true
 regex.workspace = true
 roxmltree.workspace = true
