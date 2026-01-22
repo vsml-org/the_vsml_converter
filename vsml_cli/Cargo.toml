@@ -1,8 +1,8 @@
 [package]
+authors.workspace = true
+edition.workspace = true
 name = "vsml_cli"
 version.workspace = true
-edition.workspace = true
-authors.workspace = true
 
 [[bin]]
 name = "vsml"
@@ -19,6 +19,7 @@ vsml_iv_converter.workspace = true
 vsml_parser.workspace = true
 vsml_processor.workspace = true
 vsml_text_renderer.workspace = true
+
 clap.workspace = true
 pollster.workspace = true
 wgpu.workspace = true

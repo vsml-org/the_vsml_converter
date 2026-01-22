@@ -1,25 +1,25 @@
 [workspace.package]
-version = "0.1.0"
-edition = "2024"
 authors = ["PigeonsHouse"]
+edition = "2024"
+version = "0.1.0"
 
 [workspace]
-resolver = "2"
 members = [
-    "vsml_ast",
-    "vsml_audio_mixer",
-    "vsml_cli",
-    "vsml_common_audio",
-    "vsml_common_image",
-    "vsml_core",
-    "vsml_encoder",
-    "vsml_image_renderer",
-    "vsml_iv_converter",
-    "vsml_parser",
-    "vsml_processor",
-    "vsml_test_utils",
-    "vsml_text_renderer",
+  "vsml_ast",
+  "vsml_audio_mixer",
+  "vsml_cli",
+  "vsml_common_audio",
+  "vsml_common_image",
+  "vsml_core",
+  "vsml_encoder",
+  "vsml_image_renderer",
+  "vsml_iv_converter",
+  "vsml_parser",
+  "vsml_processor",
+  "vsml_test_utils",
+  "vsml_text_renderer",
 ]
+resolver = "2"
 
 [workspace.dependencies]
 vsml_ast = { path = "vsml_ast" }
@@ -34,16 +34,17 @@ vsml_parser = { path = "vsml_parser" }
 vsml_processor = { path = "vsml_processor" }
 vsml_test_utils = { path = "vsml_test_utils" }
 vsml_text_renderer = { path = "vsml_text_renderer" }
-bytemuck = { version = "1.24.0", features = ["derive"] }
-clap = { version = "4.5.54", features = ["derive"] }
+
+bytemuck = { features = ["derive"], version = "1.24.0" }
+clap = { features = ["derive"], version = "4.5.54" }
 cosmic-text = "0.16"
-dasp = { version = "0.11.0", features = ["all"] }
+dasp = { features = ["all"], version = "0.11.0" }
 font-kit = "0.14"
 hound = "3.5.1"
 image = "0.25.9"
 mockall = "0.14.0"
 nom = "8.0.0"
-phf = { version = "0.13.1", features = ["macros"] }
+phf = { features = ["macros"], version = "0.13.1" }
 pollster = "0.4.0"
 regex = "1.12.2"
 roxmltree = "0.21.1"

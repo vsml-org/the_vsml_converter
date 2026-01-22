@@ -1,16 +1,18 @@
 [package]
+authors.workspace = true
+edition.workspace = true
 name = "vsml_image_renderer"
 version.workspace = true
-edition.workspace = true
-authors.workspace = true
 
 [dependencies]
-vsml_core.workspace = true
 vsml_common_image.workspace = true
+vsml_core.workspace = true
+
 bytemuck.workspace = true
 wgpu.workspace = true
 
 [dev-dependencies]
+vsml_test_utils.workspace = true
+
 image.workspace = true
 pollster.workspace = true
-vsml_test_utils.workspace = true
