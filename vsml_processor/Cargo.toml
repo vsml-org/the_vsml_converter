@@ -1,14 +1,14 @@
 [package]
+authors.workspace = true
+edition.workspace = true
 name = "vsml_processor"
 version.workspace = true
-edition.workspace = true
-authors.workspace = true
 
 [dependencies]
-vsml_text_renderer.workspace = true
 vsml_common_audio.workspace = true
 vsml_common_image.workspace = true
 vsml_core.workspace = true
+vsml_text_renderer.workspace = true
 
 hound.workspace = true
 image.workspace = true

@@ -1,8 +1,8 @@
 [package]
+authors.workspace = true
+edition.workspace = true
 name = "vsml_cli"
 version.workspace = true
-edition.workspace = true
-authors.workspace = true
 
 [[bin]]
 name = "vsml"
