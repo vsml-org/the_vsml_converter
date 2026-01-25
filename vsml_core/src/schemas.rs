@@ -501,6 +501,7 @@ pub trait ObjectProcessor<I, A> {
         render_sec: f64,
         attributes: &HashMap<String, String>,
         input: ProcessorInput<I>,
+        element_rect: &ElementRect,
     ) -> Option<I>;
     fn process_audio(&self, attributes: &HashMap<String, String>, audio: Option<A>) -> Option<A>;
 }
