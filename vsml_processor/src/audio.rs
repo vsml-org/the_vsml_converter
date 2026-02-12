@@ -1,6 +1,9 @@
 use std::collections::HashMap;
 use vsml_common_audio::Audio as VsmlAudio;
-use vsml_core::schemas::{ObjectProcessor, ProcessorInput, RectSize};
+use vsml_core::{
+    ElementRect,
+    schemas::{ObjectProcessor, ProcessorInput, RectSize},
+};
 
 pub struct AudioProcessor;
 
@@ -32,6 +35,7 @@ impl<I> ObjectProcessor<I, VsmlAudio> for AudioProcessor {
         _: f64,
         _attributes: &HashMap<String, String>,
         _input: ProcessorInput<I>,
+        _element_rect: &ElementRect,
     ) -> Option<I> {
         None
     }

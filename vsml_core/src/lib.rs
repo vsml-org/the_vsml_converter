@@ -251,7 +251,8 @@ where
                         };
 
                         println!("[debug] target_time: {}", target_time);
-                        let result = processor.process_image(target_time, attributes, input);
+                        let result =
+                            processor.process_image(target_time, attributes, input, element_rect);
                         if let Some(result) = result {
                             let rendering_info = if processor.has_default_image_size() {
                                 element_rect.calc_rendering_info(outer_width, outer_height)

@@ -1,7 +1,10 @@
 use image::GenericImageView;
 use std::collections::HashMap;
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::schemas::{ObjectProcessor, ProcessorInput, RectSize};
+use vsml_core::{
+    ElementRect,
+    schemas::{ObjectProcessor, ProcessorInput, RectSize},
+};
 
 pub struct ImageProcessor {
     device: wgpu::Device,
@@ -42,6 +45,7 @@ impl<A> ObjectProcessor<VsmlImage, A> for ImageProcessor {
         _: f64,
         attributes: &HashMap<String, String>,
         _input: ProcessorInput<VsmlImage>,
+        _element_rect: &ElementRect,
     ) -> Option<VsmlImage> {
         let src_path = attributes.get("src").unwrap();
         let image = image::open(src_path).unwrap();
