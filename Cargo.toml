@@ -36,7 +36,7 @@ vsml_test_utils = { path = "vsml_test_utils" }
 vsml_text_renderer = { path = "vsml_text_renderer" }
 
 bytemuck = { features = ["derive"], version = "1.25.0" }
-clap = { features = ["derive"], version = "4.5.58" }
+clap = { features = ["derive"], version = "4.5.60" }
 cosmic-text = "0.18"
 dasp = { features = ["all"], version = "0.11.0" }
 font-kit = "0.14"
