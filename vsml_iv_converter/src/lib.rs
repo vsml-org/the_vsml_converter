@@ -374,6 +374,13 @@ fn convert_tag_element<'a, I, A>(
             _ => {}
         }
     }
+    // 幅が指定されていれば折り返し幅として使用
+    // TODO: 縦書き対応時はフラグを見てwidthとheightと取り分ける必要がある。max-width/heightも対応時にここの考慮が必要。
+    text_style = TextStyleData {
+        // TODO: max-width/height
+        wrap_length: rule_target_width,
+        ..text_style
+    };
 
     // ここでinvalidな値が入っていたらpanicする
     if let Some(width) = rule_target_width
@@ -452,10 +459,6 @@ fn convert_tag_element<'a, I, A>(
                 duration_for_children,
                 size_for_children,
             ),
-            // TODO: VSSプロパティとしてwidth, heightが追加された場合、ここでwidth, heightも必要になる
-            // 仮に横書きであれば水平方向に書いた描画範囲の幅がwidthを超える場合、改行して次の行に続ける必要がある
-            // そのため、折り返しの判定をするために、width(縦書きの場合はheight)が必要になる
-            // 現状は、textの描画サイズがそのままtxtタグの描画サイズになるため、width, heightは不要
             Element::Text(text) => convert_element_text(text, &text_style),
         });
         // 子要素によって親要素のstyleが変わる場合の処理
