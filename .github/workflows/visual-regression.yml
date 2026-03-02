@@ -54,7 +54,7 @@ jobs:
         run: ./.ci/capture_vrt_images.sh "$(pwd)/examples" "$(pwd)/visual-regression/images"
 
       - name: Upload visual regression images
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: vr-images
           path: visual-regression/images
@@ -68,7 +68,7 @@ jobs:
       contents: read
     steps:
       - name: Download images artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: vr-images
           path: ./visual-regression/images
@@ -98,7 +98,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Download images artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: vr-images
           path: ./visual-regression/images
