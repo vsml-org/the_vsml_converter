@@ -131,7 +131,7 @@ jobs:
             pages deploy --project-name ${{ vars.VRT_CF_PAGES_PROJECT_NAME }} --branch pr-${{ github.event.pull_request.number }} ./visual-regression
 
       - name: Post visual regression test summary as PR comment
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           script: |
             const fs = require('fs');
