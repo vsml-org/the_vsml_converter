@@ -44,7 +44,7 @@ jobs:
         run: RUSTDOCFLAGS="--enable-index-page -Zunstable-options" cargo doc --locked --workspace --document-private-items --no-deps -Zrustdoc-map
 
       - name: Upload rustdoc artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@v5
         with:
           path: target/doc
 
