@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use vsml_ast::vsml::Element;
 use vsml_ast::vss::{Rule, VSSSelector, VSSSelectorTree};
+use vsml_core::ElementRect;
 use vsml_core::schemas::{ObjectProcessor, ProcessorInput, RectSize, TextData};
 
 pub fn create_element(name: &str, class: Option<&str>, id: Option<&str>) -> Element {
@@ -51,6 +52,7 @@ mock! {
             render_sec: f64,
             attributes: &HashMap<String, String>,
             input: ProcessorInput<()>,
+            element_rect: &ElementRect,
         ) -> Option<()>;
         fn process_audio(&self, attributes: &HashMap<String, String>, audio: Option<()>) -> Option<()>;
     }
