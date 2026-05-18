@@ -80,7 +80,7 @@ jobs:
           tar -I 'zstd -19' -cf images.tar.zst -C "${OUT_ROOT}" .
 
       - name: Upload images to Cloudflare R2
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
@@ -105,7 +105,7 @@ jobs:
 
       - name: Download images from Cloudflare R2
         continue-on-error: true
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
@@ -123,7 +123,7 @@ jobs:
           npx reg-cli ./visual-regression/images ./visual-regression/expected ./visual-regression/diff --matchingThreshold 0.004 --report ./visual-regression/index.html --json ./reg.json --ignoreChange
 
       - name: Deploy visual regression diff to Cloudflare Pages
-        uses: cloudflare/wrangler-action@v3
+        uses: cloudflare/wrangler-action@v4
         with:
           apiToken: ${{ secrets.CF_API_TOKEN }}
           accountId: ${{ secrets.CF_ACCOUNT_ID }}
