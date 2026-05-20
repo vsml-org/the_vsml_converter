@@ -1,7 +1,10 @@
 use std::collections::HashMap;
 use vsml_common_audio::Audio as VsmlAudio;
 use vsml_common_image::Image as VsmlImage;
-use vsml_core::schemas::{ObjectProcessor, ProcessorInput, RectSize};
+use vsml_core::{
+    ElementRect,
+    schemas::{ObjectProcessor, ProcessorInput, RectSize},
+};
 use vsml_text_renderer::TextRendererContext;
 
 pub struct TextProcessor {
@@ -42,6 +45,7 @@ impl ObjectProcessor<VsmlImage, VsmlAudio> for TextProcessor {
         _time: f64,
         _attributes: &HashMap<String, String>,
         input: ProcessorInput<VsmlImage>,
+        _element_rect: &ElementRect,
     ) -> Option<VsmlImage> {
         let ProcessorInput::Text(text_data_vec) = input else {
             return None;

@@ -501,6 +501,7 @@ pub trait ObjectProcessor<I, A> {
         render_sec: f64,
         attributes: &HashMap<String, String>,
         input: ProcessorInput<I>,
+        element_rect: &ElementRect,
     ) -> Option<I>;
     fn process_audio(&self, attributes: &HashMap<String, String>, audio: Option<A>) -> Option<A>;
 }
@@ -516,6 +517,7 @@ pub struct TextStyleData {
     pub color: Color,
     pub font_family: Vec<String>,
     pub font_size: f32,
+    pub wrap_length: Option<f32>,
 }
 impl Default for TextStyleData {
     fn default() -> Self {
@@ -524,6 +526,7 @@ impl Default for TextStyleData {
             font_size: 32.0,
             // 環境によってプリインストールのフォントが変わるのでvsml_coreでは定義しない
             font_family: vec![],
+            wrap_length: None,
         }
     }
 }

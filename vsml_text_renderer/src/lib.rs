@@ -106,6 +106,12 @@ impl TextRendererContext {
         let line_height =
             calculate_line_height_from_font(&font_system, &vec![font_family], font_size);
         let mut buffer = Buffer::new(&mut font_system, Metrics::new(font_size, line_height));
+
+        // 折り返し幅が指定されている場合は設定
+        if let Some(wrap_width) = style.wrap_length {
+            buffer.set_size(&mut font_system, Some(wrap_width), None);
+        }
+
         let attrs = Attrs::new().family(font_family);
         buffer.set_text(&mut font_system, text, &attrs, Shaping::Advanced, None);
         buffer.shape_until_scroll(&mut font_system, false);
@@ -218,6 +224,12 @@ impl TextRendererContext {
         let line_height =
             calculate_line_height_from_font(&font_system, &vec![font_family], font_size);
         let mut buffer = Buffer::new(&mut font_system, Metrics::new(font_size, line_height));
+
+        // 折り返し幅が指定されている場合は設定
+        if let Some(wrap_width) = style.wrap_length {
+            buffer.set_size(&mut font_system, Some(wrap_width), None);
+        }
+
         let attrs = Attrs::new().family(font_family);
         buffer.set_text(&mut font_system, text, &attrs, Shaping::Advanced, None);
         buffer.shape_until_scroll(&mut font_system, false);

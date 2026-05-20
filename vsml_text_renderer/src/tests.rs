@@ -108,6 +108,7 @@ fn test_render_simple_text_vrt() {
             color: Color::WHITE,
             font_size: 32.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
 
@@ -138,6 +139,7 @@ fn test_render_text_with_color_vrt() {
             color: Color::from_rgb(255, 0, 0), // 赤色
             font_size: 48.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
 
@@ -168,6 +170,7 @@ fn test_render_text_with_alpha_vrt() {
             color: Color::from(0, 255, 0, 128),
             font_size: 40.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
 
@@ -198,6 +201,7 @@ fn test_render_text_with_line_break_vrt() {
             color: Color::WHITE,
             font_size: 48.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
 
@@ -228,6 +232,7 @@ fn test_render_text_different_sizes_vrt() {
             color: Color::WHITE,
             font_size: 16.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
     let small_texture = context.render_text(&small_text);
@@ -239,6 +244,7 @@ fn test_render_text_different_sizes_vrt() {
             color: Color::WHITE,
             font_size: 64.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
     let large_texture = context.render_text(&large_text);
@@ -276,6 +282,7 @@ fn test_render_japanese_text_vrt() {
             color: Color::from_rgb(0, 0, 255),
             font_size: 36.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
 
@@ -307,6 +314,7 @@ fn test_calculate_text_size_simple() {
             color: Color::WHITE,
             font_size: 32.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
 
@@ -327,6 +335,7 @@ fn test_calculate_text_size_empty() {
             color: Color::WHITE,
             font_size: 32.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
 
@@ -347,6 +356,7 @@ fn test_calculate_text_size_comparison() {
             color: Color::WHITE,
             font_size: 32.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
 
@@ -356,6 +366,7 @@ fn test_calculate_text_size_comparison() {
             color: Color::WHITE,
             font_size: 32.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
 
@@ -377,6 +388,7 @@ fn test_calculate_text_size_different_font_sizes() {
             color: Color::WHITE,
             font_size: 16.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
 
@@ -386,6 +398,7 @@ fn test_calculate_text_size_different_font_sizes() {
             color: Color::WHITE,
             font_size: 64.0,
             font_family: vec![],
+            wrap_length: None,
         },
     }];
 
@@ -394,4 +407,68 @@ fn test_calculate_text_size_different_font_sizes() {
 
     assert!(large_size.width > small_size.width);
     assert!(large_size.height > small_size.height);
+}
+
+#[test]
+fn test_render_text_with_wrap_width_vrt() {
+    let (device, queue) = create_gpu_context();
+    let context = TextRendererContext::new(device.clone(), queue.clone());
+
+    let text_data = vec![TextData {
+        text: "This is a long text that should wrap to multiple lines".to_string(),
+        style: TextStyleData {
+            color: Color::WHITE,
+            font_size: 32.0,
+            font_family: vec![],
+            wrap_length: Some(200.0),
+        },
+    }];
+
+    let texture = context.render_text(&text_data);
+
+    let size = texture.size();
+    assert!(size.width > 0);
+    assert!(size.height > 0);
+    assert!(size.width <= 200);
+
+    save_texture_to_file(
+        &device,
+        &queue,
+        &texture,
+        size.width,
+        size.height,
+        vrt_out_path!("test_render_text_with_wrap_width.png"),
+    );
+}
+
+#[test]
+fn test_calculate_text_size_with_wrap_width() {
+    let (device, queue) = create_gpu_context();
+    let context = TextRendererContext::new(device, queue);
+
+    let text_no_wrap = vec![TextData {
+        text: "This is a long text".to_string(),
+        style: TextStyleData {
+            color: Color::WHITE,
+            font_size: 32.0,
+            font_family: vec![],
+            wrap_length: None,
+        },
+    }];
+
+    let text_with_wrap = vec![TextData {
+        text: "This is a long text".to_string(),
+        style: TextStyleData {
+            color: Color::WHITE,
+            font_size: 32.0,
+            font_family: vec![],
+            wrap_length: Some(100.0),
+        },
+    }];
+
+    let size_no_wrap = context.calculate_text_size(&text_no_wrap);
+    let size_with_wrap = context.calculate_text_size(&text_with_wrap);
+
+    assert!(size_with_wrap.width < size_no_wrap.width);
+    assert!(size_with_wrap.height > size_no_wrap.height);
 }
