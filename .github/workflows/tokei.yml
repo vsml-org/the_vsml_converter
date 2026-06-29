@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: Get latest tokei version
         id: tokei-version
@@ -24,7 +24,7 @@ jobs:
 
       - name: Cache tokei binary
         id: cache-tokei
-        uses: actions/cache@v5
+        uses: actions/cache@v6
         with:
           key: ${{ runner.os }}-tokei-bin-${{ steps.tokei-version.outputs.version }}
           path: ~/.cargo/bin/tokei
